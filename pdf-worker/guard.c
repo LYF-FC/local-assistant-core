@@ -19,14 +19,14 @@ static void rule(scmp_filter_ctx ctx, const char *name) {
     if (call >= 0 && seccomp_rule_add(ctx, SCMP_ACT_ALLOW, call, 0)) _exit(125);
 }
 int main(int argc, char **argv) {
-    if (argc != 2 || (strcmp(argv[1], "info") && strcmp(argv[1], "text") && strcmp(argv[1], "version") && strcmp(argv[1], "probe") && strcmp(argv[1], "probe_cpu") && strcmp(argv[1], "probe_memory") && strcmp(argv[1], "probe_output"))) return 125;
+    if (argc != 2 || (strcmp(argv[1], "render2") && strcmp(argv[1], "render1") && strcmp(argv[1], "ocr") && strcmp(argv[1], "info") && strcmp(argv[1], "text") && strcmp(argv[1], "version") && strcmp(argv[1], "probe") && strcmp(argv[1], "probe_cpu") && strcmp(argv[1], "probe_memory") && strcmp(argv[1], "probe_output"))) return 125;
     limit(RLIMIT_CPU, 3);
     limit(RLIMIT_AS, 256UL * 1024 * 1024);
     limit(RLIMIT_FSIZE, 0);
     limit(RLIMIT_CORE, 0);
     limit(RLIMIT_NOFILE, 32);
     limit(RLIMIT_NPROC, 0);
-    if (clearenv() || setenv("LC_ALL", "C", 1) || setenv("HOME", "/nonexistent", 1) || chdir("/")) return 125;
+    if (clearenv() || setenv("OMP_THREAD_LIMIT", "1", 1) || setenv("LC_ALL", "C", 1) || setenv("HOME", "/nonexistent", 1) || chdir("/")) return 125;
     if (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0)) return 125;
     scmp_filter_ctx ctx = seccomp_init(SCMP_ACT_ERRNO(EPERM));
     if (!ctx) return 125;
@@ -77,7 +77,14 @@ int main(int argc, char **argv) {
         puts("confined");
         return 0;
     }
-    if (!strcmp(argv[1], "info")) {
+    if (!strcmp(argv[1], "render1") || !strcmp(argv[1], "render2")) {
+        char *page = !strcmp(argv[1], "render1") ? "1" : "2";
+        char *args[] = {"/usr/bin/pdftoppm", "-f", page, "-l", page, "-singlefile", "-gray", "-scale-to", "1600", "-", NULL};
+        execv(args[0], args);
+    } else if (!strcmp(argv[1], "ocr")) {
+        char *args[] = {"/usr/bin/tesseract", "stdin", "stdout", "-l", "eng+fra+spa", "--psm", "6", NULL};
+        execv(args[0], args);
+    } else if (!strcmp(argv[1], "info")) {
         char *args[] = {"/usr/bin/pdfinfo", "-", NULL};
         execv(args[0], args);
     } else if (!strcmp(argv[1], "version")) {

@@ -31,7 +31,7 @@ class BoundedFailure(Exception):
     pass
 
 
-def command(mode, original=b"", output_limit=MAX_OUTPUT):
+def command(mode, original=b"", output_limit=MAX_OUTPUT, *, deadline=None):
     """Bound both streams while feeding stdin; never use unbounded communicate()."""
     # Fixed absolute guard; mode is checked by the guard.
     with subprocess.Popen(  # nosec B603
@@ -45,7 +45,9 @@ def command(mode, original=b"", output_limit=MAX_OUTPUT):
     ) as child:
         streams = {child.stdout: bytearray(), child.stderr: bytearray()}
         sent = 0
-        deadline = time.monotonic() + 8
+        deadline = (
+            min(time.monotonic() + 8, deadline) if deadline is not None else time.monotonic() + 8
+        )
         with selectors.DefaultSelector() as selector:
             for stream in streams:
                 os.set_blocking(stream.fileno(), False)
@@ -91,11 +93,11 @@ def command(mode, original=b"", output_limit=MAX_OUTPUT):
         )
 
 
-def extract(original, version):
+def extract(original, version, *, ocr=False):
     result = {
         "schema_version": 1,
         "source_sha256": hashlib.sha256(original).hexdigest(),
-        "engine": "poppler-text-v1",
+        "engine": "poppler-tesseract-v1" if ocr else "poppler-text-v1",
         "version": version,
         "status": "invalid",
         "pages": 0,
@@ -105,8 +107,9 @@ def extract(original, version):
     }
     if not 1 <= len(original) <= MAX_INPUT or not original.startswith(b"%PDF-"):
         return result
+    deadline = time.monotonic() + 18 if ocr else None
     try:
-        code, info, error = command("info", original, 8192)
+        code, info, error = command("info", original, 8192, deadline=deadline)
         if code != 0:
             result["status"] = (
                 "encrypted"
@@ -127,17 +130,40 @@ def extract(original, version):
         if re.search(rb"^Encrypted:\s+yes\b", info, re.MULTILINE):
             result["status"] = "encrypted"
             return result
-        code, output, _ = command("text", original)
-        if code != 0:
-            result["status"] = "resource_limit" if code < 0 or code == 125 else "invalid"
-            return result
-        text = output.decode("utf-8", errors="strict")
-        if "\x00" in text:
-            return result
-        parts = text.split("\f")
-        if parts[-1] == "":
-            parts.pop()
-        if len(parts) != pages:
+        if ocr:
+            if pages > 2:
+                result["status"] = "resource_limit"
+                return result
+            parts = []
+            for page in range(1, pages + 1):
+                code, image, _ = command(
+                    f"render{page}", original, 3 * 1024 * 1024, deadline=deadline
+                )
+                header = re.match(rb"P5\n([0-9]{1,4}) ([0-9]{1,4})\n255\n", image)
+                if code or header is None:
+                    raise BoundedFailure("resource_limit")
+                width, height = map(int, header.groups())
+                if (
+                    not 1 <= width <= 1600
+                    or not 1 <= height <= 1600
+                    or len(image) != header.end() + width * height
+                ):
+                    raise BoundedFailure("resource_limit")
+                code, output, _ = command("ocr", image, deadline=deadline)
+                if code:
+                    raise BoundedFailure("resource_limit")
+                parts.append(output.decode("utf-8", errors="strict"))
+        else:
+            code, output, _ = command("text", original)
+            if code != 0:
+                result["status"] = "resource_limit" if code < 0 or code == 125 else "invalid"
+                return result
+            parts = output.decode("utf-8", errors="strict").split("\f")
+            if parts[-1] == "":
+                parts.pop()
+            if len(parts) != pages:
+                return result
+        if any("\x00" in part for part in parts):
             return result
         parts = [part.rstrip("\n") for part in parts]
         combined = "\n".join(parts)
@@ -184,10 +210,11 @@ class Handler(socketserver.BaseRequestHandler):
         self.request.settimeout(20)
         try:
             size = struct.unpack("!I", receive(self.request, 4))[0]
-            if not 1 <= size <= MAX_INPUT:
+            if not 1 <= size <= MAX_INPUT + 4:
                 return
             original = receive(self.request, size)
-            result = extract(original, self.server.parser_version)
+            ocr = original.startswith(b"OCR1")
+            result = extract(original[4:] if ocr else original, self.server.parser_version, ocr=ocr)
             payload = json.dumps(result, ensure_ascii=False, separators=(",", ":")).encode()
             if len(payload) <= MAX_RESPONSE:
                 self.request.sendall(struct.pack("!I", len(payload)) + payload)
@@ -229,6 +256,10 @@ def main():
             + Path(GUARD).read_bytes()
             + Path(__file__).read_bytes()
             + sys.version.encode()
+            + b"".join(
+                Path(f"/usr/share/tesseract-ocr/5/tessdata/{language}.traineddata").read_bytes()
+                for language in ("eng", "fra", "spa")
+            )
         ).hexdigest()
         server.parser_version = matches[0].decode() + "+" + build
         server.serve_forever(poll_interval=0.5)

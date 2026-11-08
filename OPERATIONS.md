@@ -15,6 +15,10 @@ Optional [local archive operations](docs/DOCUMENT_ARCHIVE.md) require a separate
 
 Optional [PDF ingestion operations](docs/PDF_INGESTION.md) require a separately selected synthetic overlay. Unavailable extraction retains the original; retry explicitly after repairing the worker. Preserve parser package/build provenance with backups, and verify raw/derived hashes and review state after restore. Migration 0024 refuses downgrade while PDF content or extraction-operation history exists. Forgetting scrubs content but retains immutable operation evidence; keep the migration when that evidence exists. Never apply this exercise to an existing private deployment.
 
+## Explicit bounded OCR — spec 052
+
+The optional PDF worker now includes fixed OCR language models. Failed/over-limit OCR retains the source and creates an unreviewed failure version; choose text extraction or explicit OCR again after checking the cause. Do not treat recognized names/dates/numbers as authoritative. Back up build/model provenance. Migration 0025 refuses downgrade with retained OCR content/snapshots; normal managed forgetting scrubs that metadata, while migration 0024 still protects extracted-operation history. See [limits and recovery](docs/PDF_OCR.md).
+
 ## Planned installation operations
 
 INSTALL-01–12 require independent per-household configuration/secrets/records/backups, auditable feature changes, safe worker/dependency shutdown, upgrade compatibility and rollback. Disabling never abandons bound data-cleanup obligations. Versioned template exports omit private data and secret values by default. This is scope only; no production onboarding or toggle interface is delivered. Existing operations and migration refusal remain in force. See [installation lifecycle](docs/CONFIGURABLE_INSTALLATIONS.md).

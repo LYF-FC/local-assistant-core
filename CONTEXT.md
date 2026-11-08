@@ -8,7 +8,7 @@ The retained product scope includes an everyday MVP and later household, care, c
 
 See [architecture](ARCHITECTURE.md), [decisions](DECISIONS.md), [operations](OPERATIONS.md), [setup](SETUP.md) and [publication boundary](PUBLICATION.md).
 
-Spec 050 local original archive merged in [PR #2](https://github.com/LYF-FC/local-assistant-core/pull/2) at `8c6794b31ce2f0458beb1ffe26cdb0ca81ea113a`; its main CI passed all six jobs. Current branch [spec 051](docs/PDF_INGESTION.md) extends that lifecycle with isolated bounded PDF text extraction. OCR, live adapters and operational acceptance remain open.
+Specs 050/051 merged in [PR #2](https://github.com/LYF-FC/local-assistant-core/pull/2) and [PR #3](https://github.com/LYF-FC/local-assistant-core/pull/3). PR #3 main `3fe5cce93878deec2301bcb33051c239c057acee` passed all six jobs in run 42504016023. Current [spec 052](docs/PDF_OCR.md) adds explicit bounded uncertain OCR to that same lifecycle. Structured invoice fields, live adapters and operational acceptance remain open.
 
 ## Configurable installations — scope extension
 

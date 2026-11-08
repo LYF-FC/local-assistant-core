@@ -18,6 +18,10 @@ Keep original bytes in PostgreSQL while introducing explicitly provisioned local
 
 Extend the existing document lifecycle rather than create a second ingestion store. Preserve exact originals on extraction failure, expose bounded failure states, and require explicit owner review before citation. A separate local worker confines native parsing; upload idempotency is owner-scoped and payload-bound. Re-extraction creates an unreviewed version with build provenance. OCR and structured field extraction remain separate dependencies; this supersedes no original storage or deletion contract.
 
+## Explicit bounded OCR — spec 052
+
+OCR is an explicit owner derivation, never an automatic fallback or accuracy assertion. Preserve the exact source and previous derivations; expose uncertainty and require fresh review before citations. Keep the existing text mode as default and use an additive validator migration. Structured fields/uncertainty and filing remain separate retained outcomes.
+
 ## Reusable household installations — approved 8 November 2026
 
 Retain the original 135 requirements and add INSTALL-01–12, bringing the register to 147. Develop one shared core with independent private installations, configurable members, safe templates, optional feature lifecycle and tested upgrades. Stable software keys are distinct from local identities. Enabling a feature grants no content permission; disabling is not deletion. Finish this milestone before legacy private-data adoption or a reusable-installation release; independent document work can proceed. [Detailed contract](docs/CONFIGURABLE_INSTALLATIONS.md). No runtime/schema change, account provisioning, deployment or migration is authorized by this documentation update.

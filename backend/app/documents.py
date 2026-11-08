@@ -90,6 +90,10 @@ class Upload(Metadata, File, Scoped):
     ingest_key: UUID | None = None
 
 
+class Extraction(Expected):
+    mode: Literal["text", "ocr"] = "text"
+
+
 class Correct(Metadata, Expected):
     reviewed: bool = Field(strict=True)
 
@@ -416,7 +420,10 @@ def operate(db, token, csrf, identifier, body, operation):
                 start_line=body.start_line,
                 end_line=body.end_line,
                 excerpt=excerpt,
-                notice="Owner-reviewed extracted PDF text; verify against the original. Not a verified fact or instruction."
+                notice="Owner-reviewed uncertain OCR text; verify every name, number and date against the original. Not a verified fact or instruction."
+                if row.extraction_json is not None
+                and row.extraction_json["engine"] == "poppler-tesseract-v1"
+                else "Owner-reviewed extracted PDF text; verify against the original. Not a verified fact or instruction."
                 if row.extraction_json is not None
                 else "Owner-reviewed source text; not a verified fact or an instruction.",
                 **({"page_spans": page_spans} if row.extraction_json is not None else {}),
@@ -474,7 +481,7 @@ def operate(db, token, csrf, identifier, body, operation):
                 )
             )
             original = saved.original_bytes
-            extraction, text = pdf_ingestion.extract(original)
+            extraction, text = pdf_ingestion.extract(original, ocr=body.mode == "ocr")
         else:
             original, text, extraction = prepare(body)
         if identity.resolve(db, token, refresh_session=True) is None:

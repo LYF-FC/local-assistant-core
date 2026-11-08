@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend/tests"))
-from pdf_fixtures import pdf
+from pdf_fixtures import pdf, scanned_pdf
 
 cases = [
     ("one", pdf(), "ready", "Synthetic invoice 100.00", 1),
@@ -41,11 +41,22 @@ cases = [
         0,
     ),
 ]
+ocr_text = "Synthetic invoice\nFacture facture\nFactura total\nTOTAL 123.45"
+cases += [
+    ("ocr-scan", scanned_pdf(), "ready", ocr_text, 1),
+    ("ocr-two", scanned_pdf(2), "ready", ocr_text+"\n"+ocr_text, 2),
+    ("ocr-mixed", scanned_pdf(2,mixed=True), "ready", ocr_text+"\n", 2),
+    ("ocr-blank", scanned_pdf(blank=True), "no_text", "", 1),
+    ("ocr-pages", scanned_pdf(3), "resource_limit", "", 0),
+    ("ocr-encrypted", pdf(encrypted=True), "encrypted", "", 0),
+    ("ocr-invalid", b"%PDF-invalid\n", "invalid", "", 0),
+]
 print(
     json.dumps(
         [
             {
                 "name": name,
+                "mode": "ocr" if name.startswith("ocr-") else "text",
                 "original": base64.b64encode(raw).decode(),
                 "status": status,
                 "text": text,

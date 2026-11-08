@@ -40,3 +40,11 @@ it("preserves PDF bytes without decoding them as UTF-8 and retains the upload ke
  const fetch=mock(pdf);await api.upload(row.scope,{ingest_key:"33333333-3333-4333-8333-333333333333",filename:file.name,original_base64:"JVBERi3/AA=="},"synthetic",signal());
  expect(JSON.parse(fetch.mock.calls[0][1].body).ingest_key).toBe("33333333-3333-4333-8333-333333333333");
 });
+
+it("validates explicit OCR provenance and its two-page bound",async()=>{
+ const ocr={...row,revision:2,filename:"synthetic.pdf",text_origin:"pdf_text",text_sha256:"b".repeat(64),extraction:{...extraction,engine:"poppler-tesseract-v1"}};
+ const fetch=mock(ocr);expect((await api.action(row,"extract",{mode:"ocr"},"synthetic",signal())).extraction?.engine).toBe("poppler-tesseract-v1");
+ expect(JSON.parse(fetch.mock.calls[0][1].body)).toMatchObject({mode:"ocr",expected_revision:1});
+ expect(()=>api.parseExtraction({...ocr.extraction,status:"no_text",pages:3,page_spans:[]},0)).toThrow("Invalid document");
+ expect(()=>api.parseExtraction({...ocr.extraction,engine:"unknown-ocr"},2)).toThrow("Invalid document");
+});

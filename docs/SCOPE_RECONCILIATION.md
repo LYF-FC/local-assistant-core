@@ -47,6 +47,10 @@ Connector access routes and accounts; calendar write/mirror ownership and confli
 
 Spec 051 extends specs 048 and 050 rather than duplicates their library/archive stores. It supersedes the earlier text/Markdown-only intake restriction for bounded PDF originals; all owner, review-reset, byte-fidelity, immutable history, quota, audit, export, forgetting and recovery contracts remain. Raw and derived text hashes are distinct. OCR, source-email provenance, structured field uncertainty, live NAS, generated answers, key lifecycle and older-backup suppression remain retained requirements. The 135-entry register is unchanged in membership.
 
+## Explicit OCR reconciliation — spec 052
+
+Spec 052 supersedes the OCR-unsupported restriction only for explicit two-page synthetic PDF derivation. It reuses the existing library/worker/archive rather than duplicating them. All original 135 register IDs and prior permission/source/review/audit/forget/recovery contracts remain, alongside INSTALL-01–12 and RND-04/05 (149 total after PRs #5/#6). Structured fields, recognition quality/uncertainty acceptance on real documents, duplicate detection, automatic intake, NAS and full recovery are retained. No private deployment activation is inferred.
+
 ## Additive installation requirements — 8 November 2026
 
 INSTALL-01–12 add 12 approved requirements to the original 135-reference inventory, for 147 total. No existing ID is removed or marked complete. CORE-01/04/09 and PLATFORM-04 overlap but remain distinct: configurable onboarding/activation serves all independent households, while private adoption still requires its own mapping and acceptance. Initial fixed member scopes remain current implementation until reviewed migrations; generic display names are not a permanent family-size constraint. A feature may be optional while its records remain private and its permission/audit/recovery obligations remain mandatory. No shared database, automatic record synchronization or public personal-data hosting is implied. See [contract](CONFIGURABLE_INSTALLATIONS.md).
