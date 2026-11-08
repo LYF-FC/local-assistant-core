@@ -156,7 +156,7 @@ def archive_copy(
 @router.post("/{identifier}/extract")
 def extract(
     identifier: UUID,
-    body: tasks.Expected,
+    body: tasks.Extraction,
     request: Request,
     db: Annotated[Session, Depends(get_db)],
 ):
