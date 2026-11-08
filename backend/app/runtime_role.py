@@ -159,6 +159,11 @@ def configure(connection, password: str) -> None:
             )
         )
         cursor.execute(
+            sql.SQL("GRANT SELECT, INSERT ON public.document_archive_bindings TO {}").format(
+                sql.Identifier(ROLE)
+            )
+        )
+        cursor.execute(
             sql.SQL("GRANT SELECT, INSERT ON public.document_versions TO {}").format(
                 sql.Identifier(ROLE)
             )

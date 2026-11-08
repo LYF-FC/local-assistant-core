@@ -13,3 +13,5 @@ The MVP has not been released or accepted. [Public baseline CI](VALIDATION.md) p
 | Operations/basic goals | Dependency locks and some failure/status safeguards | Installed-service inventory, unified infrastructure/audit views, capacity/alert/upgrade/rollback acceptance and restricted manual financial goals/source capture |
 
 Use the [MVP acceptance matrix](MVP_ACCEPTANCE.md) for closure evidence and the [roadmap](../ROADMAP.md) for dependency-aware batches. Release gates require full exact-main CI, security/key/recovery runbooks, independent monitoring and measured host acceptance. Synthetic development does not activate a provider or production. Existing private installations remain unchanged until separate migration/adoption authorization.
+
+Spec 050 branch work adds optional local disk copies with immutable cleanup obligations, byte verification and retry/forgetting; it retains authoritative DB originals. See [archive limits](DOCUMENT_ARCHIVE.md). This does not close PDF/OCR, validated Synology, clean-host/key/older-backup or whole-MVP gates; merged delivery and host acceptance remain pending.

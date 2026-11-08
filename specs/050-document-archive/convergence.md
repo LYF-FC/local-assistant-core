@@ -1,0 +1,7 @@
+# Convergence at batch preparation
+
+The scoped archive implementation and local acceptance are complete: 879 backend tests, 358 client tests/build, repository and 14 CI policy tests, all 699 actual PostgreSQL integration cases including migrations, and the complete synthetic logical restore drill with a separately copied archive root. Trusted-HTTPS browser acceptance passed all 12 document scenarios with archive disabled and all three opt-in archive scenarios in a disposable browser/container stack. Bandit, dependency audits, workflow lint, source privacy/links/register parity and source secret scanning passed. Existing test warnings remain; this is not a warning-free claim.
+
+The PostgreSQL rerun corrected new-test fixture cleanup through normal managed forgetting; existing permission assertions were retained. Local container acceptance used separate ports and subnet to preserve an existing deployment, and trusted its public CA only inside the disposable browser container. Full hosted coverage remains mandatory at the final PR head; record those results and final convergence in PR metadata without another source push.
+
+No product row is promoted to whole-MVP or production acceptance. DB originals remain authoritative; PDF/OCR, validated NAS, generated answers and independent archive/key/older-backup suppression remain open. Owner merge and actual-host acceptance are not claimed. Scope/register, canonical context/architecture/decisions/operations/setup/roadmap and feature documentation agree.

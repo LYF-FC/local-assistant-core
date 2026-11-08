@@ -114,3 +114,40 @@ def excerpt(
     return execute(
         db, request, lambda token, csrf: tasks.operate(db, token, csrf, identifier, body, "excerpt")
     )
+
+
+@router.post("/{identifier}/archive/status")
+def archive_status(
+    identifier: UUID,
+    body: tasks.Expected,
+    request: Request,
+    db: Annotated[Session, Depends(get_db)],
+):
+    return execute(
+        db,
+        request,
+        lambda token, csrf: tasks.operate(db, token, csrf, identifier, body, "archive_status"),
+    )
+
+
+@router.post("/{identifier}/archive")
+def archive_copy(
+    identifier: UUID,
+    body: tasks.Expected,
+    request: Request,
+    db: Annotated[Session, Depends(get_db)],
+):
+    # Never copy bytes until the cleanup obligation AND its audit have committed.
+    prepared = execute(
+        db,
+        request,
+        lambda token, csrf: tasks.operate(db, token, csrf, identifier, body, "archive_bind"),
+    )
+    if prepared.status_code != 200:
+        return prepared
+    # Re-resolve session, permissions, ownership and revision after the first commit.
+    return execute(
+        db,
+        request,
+        lambda token, csrf: tasks.operate(db, token, csrf, identifier, body, "archive_write"),
+    )

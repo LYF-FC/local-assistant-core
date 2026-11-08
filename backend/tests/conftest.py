@@ -184,3 +184,19 @@ def scenario(postgres_engine, runtime_engine):
 
 # Explicit root registration shares the restricted login fixture across PG modules.
 pytest_plugins = ["work_storage_helpers", "work_credential_helpers", "work_review_helpers"]
+
+
+@pytest.fixture
+def archive_root(tmp_path):
+    from app import document_archive
+
+    root = tmp_path / "archive"
+    root.mkdir(mode=0o700)
+    document_archive.initialize(root)
+    return root
+
+
+@pytest.fixture
+def configured_archive(archive_root, monkeypatch):
+    monkeypatch.setattr(settings, "document_archive_directory", archive_root)
+    return archive_root

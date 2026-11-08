@@ -1,7 +1,7 @@
 FROM python:3.15-slim
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 UV_COMPILE_BYTECODE=0
 WORKDIR /app
-RUN pip install --no-cache-dir uv==0.13.4 && groupadd --gid 10001 butler && useradd --uid 10001 --gid butler --no-create-home butler && install -d -m 0700 -o butler -g butler /run/butler-work
+RUN pip install --no-cache-dir uv==0.13.4 && groupadd --gid 10001 butler && useradd --uid 10001 --gid butler --no-create-home butler && install -d -m 0700 -o butler -g butler /run/butler-work /var/lib/butler-document-archive
 COPY pyproject.toml uv.lock /app/
 COPY app /app/app
 RUN uv sync --frozen --no-dev --no-editable

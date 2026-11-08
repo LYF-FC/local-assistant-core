@@ -552,3 +552,12 @@ class DocumentVersion(Base):
     snapshot: Mapped[dict | None] = mapped_column(MEMORY_JSON)
     original_bytes: Mapped[bytes | None] = mapped_column(LargeBinary)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class DocumentArchiveBinding(Base):
+    __tablename__ = "document_archive_bindings"
+    document_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("document_records.id"), primary_key=True
+    )
+    root_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

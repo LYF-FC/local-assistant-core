@@ -72,3 +72,7 @@ test("generic scope names keep the new-record default private",async({page})=>{
  await expect(page.getByLabel("Document scope",{exact:true})).toHaveValue("member_a_private");
  await page.getByRole("button",{name:"Cancel editing",exact:true}).click();
 });
+
+test("archive is optional and disabled in the base deployment",async({page})=>{
+ await login(page);const row=await add(page,"Synthetic archive disabled");await open(page,row.title);const archive=page.getByRole("region",{name:"Local original archive",exact:true});await archive.getByRole("button",{name:"Check archive",exact:true}).click();await expect(archive).toContainText("Local archive is not configured.");await expect(archive.getByRole("button",{name:"Archive originals",exact:true})).toHaveCount(0);
+});

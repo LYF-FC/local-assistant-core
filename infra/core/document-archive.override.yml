@@ -1,0 +1,9 @@
+# Explicit synthetic development option. Initialize the empty volume before use.
+services:
+  api:
+    environment:
+      BUTLER_DOCUMENT_ARCHIVE_DIRECTORY: /var/lib/butler-document-archive
+    volumes:
+      - document_archive:/var/lib/butler-document-archive
+volumes:
+  document_archive:

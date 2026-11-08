@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     work_notes_interface_enabled: bool = False
     work_notes_export_enabled: bool = False
     work_synthetic_secret_directory: Path | None = None
+    document_archive_directory: Path | None = None
 
     @field_validator("postgres_password")
     @classmethod

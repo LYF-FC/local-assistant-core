@@ -9,7 +9,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import func, or_, select, update
 
-from app import identity
+from app import document_archive, document_archiving, identity
 from app.manual_tasks import Expected, Scoped, authority, stamp
 from app.models import DocumentRecord as Record
 from app.models import DocumentVersion as Version
@@ -243,7 +243,8 @@ def create(db, token, csrf, body):
 
 
 def operate(db, token, csrf, identifier, body, operation):
-    write = operation in {"correct", "replace", "forget"}
+    archive_operation = operation in {"archive_bind", "archive_write", "archive_status"}
+    write = operation in {"correct", "replace", "forget"} or archive_operation
     current = authority(db, token, csrf, body.scope, exclusive_user=write, event_prefix="documents")
     if isinstance(current, identity.Result):
         return current
@@ -304,6 +305,16 @@ def operate(db, token, csrf, identifier, body, operation):
     if row.state == "forgotten":
         audit(db, user, row, "forgotten_read")
         return identity.Result(410, document(row))
+    if archive_operation:
+        try:
+            return document_archiving.operation(db, user, row, operation)
+        except document_archive.ArchiveError:
+            return identity.denied(db, 503, "documents.archive_unavailable", user=user)
+    if operation == "forget":
+        try:
+            document_archiving.purge(db, row)
+        except document_archive.ArchiveError:
+            return identity.denied(db, 503, "documents.archive_unavailable", user=user)
     if operation == "excerpt":
         lines = row.content_text.split("\n")
         if not row.reviewed:

@@ -6,11 +6,11 @@ The [scope](docs/SCOPE.md), [135-entry register](docs/FEATURE_REGISTER.md), [dep
 
 | State | Capability / next evidence |
 |---|---|
-| In progress | Documentation reconciliation: complete generic scope, acceptance, dependencies and baseline evidence; owner review/merge pending. |
-| Next, after documentation merge | Durable originals and bounded ingestion design/implementation; local synthetic adapter before live storage. |
+| In progress | Spec 050: private local original archive, exact verification, retry/forgetting and recovery checks. Database originals retained; PDF/OCR follows the storage boundary. |
+| Next | Bounded PDF extraction and subsequent OCR isolation/provenance, after storage lifecycle review. |
 | Next by dependency | Scoped local answers; calendar/briefing; recurrence/one notification path; forwarded invoice intake/filing; operations and independent recovery. |
 | Later, retained | Household/food, care/coaching, connected life, NOMAD/education, professional/creative/financial modules and governed platform evolution below. |
-| Done | No public PR delivery is claimed yet. The imported baseline has independent [engineering evidence](docs/VALIDATION.md), not inherited merged PR history or production acceptance. |
+| Done | Documentation scope reconciliation delivered by [PR #1](https://github.com/LYF-FC/local-assistant-core/pull/1). The imported baseline has independent [engineering evidence](docs/VALIDATION.md), not inherited merged PR history or production acceptance. |
 
 Add a verified delivering public PR link beside each completed checkbox only after merge. Keep green open PRs In progress. Host/provider acceptance and release certification remain separate gates.
 
