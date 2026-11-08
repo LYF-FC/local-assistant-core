@@ -25,3 +25,18 @@ it("pins archive status and capture to the current revision without automatic re
  mock({...v,state:"disabled",verified_versions:0,verified_bytes:0});expect((await api.archive(row,false,"synthetic",signal())).state).toBe("disabled");
  for(const change of [{document_id:row.owner_id},{revision:2},{versions:2},{verified_versions:2},{verified_bytes:-1},{verified_bytes:131073},{state:"verified",verified_versions:0},{state:"partial"},{state:"disabled"},{checked_at:"bad"}]){mock({...v,...change});await expect(api.archive(row,false,"synthetic",signal())).rejects.toThrow("Invalid document");}
 });
+
+const extraction={engine:"poppler-text-v1",version:"25.03.0",status:"ready",pages:2,page_spans:[{page:1,start_line:1,end_line:1},{page:2,start_line:2,end_line:2}],empty_pages:[]};
+it("validates PDF derivation, failed states and strict page provenance",()=>{
+ const pdf={...row,filename:"source.pdf",text_origin:"pdf_text",text_sha256:"b".repeat(64),extraction};
+ expect(api.parseDocument(pdf).extraction?.pages).toBe(2);
+ expect(api.parseDocument({...pdf,line_count:0,content_text:"",extraction:{...extraction,status:"no_text",pages:1,page_spans:[]}}).extraction?.status).toBe("no_text");
+ for(const change of [{text_sha256:"bad"},{reviewed:true,line_count:0,content_text:"",extraction:{...extraction,status:"no_text",page_spans:[]}},{extraction:{...extraction,page_spans:[{page:2,start_line:1,end_line:2}]}},{extraction:{...extraction,empty_pages:[2,1]}},{extraction:{...extraction,status:"unavailable",version:"unavailable"}},{filename:"source.txt"}])expect(()=>api.parseDocument({...pdf,...change})).toThrow("Invalid document");
+});
+it("preserves PDF bytes without decoding them as UTF-8 and retains the upload key",async()=>{
+ const file=new File([new Uint8Array([37,80,68,70,45,255,0])],"synthetic.pdf");
+ expect((await api.fileValues(file)).original_base64).toBe("JVBERi3/AA==");
+ const pdf={...row,filename:"synthetic.pdf",text_origin:"pdf_text",text_sha256:"b".repeat(64),extraction};
+ const fetch=mock(pdf);await api.upload(row.scope,{ingest_key:"33333333-3333-4333-8333-333333333333",filename:file.name,original_base64:"JVBERi3/AA=="},"synthetic",signal());
+ expect(JSON.parse(fetch.mock.calls[0][1].body).ingest_key).toBe("33333333-3333-4333-8333-333333333333");
+});

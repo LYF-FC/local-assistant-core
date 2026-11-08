@@ -42,3 +42,7 @@ These refine register rows without claiming implementation:
 ## Decisions still needed before affected activation/release
 
 Connector access routes and accounts; calendar write/mirror ownership and conflict rules; the first external notification channel/recipient identity; standing approval limits; storage/parser/model limits and quality budgets; key/retention/old-restore policy; measured capacity, RPO/RTO and recovery host; independently reviewed private adoption; optional voice licensing; future gateway policy/provider controls; license selection when required. These are open decisions, not implied permission or blockers to synthetic planning and local implementation.
+
+## PDF ingestion reconciliation — spec 051
+
+Spec 051 extends specs 048 and 050 rather than duplicates their library/archive stores. It supersedes the earlier text/Markdown-only intake restriction for bounded PDF originals; all owner, review-reset, byte-fidelity, immutable history, quota, audit, export, forgetting and recovery contracts remain. Raw and derived text hashes are distinct. OCR, source-email provenance, structured field uncertainty, live NAS, generated answers, key lifecycle and older-backup suppression remain retained requirements. The 135-entry register is unchanged in membership.

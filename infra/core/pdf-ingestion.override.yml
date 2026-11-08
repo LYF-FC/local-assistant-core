@@ -1,0 +1,32 @@
+# Explicit local synthetic parser capability. Worker has no TCP network or credentials.
+services:
+  api:
+    environment:
+      BUTLER_PDF_SOCKET_DIRECTORY: /run/butler-pdf
+    volumes:
+      - pdf_socket:/run/butler-pdf:ro
+    depends_on:
+      pdf_worker:
+        condition: service_healthy
+  pdf_worker:
+    build:
+      context: ../../pdf-worker
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    network_mode: none
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 16
+    mem_limit: 384m
+    cpus: 1
+    volumes:
+      - pdf_socket:/run/butler-pdf
+    healthcheck:
+      test: [CMD, python, -c, "import os,stat; s=os.lstat('/run/butler-pdf/worker.sock'); assert stat.S_ISSOCK(s.st_mode) and s.st_uid==10001 and stat.S_IMODE(s.st_mode)==0o600"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+      start_period: 10s
+volumes:
+  pdf_socket:

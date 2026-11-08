@@ -5,7 +5,6 @@ import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
 from threading import Event
 from uuid import UUID, uuid4
 
@@ -397,14 +396,12 @@ def test_actual_cli_and_downgrade_receipt_refusal(case):
     )
     assert result.returncode == 0, result.stderr
     assert len(json.loads(result.stdout)["outcomes"]) == 5
-    downgraded = subprocess.run(
-        ["alembic", "downgrade", "0017_work_suppression"],
-        cwd=Path(__file__).resolve().parents[2],
-        capture_output=True,
-        text=True,
-        check=False,
+    # Later migrations can refuse first; also exercise this guard directly.
+    from work_migration_helpers import assert_downgrade_refused
+
+    assert_downgrade_refused(
+        "0017_work_suppression", "0018_work_restore_requests", "cleanup evidence exists"
     )
-    assert downgraded.returncode != 0 and "cleanup evidence exists" in downgraded.stderr
     assert state(case) == (0, 0, 0, 1)
 
 
