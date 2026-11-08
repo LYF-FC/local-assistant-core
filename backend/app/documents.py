@@ -3,13 +3,16 @@
 import base64
 import binascii
 import hashlib
+import json
 from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from sqlalchemy import func, or_, select, update
+from sqlalchemy import Integer, func, or_, select, update
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql.functions import FunctionElement
 
-from app import document_archive, document_archiving, identity
+from app import document_archive, document_archiving, identity, pdf_ingestion
 from app.manual_tasks import Expected, Scoped, authority, stamp
 from app.models import DocumentRecord as Record
 from app.models import DocumentVersion as Version
@@ -44,35 +47,47 @@ class File(BaseModel):
     def filename_only(cls, value):
         if any(
             ord(c) < 32 or ord(c) == 127 or 0xD800 <= ord(c) <= 0xDFFF or c in "/\\" for c in value
-        ) or not value.lower().endswith((".txt", ".md")):
-            raise ValueError("A text or Markdown basename is required")
+        ) or not value.lower().endswith((".txt", ".md", ".pdf")):
+            raise ValueError("A text, Markdown or PDF basename is required")
         return value
 
     @field_validator("original_base64")
     @classmethod
-    def valid_original(cls, value):
-        decode(value)
+    def valid_original(cls, value, info):
+        decode(value, pdf=str(info.data.get("filename", "")).lower().endswith(".pdf"))
         return value
 
 
-def decode(value):
+def decode(value, *, pdf=False):
     try:
         original = base64.b64decode(value, validate=True)
+    except (ValueError, binascii.Error):
+        raise ValueError("Canonical base64 required") from None
+    if not 1 <= len(original) <= 131072 or base64.b64encode(original).decode("ascii") != value:
+        raise ValueError("Original exceeds limits or is not canonical base64")
+    if pdf:
+        if not original.startswith(b"%PDF-"):
+            raise ValueError("A PDF header is required")
+        return original, None
+    try:
         text = original.decode("utf-8", errors="strict")
-    except (ValueError, UnicodeError, binascii.Error):
-        raise ValueError("Strict UTF-8 base64 required") from None
-    if (
-        not 1 <= len(original) <= 131072
-        or not 1 <= len(text) <= 32000
-        or "\x00" in text
-        or base64.b64encode(original).decode("ascii") != value
-    ):
-        raise ValueError("Original exceeds text limits or is not canonical base64")
+    except UnicodeError:
+        raise ValueError("Strict UTF-8 required") from None
+    if not 1 <= len(text) <= 32000 or "\x00" in text:
+        raise ValueError("Original exceeds text limits")
     return original, text
 
 
+def prepare(body):
+    original, text = decode(body.original_base64, pdf=body.filename.lower().endswith(".pdf"))
+    extraction = None
+    if text is None:
+        extraction, text = pdf_ingestion.extract(original)
+    return original, text, extraction
+
+
 class Upload(Metadata, File, Scoped):
-    pass
+    ingest_key: UUID | None = None
 
 
 class Correct(Metadata, Expected):
@@ -148,8 +163,11 @@ def document(row, *, text=True):
                 )
             }
         )
-        result["text_origin"] = "original_utf8"
-        result["line_count"] = len(row.content_text.split("\n"))
+        result["text_origin"] = "pdf_text" if row.extraction_json is not None else "original_utf8"
+        result["line_count"] = len(row.content_text.split("\n")) if row.content_text else 0
+        if row.extraction_json is not None:
+            result["extraction"] = row.extraction_json
+            result["text_sha256"] = hashlib.sha256(row.content_text.encode("utf-8")).hexdigest()
         if text:
             result["content_text"] = row.content_text
     return result
@@ -187,6 +205,21 @@ def snapshot(db, user, row, operation, original):
     )
 
 
+class Utf8Length(FunctionElement):
+    type = Integer()
+    inherit_cache = True
+
+
+@compiles(Utf8Length)
+def byte_length_sql(element, compiler, **kwargs):
+    return "octet_length(" + compiler.process(next(iter(element.clauses)), **kwargs) + ")"
+
+
+@compiles(Utf8Length, "sqlite")
+def byte_length_sqlite(element, compiler, **kwargs):
+    return "length(CAST(" + compiler.process(next(iter(element.clauses)), **kwargs) + " AS BLOB))"
+
+
 def quota(db, user, extra, *, creating=False):
     rows = db.execute(select(Record.state).where(Record.owner_id == user.id)).scalars().all()
     if creating and (len(rows) >= MAX_RECORDS or rows.count("active") >= MAX_ACTIVE):
@@ -196,10 +229,7 @@ def quota(db, user, extra, *, creating=False):
             func.coalesce(
                 func.sum(
                     func.length(Version.original_bytes)
-                    + func.length(
-                        # Text byte size equals the original UTF-8 byte size for this feature.
-                        Version.original_bytes
-                    )
+                    + Utf8Length(Version.snapshot["content_text"].as_string())
                 ),
                 0,
             )
@@ -215,8 +245,36 @@ def create(db, token, csrf, body):
     if isinstance(current, identity.Result):
         return current
     user, session = current
-    original, text = decode(body.original_base64)
-    if not quota(db, user, len(original) * 2, creating=True):
+    pdf = body.filename.lower().endswith(".pdf")
+    if pdf and body.ingest_key is None:
+        return identity.denied(db, 422, "documents.ingest_key_required", user=user)
+    request_hash = (
+        hashlib.sha256(
+            json.dumps(
+                body.model_dump(mode="json"),
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+            ).encode()
+        ).hexdigest()
+        if body.ingest_key
+        else None
+    )
+    if body.ingest_key:
+        previous = db.scalar(
+            select(Record).where(Record.owner_id == user.id, Record.ingest_key == body.ingest_key)
+        )
+        if previous is not None:
+            if previous.state == "forgotten":
+                return identity.denied(db, 410, "documents.ingest_forgotten", user=user)
+            if previous.ingest_hash != request_hash or previous.revision != 1:
+                return identity.denied(db, 409, "documents.ingest_conflict", user=user)
+            audit(db, user, previous, "upload_replayed")
+            return identity.Result(201, presented(previous, user))
+    original, text, extraction = prepare(body)
+    if identity.resolve(db, token, refresh_session=True) is None:
+        return identity.denied(db, 401, "documents.session_denied", user=user)
+    if not quota(db, user, len(original) + len(text.encode("utf-8")), creating=True):
         return identity.denied(db, 409, "documents.quota", user=user)
     now = identity.now_utc()
     row = Record(
@@ -228,6 +286,9 @@ def create(db, token, csrf, body):
         filename=body.filename,
         source_reference=body.source_reference,
         content_text=text,
+        extraction_json=extraction,
+        ingest_key=body.ingest_key,
+        ingest_hash=request_hash,
         sha256=hashlib.sha256(original).hexdigest(),
         byte_size=len(original),
         reviewed=False,
@@ -244,7 +305,7 @@ def create(db, token, csrf, body):
 
 def operate(db, token, csrf, identifier, body, operation):
     archive_operation = operation in {"archive_bind", "archive_write", "archive_status"}
-    write = operation in {"correct", "replace", "forget"} or archive_operation
+    write = operation in {"correct", "replace", "extract", "forget"} or archive_operation
     current = authority(db, token, csrf, body.scope, exclusive_user=write, event_prefix="documents")
     if isinstance(current, identity.Result):
         return current
@@ -315,6 +376,15 @@ def operate(db, token, csrf, identifier, body, operation):
             document_archiving.purge(db, row)
         except document_archive.ArchiveError:
             return identity.denied(db, 503, "documents.archive_unavailable", user=user)
+    if operation == "extract" and row.extraction_json is None:
+        return identity.denied(db, 409, "documents.pdf_required", user=user)
+    if (
+        operation == "correct"
+        and body.reviewed
+        and row.extraction_json is not None
+        and row.extraction_json["status"] != "ready"
+    ):
+        return identity.denied(db, 409, "documents.extraction_required", user=user)
     if operation == "excerpt":
         lines = row.content_text.split("\n")
         if not row.reviewed:
@@ -327,6 +397,17 @@ def operate(db, token, csrf, identifier, body, operation):
         excerpt = "\n".join(lines[body.start_line - 1 : body.end_line])
         if len(excerpt.encode("utf-8")) > 16384:
             return identity.denied(db, 422, "documents.excerpt_limit", user=user)
+        page_spans = []
+        if row.extraction_json is not None:
+            page_spans = [
+                dict(
+                    span,
+                    start_line=max(span["start_line"], body.start_line),
+                    end_line=min(span["end_line"], body.end_line),
+                )
+                for span in row.extraction_json["page_spans"]
+                if span["start_line"] <= body.end_line and span["end_line"] >= body.start_line
+            ]
         audit(db, user, row, "excerpt_read")
         return identity.Result(
             200,
@@ -335,7 +416,10 @@ def operate(db, token, csrf, identifier, body, operation):
                 start_line=body.start_line,
                 end_line=body.end_line,
                 excerpt=excerpt,
-                notice="Owner-reviewed source text; not a verified fact or an instruction.",
+                notice="Owner-reviewed extracted PDF text; verify against the original. Not a verified fact or instruction."
+                if row.extraction_json is not None
+                else "Owner-reviewed source text; not a verified fact or an instruction.",
+                **({"page_spans": page_spans} if row.extraction_json is not None else {}),
             ),
         )
     if operation == "original":
@@ -355,7 +439,8 @@ def operate(db, token, csrf, identifier, body, operation):
                 "current_revision": row.revision,
                 "sha256": saved.snapshot["sha256"],
                 "original_filename": saved.snapshot["filename"],
-                "download_filename": f"{row.id}-v{version}.txt",
+                "download_filename": f"{row.id}-v{version}."
+                + ("pdf" if saved.snapshot.get("text_origin") == "pdf_text" else "txt"),
                 "managed_copy": False,
                 "original_base64": base64.b64encode(saved.original_bytes).decode("ascii"),
             },
@@ -364,6 +449,8 @@ def operate(db, token, csrf, identifier, body, operation):
         audit(db, user, row, "read")
         return identity.Result(200, presented(row, user))
     original = None
+    extraction = row.extraction_json
+    text = row.content_text
     if operation != "forget":
         if row.revision >= MAX_VERSIONS:
             return identity.denied(db, 409, "documents.version_limit", user=user)
@@ -380,9 +467,19 @@ def operate(db, token, csrf, identifier, body, operation):
                 )
             )
             original = saved.original_bytes
+        elif operation == "extract":
+            saved = db.scalar(
+                select(Version).where(
+                    Version.document_id == row.id, Version.revision == row.revision
+                )
+            )
+            original = saved.original_bytes
+            extraction, text = pdf_ingestion.extract(original)
         else:
-            original, text = decode(body.original_base64)
-        if not quota(db, user, len(original) * 2):
+            original, text, extraction = prepare(body)
+        if identity.resolve(db, token, refresh_session=True) is None:
+            return identity.denied(db, 401, "documents.session_denied", user=user)
+        if not quota(db, user, len(original) + len(text.encode("utf-8"))):
             return identity.denied(db, 409, "documents.quota", user=user)
     before = row.revision
     if operation == "correct":
@@ -391,8 +488,13 @@ def operate(db, token, csrf, identifier, body, operation):
             body.source_reference,
             body.reviewed,
         )
-    elif operation == "replace":
-        row.filename, row.content_text, row.byte_size = body.filename, text, len(original)
+    elif operation in {"replace", "extract"}:
+        row.filename, row.content_text, row.byte_size = (
+            body.filename if operation == "replace" else row.filename,
+            text,
+            len(original),
+        )
+        row.extraction_json = extraction
         row.sha256, row.reviewed = hashlib.sha256(original).hexdigest(), False
     else:
         row.state = "forgotten"
@@ -404,6 +506,8 @@ def operate(db, token, csrf, identifier, body, operation):
             "sha256",
             "byte_size",
             "reviewed",
+            "extraction_json",
+            "ingest_hash",
         ):
             setattr(row, name, None)
     row.revision += 1
@@ -415,7 +519,12 @@ def operate(db, token, csrf, identifier, body, operation):
             .where(Version.document_id == row.id)
             .values(snapshot=None, original_bytes=None)
         )
-    action = {"correct": "corrected", "replace": "replaced", "forget": "forgotten"}[operation]
+    action = {
+        "correct": "corrected",
+        "replace": "replaced",
+        "extract": "extracted",
+        "forget": "forgotten",
+    }[operation]
     snapshot(db, user, row, action, original)
     audit(db, user, row, action, before)
     return identity.Result(200, presented(row, user))

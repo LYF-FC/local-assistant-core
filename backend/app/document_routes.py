@@ -151,3 +151,15 @@ def archive_copy(
         request,
         lambda token, csrf: tasks.operate(db, token, csrf, identifier, body, "archive_write"),
     )
+
+
+@router.post("/{identifier}/extract")
+def extract(
+    identifier: UUID,
+    body: tasks.Expected,
+    request: Request,
+    db: Annotated[Session, Depends(get_db)],
+):
+    return execute(
+        db, request, lambda token, csrf: tasks.operate(db, token, csrf, identifier, body, "extract")
+    )

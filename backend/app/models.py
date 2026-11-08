@@ -503,10 +503,11 @@ class DocumentRecord(Base):
         ),
         CheckConstraint("state IN ('active','forgotten')", name="ck_document_state"),
         CheckConstraint(
-            "(state='active' AND title IS NOT NULL AND length(trim(title)) BETWEEN 1 AND 160 AND filename IS NOT NULL AND source_reference IS NOT NULL AND length(trim(source_reference)) BETWEEN 1 AND 512 AND content_text IS NOT NULL AND length(content_text) BETWEEN 1 AND 32000 AND sha256 IS NOT NULL AND length(sha256)=64 AND byte_size IS NOT NULL AND byte_size BETWEEN 1 AND 131072 AND reviewed IS NOT NULL) OR (state='forgotten' AND title IS NULL AND filename IS NULL AND source_reference IS NULL AND content_text IS NULL AND sha256 IS NULL AND byte_size IS NULL AND reviewed IS NULL)",
+            "(state='active' AND title IS NOT NULL AND length(trim(title)) BETWEEN 1 AND 160 AND filename IS NOT NULL AND source_reference IS NOT NULL AND length(trim(source_reference)) BETWEEN 1 AND 512 AND content_text IS NOT NULL AND length(content_text) BETWEEN 0 AND 32000 AND sha256 IS NOT NULL AND length(sha256)=64 AND byte_size IS NOT NULL AND byte_size BETWEEN 1 AND 131072 AND reviewed IS NOT NULL AND ((extraction_json IS NULL AND length(content_text)>=1) OR (extraction_json IS NOT NULL AND (reviewed=false OR extraction_json ->> 'status'='ready'))) AND ((ingest_key IS NULL AND ingest_hash IS NULL) OR (ingest_key IS NOT NULL AND ingest_hash IS NOT NULL AND length(ingest_hash)=64))) OR (state='forgotten' AND title IS NULL AND filename IS NULL AND source_reference IS NULL AND content_text IS NULL AND sha256 IS NULL AND byte_size IS NULL AND reviewed IS NULL AND extraction_json IS NULL AND ingest_hash IS NULL)",
             name="ck_document_content",
         ),
         Index("ix_document_scope_owner", "scope_key", "owner_id", "id"),
+        UniqueConstraint("owner_id", "ingest_key", name="uq_document_ingest_key"),
     )
     id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     owner_id: Mapped[uuid.UUID] = mapped_column(
@@ -522,6 +523,9 @@ class DocumentRecord(Base):
     sha256: Mapped[str | None] = mapped_column(String(64))
     byte_size: Mapped[int | None] = mapped_column(Integer)
     reviewed: Mapped[bool | None] = mapped_column(Boolean)
+    extraction_json: Mapped[dict | None] = mapped_column(MEMORY_JSON)
+    ingest_key: Mapped[uuid.UUID | None] = mapped_column(Uuid(as_uuid=True))
+    ingest_hash: Mapped[str | None] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
@@ -532,7 +536,7 @@ class DocumentVersion(Base):
         UniqueConstraint("document_id", "revision", name="uq_document_version"),
         CheckConstraint("revision>=1", name="ck_document_version_revision"),
         CheckConstraint(
-            "operation IN ('uploaded','corrected','replaced','forgotten')",
+            "operation IN ('uploaded','corrected','replaced','extracted','forgotten')",
             name="ck_document_operation",
         ),
         CheckConstraint(
