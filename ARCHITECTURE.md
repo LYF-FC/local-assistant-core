@@ -13,3 +13,7 @@ Spec 050 adds an optional descriptor-safe private local archive adapter. Immutab
 ## Bounded PDF derivation — spec 051
 
 An optional non-root, read-only, network-free Poppler worker receives bounded original bytes over a private Unix socket. Native children run under default-deny seccomp and resource/time/output limits; the API never loads the parser. The worker has no database credentials or archive mount. Raw and derived hashes, parser build fingerprint, page/line spans and explicit failure states join the existing sealed version lifecycle. Review gates citations; replacement/re-extraction resets it. See [PDF ingestion](docs/PDF_INGESTION.md).
+
+## Planned installation and feature boundaries
+
+Separate shared code, schema-validated private configuration and private operational state. Stable software feature/policy keys coexist with installation-local household/user/workspace identities; display names never define authorization or record mappings. Independent installations use separate data/credential namespaces and backups. Feature activation combines dependency/readiness checks with current permissions and server/worker enforcement; core identity, authorization, audit and recovery are not optional. See [INSTALL-01–12](docs/CONFIGURABLE_INSTALLATIONS.md). Current fixed seed scopes are not silently generalized or converted by this scope document.

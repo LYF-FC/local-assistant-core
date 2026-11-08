@@ -139,5 +139,17 @@ Companion to the [complete register](FEATURE_REGISTER.md). These are prerequisit
 | REM-01 | Specs 046/047; recurrence/calendar/channel contracts remain open |
 | DOC-X01 | Spec 048; durable storage consistency; sandboxed PDF/OCR and archive restore |
 | DOC-X02 | DOC-X01; key/derived-copy lifecycle; authenticated older-restore suppression |
+| INSTALL-01 | Reviewed deployment/isolation contract; PLATFORM-02/03 |
+| INSTALL-02 | INSTALL-01; configuration schema/versioning; secrets references |
+| INSTALL-03 | INSTALL-02; current administrative authority; dependency/status model |
+| INSTALL-04 | INSTALL-03; durable jobs, approval invalidation, recovery and concurrency tests |
+| INSTALL-05 | INSTALL-01/02; identity policy, secure bootstrap and relationship/privacy review |
+| INSTALL-06 | INSTALL-05; explicit policy/schema migration and stable export identities |
+| INSTALL-07 | INSTALL-02; secret storage/reference policy; least-privilege connectors |
+| INSTALL-08 | INSTALL-02/05/07; classification, import validation and schema compatibility |
+| INSTALL-09 | INSTALL-01/06/07; isolated DB/files/jobs/keys/backup tests |
+| INSTALL-10 | INSTALL-02/04; release manifest, upgrade/recovery contracts; PLATFORM-03 |
+| INSTALL-11 | INSTALL-05/06/10; PLATFORM-04; separate owner authorization |
+| INSTALL-12 | INSTALL-01–11; MVP acceptance; reviewed hardware/toolchain prerequisites |
 
 Spec 051 builds on merged spec 050 and extends spec 048; it delivers only bounded PDF text derivation within DOC-X01/CORE-10 and the parser foundation of DOC-02. OCR, reviewed structured fields, restricted mail intake and live Synology remain successive dependencies. No register ID is removed or declared fully accepted by this increment.

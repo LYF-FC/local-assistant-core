@@ -4,7 +4,7 @@ Local Assistant Core is a local-first assistant for private/shared household and
 
 ## Reading and authority
 
-- [Complete feature register](FEATURE_REGISTER.md): all 135 retained references, bounded evidence and remaining acceptance.
+- [Complete feature register](FEATURE_REGISTER.md): all 147 retained references, bounded evidence and remaining acceptance.
 - [Dependencies](FEATURE_DEPENDENCIES.md): prerequisites for every register ID.
 - [MVP acceptance](MVP_ACCEPTANCE.md): measurable everyday outcomes and release gates.
 - [Reconciliation](SCOPE_RECONCILIATION.md): overlaps, supersessions, alternatives and unresolved decisions.
@@ -16,6 +16,14 @@ The [constitution](../.specify/memory/constitution.md) and current explicit deci
 ## Everyday MVP
 
 Two adult identities use explicit shared/private spaces, controlled memory, local text conversation in French/Spanish/English and a responsive desktop/mobile interface over private access. A user sees an agenda/briefing, asks about an authorized document, adds a deterministic reminder and forwards an invoice. Local extraction proposes filing; human review confirms the result; original references and audit survive restart; failures support safe retry. Include calendar read/reconciliation, general recurring routines, one explicitly authorized external notification path, a dedicated inbox, bounded PDF/OCR, durable archive/search, scoped local-model cited answers, basic manual financial goal/source capture, operational inventory/status and tested clean-host recovery. Calendar writes follow separate ownership/conflict acceptance. Full acceptance is still open.
+
+## Reusable private installations — owner-approved extension
+
+[INSTALL-01–12](CONFIGURABLE_INSTALLATIONS.md) add reusable household installations, private versioned configuration, secure onboarding, stable installation-local identities, credential provisioning, safe templates, feature activation/dependencies, tested updates and explicit legacy conversion. Each household supplies its own reviewed hardware and keeps its database, records, secrets, storage and backups independent. No public shared-data service is introduced.
+
+Feature controls are not permission grants: identity, authorization, audit and recovery remain mandatory foundations. Disabling a feature stops its active behavior safely without silently deleting records or bypassing export/recovery obligations. Current fixed example scopes remain implemented behavior until a separately reviewed migration supports configurable household members; this planning addition changes no schema or runtime.
+
+This is a prerequisite for private installation adoption and a usable reusable-installation release. Design begins before new hard-coded household assumptions spread; bounded independent document work can continue. Complete onboarding, migration and lifecycle acceptance before converting existing private data. See the [acceptance contract](CONFIGURABLE_INSTALLATIONS.md#acceptance).
 
 ## Retained later scope
 

@@ -9,3 +9,7 @@ The retained product scope includes an everyday MVP and later household, care, c
 See [architecture](ARCHITECTURE.md), [decisions](DECISIONS.md), [operations](OPERATIONS.md), [setup](SETUP.md) and [publication boundary](PUBLICATION.md).
 
 Spec 050 local original archive merged in [PR #2](https://github.com/LYF-FC/local-assistant-core/pull/2) at `8c6794b31ce2f0458beb1ffe26cdb0ca81ea113a`; its main CI passed all six jobs. Current branch [spec 051](docs/PDF_INGESTION.md) extends that lifecycle with isolated bounded PDF text extraction. OCR, live adapters and operational acceptance remain open.
+
+## Configurable installations — scope extension
+
+The shared core is intended for independent households, each owning its configuration, credentials, records, hardware and backups. INSTALL-01–12 define secure onboarding, configurable household identities, optional feature lifecycle and versioned adoption. See [contract](docs/CONFIGURABLE_INSTALLATIONS.md). These are approved requirements, not delivered capabilities; the existing private installation stays unchanged.
