@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.answer_routes import router as answer_router
 from app.approval_routes import router as approval_router
 from app.auth_routes import router as auth_router
 from app.config import settings
@@ -45,6 +46,7 @@ def create_app() -> FastAPI:
     application.include_router(memory_router)
     application.include_router(task_router)
     application.include_router(document_router)
+    application.include_router(answer_router)
     application.include_router(reminder_router)
     application.include_router(discovery_router)
     application.include_router(context_router)

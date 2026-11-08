@@ -25,3 +25,7 @@ Separate shared code, schema-validated private configuration and private operati
 ## Planned model-selection evaluation
 
 Application task-to-model selection is distinct from internal MoE expert routing. RND-04/05 evaluate whether either architecture or task specialization improves actual quality/resource outcomes; shared inference must not merge household/Work context or grant tool authority. Preserve replaceable adapters, bounded resource scheduling and explicit unavailable states with deterministic core availability. Configuration under INSTALL-02/03/10 follows a later evidence-backed ADR; no remote fallback or stack change is implied. See [model research](docs/LLM_RESEARCH.md).
+
+## Scoped source answers — spec 053
+
+A bounded reviewed-document evidence query and optional replaceable local passage selector extend the existing library. Preparation audit commits first; a fresh transaction reauthorizes and locks/rebuilds exact revisions before dispatch and audited response release. Model output selects only validated source line ranges; the application constructs quotations. A trusted protocol subprocess, without inherited credentials, has a hard 12-second deadline and one active slot per API process. No conversation/index store, tool execution or remote fallback. See [answer contract](docs/DOCUMENT_ANSWERS.md).

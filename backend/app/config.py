@@ -1,9 +1,10 @@
+import re
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 from urllib.parse import urlsplit
 
-from pydantic import SecretStr, field_validator
+from pydantic import SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import URL
 
@@ -36,6 +37,25 @@ class Settings(BaseSettings):
     work_synthetic_secret_directory: Path | None = None
     document_archive_directory: Path | None = None
     pdf_socket_directory: Path | None = None
+    document_answers_enabled: bool = False
+    document_answer_model: str = ""
+    document_answer_digest: str = ""
+
+    @model_validator(mode="after")
+    def answer_model_configuration(self):
+        if self.document_answer_model and not re.fullmatch(
+            r"[A-Za-z0-9][A-Za-z0-9_./-]{0,96}:[A-Za-z0-9_.-]{1,30}", self.document_answer_model
+        ):
+            raise ValueError("An explicit local model tag is required")
+        if self.document_answer_digest and not re.fullmatch(
+            r"[a-f0-9]{64}", self.document_answer_digest
+        ):
+            raise ValueError("An exact local model manifest digest is required")
+        if self.document_answers_enabled and not (
+            self.document_answer_model and self.document_answer_digest
+        ):
+            raise ValueError("Local document answers require explicit model configuration")
+        return self
 
     @field_validator("postgres_password")
     @classmethod

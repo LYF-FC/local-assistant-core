@@ -58,3 +58,7 @@ INSTALL-01–12 add 12 approved requirements to the original 135-reference inven
 ## Additive model research — 8 November 2026
 
 RND-04/05 add two retained research requirements to the prior 147 references, for 149 total. They refine RND-01/02, CORE-06/07/10 and DISC-01–03 without replacing them. Per-task model choice and internal sparse-MoE routing are distinct, and neither implies a permanent model per service or an unrestricted multi-agent runtime. Benchmark results, runtime adoption, feature activation and any future external-model exception remain separate authority/evidence boundaries. [Research contract](LLM_RESEARCH.md).
+
+## Scoped quotation answers — spec 053
+
+Spec 053 extends literal document retrieval into a complete bounded question/evidence/quotation workflow with an optional local selector. It reuses library state, current review/version/source rules and audit, and does not supersede general conversation, semantic retrieval or free-form synthesis requirements. All 149 IDs, including INSTALL-01–12 and RND-04/05, remain. The protocol choice is not model selection, research completion, weight download or real integration activation. Current-source navigation rechecks authority; questions/evidence are not a new persistent memory store.

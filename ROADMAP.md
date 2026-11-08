@@ -8,8 +8,9 @@ The [scope](docs/SCOPE.md), [149-entry register](docs/FEATURE_REGISTER.md), [dep
 |---|---|
 | Merged foundation | Spec 050 local original archive ([PR #2](https://github.com/LYF-FC/local-assistant-core/pull/2)); authoritative database originals retained. |
 | Merged foundation | Spec 051 bounded PDF ingestion ([PR #3](https://github.com/LYF-FC/local-assistant-core/pull/3)): isolated text extraction, source/review/page provenance and recovery. |
-| In progress | Spec 052: explicit bounded scanned-PDF OCR, uncertain recognition, reviewed citations and recovery. |
-| Next | Scoped local answers and conversation; structured invoice candidates/uncertainty and duplicate detection remain dependencies of reviewed intake/filing. |
+| Merged foundation | Spec 052 bounded scanned-PDF OCR ([PR #4](https://github.com/LYF-FC/local-assistant-core/pull/4)): explicit uncertain recognition, review and recovery. |
+| In progress | Spec 053 scoped document answers: reviewed lexical evidence, exact quotation selection, current-source citations and a default-disabled local adapter. |
+| Next | Authorized local-model quality/activation and fuller conversation/synthesis, alongside early installation configuration design. Structured invoice candidates/uncertainty and duplicates remain intake/filing dependencies. |
 | Next by dependency | Scoped local answers; calendar/briefing; recurrence/one notification path; forwarded invoice intake/filing; operations and independent recovery. |
 | Later, retained | Household/food, care/coaching, connected life, NOMAD/education, professional/creative/financial modules and governed platform evolution below. |
 | Done | Documentation scope reconciliation delivered by [PR #1](https://github.com/LYF-FC/local-assistant-core/pull/1). The imported baseline has independent [engineering evidence](docs/VALIDATION.md), not inherited merged PR history or production acceptance. |
