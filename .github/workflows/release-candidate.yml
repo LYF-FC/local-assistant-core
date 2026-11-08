@@ -1,0 +1,66 @@
+name: Package candidate
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: Full commit SHA on main with successful Foundation CI
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: package-candidate
+  cancel-in-progress: false
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      TARGET_SHA: ${{ inputs.commit_sha }}
+      BUTLER_ENV: test
+      BUTLER_POSTGRES_PASSWORD: synthetic-packaging-only-password-0123456789
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Validate exact commit and CI evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$TARGET_SHA" =~ ^[a-f0-9]{40}$ ]]
+          git merge-base --is-ancestor "$TARGET_SHA" origin/main
+          gh api "repos/$REPOSITORY/actions/runs?head_sha=$TARGET_SHA&per_page=100" > /tmp/butler-ci-runs.json
+          python - <<'PY'
+          import json, os
+          runs = json.load(open('/tmp/butler-ci-runs.json'))['workflow_runs']
+          assert any(r['name'] == 'Foundation CI' and r['head_sha'] == os.environ['TARGET_SHA'] and r['conclusion'] == 'success' and r['event'] == 'push' and r['head_branch'] == 'main' for r in runs), 'Successful main-push CI for exact commit is required'
+          PY
+          git checkout --detach "$TARGET_SHA"
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with: {python-version: '3.12'}
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with: {node-version: '22'}
+      - run: pip install uv==0.13.4
+      - run: uv sync --locked --extra dev && uv run --locked python ../scripts/check_repository.py && uv build --wheel --out-dir ../release-candidate/backend
+        working-directory: backend
+      - run: npm ci --ignore-scripts && npm test && npm run build
+        working-directory: frontend
+      - name: Assemble candidate manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-candidate/frontend
+          cp -R frontend/dist/. release-candidate/frontend/
+          printf '%s\n' "$TARGET_SHA" > release-candidate/COMMIT
+          find release-candidate -type f -exec sha256sum {} + > /tmp/butler-manifest
+          cp /tmp/butler-manifest release-candidate/SHA256SUMS
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: butler-candidate-${{ inputs.commit_sha }}
+          path: release-candidate/
+          retention-days: 7
+          if-no-files-found: error

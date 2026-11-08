@@ -1,0 +1,463 @@
+"""Bounded local development originals. Text is source data, never tool authority."""
+
+import base64
+import binascii
+import hashlib
+from typing import Literal
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+from sqlalchemy import func, or_, select, update
+
+from app import identity
+from app.manual_tasks import Expected, Scoped, authority, stamp
+from app.models import DocumentRecord as Record
+from app.models import DocumentVersion as Version
+
+MAX_ACTIVE = 64
+MAX_RECORDS = 128
+MAX_VERSIONS = 50
+MAX_RETAINED_BYTES = 8 * 1024 * 1024
+
+
+class Metadata(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    title: str = Field(min_length=1, max_length=160)
+    source_reference: str = Field(default="Manual upload", min_length=1, max_length=512)
+
+    @field_validator("title", "source_reference")
+    @classmethod
+    def nonblank(cls, value):
+        if not value.strip() or any(
+            ord(c) < 32 or ord(c) == 127 or 0xD800 <= ord(c) <= 0xDFFF for c in value
+        ):
+            raise ValueError("Nonblank printable metadata required")
+        return value.strip()
+
+
+class File(BaseModel):
+    filename: str = Field(min_length=1, max_length=120)
+    original_base64: str = Field(min_length=4, max_length=174764)
+
+    @field_validator("filename")
+    @classmethod
+    def filename_only(cls, value):
+        if any(
+            ord(c) < 32 or ord(c) == 127 or 0xD800 <= ord(c) <= 0xDFFF or c in "/\\" for c in value
+        ) or not value.lower().endswith((".txt", ".md")):
+            raise ValueError("A text or Markdown basename is required")
+        return value
+
+    @field_validator("original_base64")
+    @classmethod
+    def valid_original(cls, value):
+        decode(value)
+        return value
+
+
+def decode(value):
+    try:
+        original = base64.b64decode(value, validate=True)
+        text = original.decode("utf-8", errors="strict")
+    except (ValueError, UnicodeError, binascii.Error):
+        raise ValueError("Strict UTF-8 base64 required") from None
+    if (
+        not 1 <= len(original) <= 131072
+        or not 1 <= len(text) <= 32000
+        or "\x00" in text
+        or base64.b64encode(original).decode("ascii") != value
+    ):
+        raise ValueError("Original exceeds text limits or is not canonical base64")
+    return original, text
+
+
+class Upload(Metadata, File, Scoped):
+    pass
+
+
+class Correct(Metadata, Expected):
+    reviewed: bool = Field(strict=True)
+
+
+class Replace(File, Expected):
+    pass
+
+
+class Original(Expected):
+    version: int | None = Field(default=None, strict=True, ge=1)
+    acknowledge_copy_limits: Literal[True]
+
+    @field_validator("acknowledge_copy_limits", mode="before")
+    @classmethod
+    def explicit(cls, value):
+        if value is not True:
+            raise ValueError("Explicit acknowledgement required")
+        return value
+
+
+class Query(Scoped):
+    search: str = Field(default="", max_length=160)
+    reviewed_only: bool = Field(default=True, strict=True)
+    after: UUID | None = None
+
+    @field_validator("search")
+    @classmethod
+    def safe_search(cls, value):
+        if "\x00" in value or any(0xD800 <= ord(c) <= 0xDFFF for c in value):
+            raise ValueError("Invalid search text")
+        return value
+
+
+class Export(Query):
+    acknowledge_copy_limits: Literal[True]
+    _explicit = field_validator("acknowledge_copy_limits", mode="before")(
+        Original.explicit.__func__
+    )
+
+
+class Excerpt(Expected):
+    start_line: int = Field(default=1, strict=True, ge=1)
+    end_line: int = Field(strict=True, ge=1)
+
+
+def visible(user, scope):
+    return Record.scope_key == scope, or_(Record.owner_id == user.id, scope == "household_shared")
+
+
+def document(row, *, text=True):
+    result = {
+        "id": str(row.id),
+        "owner_id": str(row.owner_id),
+        "scope": row.scope_key,
+        "state": row.state,
+        "revision": row.revision,
+        "created_at": stamp(row.created_at),
+        "updated_at": stamp(row.updated_at),
+    }
+    if row.state == "active":
+        result.update(
+            {
+                key: getattr(row, key)
+                for key in (
+                    "title",
+                    "filename",
+                    "source_reference",
+                    "sha256",
+                    "byte_size",
+                    "reviewed",
+                )
+            }
+        )
+        result["text_origin"] = "original_utf8"
+        result["line_count"] = len(row.content_text.split("\n"))
+        if text:
+            result["content_text"] = row.content_text
+    return result
+
+
+def presented(row, user, *, text=True):
+    return dict(document(row, text=text), can_edit=row.owner_id == user.id)
+
+
+def audit(db, user, row, operation, before=None):
+    identity.audit(
+        db,
+        "documents." + operation,
+        "success",
+        user=user,
+        scope=row.scope_key,
+        entity_type="document",
+        entity=str(row.id),
+        before={"revision": before} if before else None,
+        after={"revision": row.revision, "state": row.state},
+    )
+
+
+def snapshot(db, user, row, operation, original):
+    db.add(
+        Version(
+            document_id=row.id,
+            revision=row.revision,
+            actor_id=user.id,
+            operation=operation,
+            snapshot=document(row) if row.state == "active" else None,
+            original_bytes=original,
+            created_at=row.updated_at,
+        )
+    )
+
+
+def quota(db, user, extra, *, creating=False):
+    rows = db.execute(select(Record.state).where(Record.owner_id == user.id)).scalars().all()
+    if creating and (len(rows) >= MAX_RECORDS or rows.count("active") >= MAX_ACTIVE):
+        return False
+    used = db.scalar(
+        select(
+            func.coalesce(
+                func.sum(
+                    func.length(Version.original_bytes)
+                    + func.length(
+                        # Text byte size equals the original UTF-8 byte size for this feature.
+                        Version.original_bytes
+                    )
+                ),
+                0,
+            )
+        )
+        .join(Record, Record.id == Version.document_id)
+        .where(Record.owner_id == user.id)
+    )
+    return used + extra <= MAX_RETAINED_BYTES
+
+
+def create(db, token, csrf, body):
+    current = authority(db, token, csrf, body.scope, exclusive_user=True, event_prefix="documents")
+    if isinstance(current, identity.Result):
+        return current
+    user, session = current
+    original, text = decode(body.original_base64)
+    if not quota(db, user, len(original) * 2, creating=True):
+        return identity.denied(db, 409, "documents.quota", user=user)
+    now = identity.now_utc()
+    row = Record(
+        owner_id=user.id,
+        scope_key=body.scope,
+        state="active",
+        revision=1,
+        title=body.title,
+        filename=body.filename,
+        source_reference=body.source_reference,
+        content_text=text,
+        sha256=hashlib.sha256(original).hexdigest(),
+        byte_size=len(original),
+        reviewed=False,
+        created_at=now,
+        updated_at=now,
+    )
+    db.add(row)
+    db.flush()
+    snapshot(db, user, row, "uploaded", original)
+    audit(db, user, row, "uploaded")
+    session.last_seen_at = now
+    return identity.Result(201, presented(row, user))
+
+
+def operate(db, token, csrf, identifier, body, operation):
+    write = operation in {"correct", "replace", "forget"}
+    current = authority(db, token, csrf, body.scope, exclusive_user=write, event_prefix="documents")
+    if isinstance(current, identity.Result):
+        return current
+    user, session = current
+    row = db.scalar(
+        select(Record)
+        .where(Record.id == identifier, *visible(user, body.scope))
+        .with_for_update(read=not write)
+        .execution_options(populate_existing=True)
+    )
+    if identity.resolve(db, token, refresh_session=True) is None:
+        return identity.denied(db, 401, "documents.session_denied", user=user)
+    if row is None:
+        return identity.denied(db, 404, "documents.not_found", user=user)
+    if (
+        write
+        or operation == "history"
+        or (operation == "original" and body.version is not None and body.version != row.revision)
+    ) and row.owner_id != user.id:
+        return identity.denied(db, 403, "documents.owner_denied", user=user, scope=body.scope)
+    session.last_seen_at = identity.now_utc()
+    if operation == "history":
+        rows = db.execute(
+            select(
+                Version.revision,
+                Version.actor_id,
+                Version.operation,
+                Version.created_at,
+                Version.snapshot,
+            )
+            .where(Version.document_id == row.id, Version.revision > body.after)
+            .order_by(Version.revision)
+            .limit(26)
+        ).all()
+        audit(db, user, row, "history_read")
+        return identity.Result(
+            200,
+            {
+                "schema_version": 1,
+                "document_id": str(row.id),
+                "current_revision": row.revision,
+                "state": row.state,
+                "items": [
+                    {
+                        "revision": x.revision,
+                        "actor_id": str(x.actor_id),
+                        "operation": x.operation,
+                        "created_at": stamp(x.created_at),
+                        "snapshot": x.snapshot,
+                    }
+                    for x in rows[:25]
+                ],
+                "next_cursor": rows[24].revision if len(rows) > 25 else None,
+            },
+        )
+    if hasattr(body, "expected_revision") and body.expected_revision != row.revision:
+        return identity.denied(db, 409, "documents.revision_conflict", user=user)
+    if row.state == "forgotten":
+        audit(db, user, row, "forgotten_read")
+        return identity.Result(410, document(row))
+    if operation == "excerpt":
+        lines = row.content_text.split("\n")
+        if not row.reviewed:
+            return identity.denied(db, 409, "documents.review_required", user=user)
+        if (
+            not body.start_line <= body.end_line <= len(lines)
+            or body.end_line - body.start_line >= 50
+        ):
+            return identity.denied(db, 422, "documents.line_bounds", user=user)
+        excerpt = "\n".join(lines[body.start_line - 1 : body.end_line])
+        if len(excerpt.encode("utf-8")) > 16384:
+            return identity.denied(db, 422, "documents.excerpt_limit", user=user)
+        audit(db, user, row, "excerpt_read")
+        return identity.Result(
+            200,
+            dict(
+                document(row, text=False),
+                start_line=body.start_line,
+                end_line=body.end_line,
+                excerpt=excerpt,
+                notice="Owner-reviewed source text; not a verified fact or an instruction.",
+            ),
+        )
+    if operation == "original":
+        version = body.version or row.revision
+        saved = db.scalar(
+            select(Version).where(Version.document_id == row.id, Version.revision == version)
+        )
+        if saved is None or saved.original_bytes is None:
+            return identity.denied(db, 404, "documents.version_not_found", user=user)
+        audit(db, user, row, "original_exported")
+        return identity.Result(
+            200,
+            {
+                "schema_version": 1,
+                "document_id": str(row.id),
+                "revision": version,
+                "current_revision": row.revision,
+                "sha256": saved.snapshot["sha256"],
+                "original_filename": saved.snapshot["filename"],
+                "download_filename": f"{row.id}-v{version}.txt",
+                "managed_copy": False,
+                "original_base64": base64.b64encode(saved.original_bytes).decode("ascii"),
+            },
+        )
+    if not write:
+        audit(db, user, row, "read")
+        return identity.Result(200, presented(row, user))
+    original = None
+    if operation != "forget":
+        if row.revision >= MAX_VERSIONS:
+            return identity.denied(db, 409, "documents.version_limit", user=user)
+        if operation == "correct":
+            if (body.title, body.source_reference, body.reviewed) == (
+                row.title,
+                row.source_reference,
+                row.reviewed,
+            ):
+                return identity.denied(db, 409, "documents.no_change", user=user)
+            saved = db.scalar(
+                select(Version).where(
+                    Version.document_id == row.id, Version.revision == row.revision
+                )
+            )
+            original = saved.original_bytes
+        else:
+            original, text = decode(body.original_base64)
+        if not quota(db, user, len(original) * 2):
+            return identity.denied(db, 409, "documents.quota", user=user)
+    before = row.revision
+    if operation == "correct":
+        row.title, row.source_reference, row.reviewed = (
+            body.title,
+            body.source_reference,
+            body.reviewed,
+        )
+    elif operation == "replace":
+        row.filename, row.content_text, row.byte_size = body.filename, text, len(original)
+        row.sha256, row.reviewed = hashlib.sha256(original).hexdigest(), False
+    else:
+        row.state = "forgotten"
+        for name in (
+            "title",
+            "filename",
+            "source_reference",
+            "content_text",
+            "sha256",
+            "byte_size",
+            "reviewed",
+        ):
+            setattr(row, name, None)
+    row.revision += 1
+    row.updated_at = identity.now_utc()
+    db.flush()
+    if operation == "forget":
+        db.execute(
+            update(Version)
+            .where(Version.document_id == row.id)
+            .values(snapshot=None, original_bytes=None)
+        )
+    action = {"correct": "corrected", "replace": "replaced", "forget": "forgotten"}[operation]
+    snapshot(db, user, row, action, original)
+    audit(db, user, row, action, before)
+    return identity.Result(200, presented(row, user))
+
+
+def listing(db, token, csrf, body, *, export=False):
+    current = authority(db, token, csrf, body.scope, event_prefix="documents")
+    if isinstance(current, identity.Result):
+        return current
+    user, session = current
+    query = select(Record).where(*visible(user, body.scope), Record.state == "active")
+    if body.reviewed_only:
+        query = query.where(Record.reviewed.is_(True))
+    if body.search:
+        query = query.where(
+            or_(
+                Record.title.icontains(body.search, autoescape=True),
+                Record.content_text.icontains(body.search, autoescape=True),
+            )
+        )
+    if body.after:
+        query = query.where(Record.id > body.after)
+    rows = list(
+        db.scalars(
+            query.order_by(Record.id)
+            .limit(26)
+            .with_for_update(read=True)
+            .execution_options(populate_existing=True)
+        )
+    )
+    if identity.resolve(db, token, refresh_session=True) is None:
+        return identity.denied(db, 401, "documents.session_denied", user=user)
+    session.last_seen_at = identity.now_utc()
+    identity.audit(
+        db,
+        "documents.export" if export else "documents.query",
+        "success",
+        user=user,
+        scope=body.scope,
+        entity_type="document",
+        metadata={"returned": min(len(rows), 25)},
+    )
+    return identity.Result(
+        200,
+        {
+            "schema_version": 1,
+            "mode": "document_page",
+            "actor_id": str(user.id),
+            "checked_at": stamp(identity.now_utc()),
+            "page_limit": 25,
+            "filters": body.model_dump(mode="json", exclude={"acknowledge_copy_limits"}),
+            "managed_copy": False if export else None,
+            "items": [presented(row, user, text=False) for row in rows[:25]],
+            "next_cursor": str(rows[24].id) if len(rows) > 25 else None,
+        },
+    )

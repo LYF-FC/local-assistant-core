@@ -1,0 +1,13 @@
+# Explicit local synthetic opt-in only; never used by normal first-run/restart.
+services:
+  api:
+    environment:
+      BUTLER_WORK_SYNTHETIC_ADAPTER_ENABLED: 'true'
+      BUTLER_WORK_SYNTHETIC_SECRET_DIRECTORY: /run/butler-work
+    volumes:
+      - work_synthetic_secrets:/run/butler-work:ro
+  migrate:
+    volumes:
+      - work_synthetic_secrets:/run/butler-work
+volumes:
+  work_synthetic_secrets:

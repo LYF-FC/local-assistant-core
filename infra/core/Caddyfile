@@ -1,0 +1,53 @@
+{
+    admin off
+    auto_https disable_redirects
+    skip_install_trust
+}
+
+(butler_api_proxy) {
+    reverse_proxy api:8000 {
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Forwarded-For {remote_host}
+        header_up -Forwarded
+    }
+}
+
+(butler_routes) {
+    header -Server
+    # Preserve handler order and keep the larger bound limited to original uploads.
+    route {
+        @document_upload {
+            method POST
+            path /api/v1/documents /api/v1/documents/*/replace
+        }
+        handle @document_upload {
+            request_body {
+                max_size 192KB
+            }
+            import butler_api_proxy
+        }
+        handle {
+            request_body {
+                max_size 64KB
+            }
+            handle /health {
+                respond "butler-core-ok" 200
+            }
+            handle /api/* {
+                import butler_api_proxy
+            }
+            handle {
+                reverse_proxy web:8080
+            }
+        }
+    }
+}
+
+:8080 {
+    import butler_routes
+}
+
+https://localhost:8443 {
+    tls internal
+    import butler_routes
+}

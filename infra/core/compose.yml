@@ -1,0 +1,244 @@
+name: ${COMPOSE_PROJECT_NAME:-butler-dev}
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${BUTLER_POSTGRES_DB:-butler}
+      POSTGRES_USER: ${BUTLER_POSTGRES_USER:-butler}
+      POSTGRES_PASSWORD: ${BUTLER_POSTGRES_PASSWORD:?BUTLER_POSTGRES_PASSWORD is required}
+    volumes:
+    - postgres_data:/var/lib/postgresql/data
+    networks:
+    - data
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - pg_isready -U ${BUTLER_POSTGRES_USER:-butler} -d ${BUTLER_POSTGRES_DB:-butler}
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    security_opt:
+    - no-new-privileges:true
+  migrate:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    restart: 'no'
+    command:
+    - alembic
+    - upgrade
+    - head
+    environment:
+      BUTLER_ENV: ${BUTLER_ENV:-development}
+      BUTLER_POSTGRES_DB: ${BUTLER_POSTGRES_DB:-butler}
+      BUTLER_POSTGRES_USER: ${BUTLER_POSTGRES_USER:-butler}
+      BUTLER_POSTGRES_PASSWORD: ${BUTLER_POSTGRES_PASSWORD:?BUTLER_POSTGRES_PASSWORD
+        is required}
+      BUTLER_POSTGRES_HOST: postgres
+      BUTLER_POSTGRES_PORT: '5432'
+      BUTLER_OLLAMA_URL: ${BUTLER_OLLAMA_URL:-http://host.docker.internal:11434}
+      BUTLER_SPEECH_ENABLED: ${BUTLER_SPEECH_ENABLED:-false}
+      BUTLER_SPEECH_MODEL: ${BUTLER_SPEECH_MODEL:-phonon:40m-multilingual}
+      BUTLER_SPEECH_VOICE: ${BUTLER_SPEECH_VOICE:-default}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+    - data
+    security_opt:
+    - no-new-privileges:true
+    read_only: true
+    cap_drop:
+    - ALL
+    tmpfs:
+    - /tmp
+    pids_limit: 128
+    mem_limit: 512m
+  api:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      BUTLER_ENV: ${BUTLER_ENV:-development}
+      BUTLER_APP_VERSION: 0.1.0-dev
+      BUTLER_POSTGRES_DB: ${BUTLER_POSTGRES_DB:-butler}
+      BUTLER_POSTGRES_USER: butler_runtime
+      BUTLER_POSTGRES_PASSWORD: ${BUTLER_RUNTIME_PASSWORD:?BUTLER_RUNTIME_PASSWORD
+        is required}
+      BUTLER_POSTGRES_HOST: postgres
+      BUTLER_POSTGRES_PORT: '5432'
+      BUTLER_OLLAMA_URL: ${BUTLER_OLLAMA_URL:-http://host.docker.internal:11434}
+      BUTLER_SPEECH_ENABLED: ${BUTLER_SPEECH_ENABLED:-false}
+      BUTLER_SPEECH_MODEL: ${BUTLER_SPEECH_MODEL:-phonon:40m-multilingual}
+      BUTLER_SPEECH_VOICE: ${BUTLER_SPEECH_VOICE:-default}
+      BUTLER_AUTH_ORIGIN: ${BUTLER_AUTH_ORIGIN:-https://localhost:8443}
+    depends_on:
+      role_setup:
+        condition: service_completed_successfully
+    networks:
+    - app
+    - data
+    healthcheck:
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health',
+        timeout=3).read()
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    security_opt:
+    - no-new-privileges:true
+    read_only: true
+    cap_drop:
+    - ALL
+    tmpfs:
+    - /tmp
+    pids_limit: 128
+    mem_limit: 512m
+    command:
+    - uvicorn
+    - app.main:app
+    - --host
+    - 0.0.0.0
+    - --port
+    - '8000'
+    - --no-server-header
+    - --proxy-headers
+    - --forwarded-allow-ips
+    - 172.29.243.2
+  web:
+    build:
+      context: ../../frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    networks:
+    - edge
+    security_opt:
+    - no-new-privileges:true
+    read_only: true
+    cap_drop:
+    - ALL
+    tmpfs:
+    - /tmp
+    pids_limit: 128
+    mem_limit: 512m
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+    - 127.0.0.1:${BUTLER_HTTP_PORT:-8080}:8080
+    - 127.0.0.1:${BUTLER_HTTPS_PORT:-8443}:8443
+    volumes:
+    - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    - caddy_data:/data
+    - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_started
+    networks:
+      edge: null
+      app:
+        ipv4_address: 172.29.243.2
+      ingress: null
+    security_opt:
+    - no-new-privileges:true
+  role_setup:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    restart: 'no'
+    command:
+    - python
+    - -m
+    - app.runtime_role
+    environment:
+      BUTLER_ENV: ${BUTLER_ENV:-development}
+      BUTLER_POSTGRES_DB: ${BUTLER_POSTGRES_DB:-butler}
+      BUTLER_POSTGRES_USER: ${BUTLER_POSTGRES_USER:-butler}
+      BUTLER_POSTGRES_PASSWORD: ${BUTLER_POSTGRES_PASSWORD:?BUTLER_POSTGRES_PASSWORD
+        is required}
+      BUTLER_POSTGRES_HOST: postgres
+      BUTLER_POSTGRES_PORT: '5432'
+      BUTLER_OLLAMA_URL: ${BUTLER_OLLAMA_URL:-http://host.docker.internal:11434}
+      BUTLER_SPEECH_ENABLED: ${BUTLER_SPEECH_ENABLED:-false}
+      BUTLER_SPEECH_MODEL: ${BUTLER_SPEECH_MODEL:-phonon:40m-multilingual}
+      BUTLER_SPEECH_VOICE: ${BUTLER_SPEECH_VOICE:-default}
+      BUTLER_RUNTIME_PASSWORD: ${BUTLER_RUNTIME_PASSWORD:?BUTLER_RUNTIME_PASSWORD
+        is required}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks:
+    - data
+    security_opt:
+    - no-new-privileges:true
+    read_only: true
+    cap_drop:
+    - ALL
+    tmpfs:
+    - /tmp
+    pids_limit: 128
+    mem_limit: 512m
+  reminder_worker:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    depends_on:
+      role_setup:
+        condition: service_completed_successfully
+    security_opt:
+    - no-new-privileges:true
+    read_only: true
+    cap_drop:
+    - ALL
+    tmpfs:
+    - /tmp
+    pids_limit: 128
+    mem_limit: 512m
+    environment:
+      BUTLER_ENV: ${BUTLER_ENV:-development}
+      BUTLER_APP_VERSION: 0.1.0-dev
+      BUTLER_POSTGRES_DB: ${BUTLER_POSTGRES_DB:-butler}
+      BUTLER_POSTGRES_USER: butler_runtime
+      BUTLER_POSTGRES_PASSWORD: ${BUTLER_RUNTIME_PASSWORD:?BUTLER_RUNTIME_PASSWORD is required}
+      BUTLER_POSTGRES_HOST: postgres
+      BUTLER_POSTGRES_PORT: '5432'
+      BUTLER_OLLAMA_URL: ${BUTLER_OLLAMA_URL:-http://host.docker.internal:11434}
+      BUTLER_SPEECH_ENABLED: ${BUTLER_SPEECH_ENABLED:-false}
+      BUTLER_SPEECH_MODEL: ${BUTLER_SPEECH_MODEL:-phonon:40m-multilingual}
+      BUTLER_SPEECH_VOICE: ${BUTLER_SPEECH_VOICE:-default}
+      BUTLER_AUTH_ORIGIN: ${BUTLER_AUTH_ORIGIN:-https://localhost:8443}
+    profiles:
+    - reminders
+    restart: unless-stopped
+    networks:
+    - data
+    command:
+    - python
+    - -m
+    - app.reminder_worker
+    - --loop
+
+volumes:
+  postgres_data: null
+  caddy_data: null
+  caddy_config: null
+networks:
+  edge:
+    internal: true
+  app:
+    internal: true
+    ipam:
+      config:
+      - subnet: 172.29.243.0/28
+        ip_range: 172.29.243.8/29
+  data:
+    internal: true
+  ingress:
+    internal: false

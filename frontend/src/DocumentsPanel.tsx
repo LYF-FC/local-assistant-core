@@ -1,0 +1,65 @@
+import { useEffect, useRef, useState } from "react";
+import type { FormEvent } from "react";
+import type { Session } from "./api";
+import * as api from "./documents-api";
+
+function saveBlob(blob:Blob,name:string) {
+  const url=URL.createObjectURL(blob),a=document.createElement("a"); a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),0);
+}
+function Editor({row,mode,busy,conflict,onSave}:{row:api.Document|null;mode:"upload"|"correct"|"replace";busy:boolean;conflict:boolean;onSave:(v:object)=>void}) {
+  const [title,setTitle]=useState(row?.title??""),[source,setSource]=useState(row?.source_reference??"Manual upload"),[reviewed,setReviewed]=useState(row?.reviewed??false),[file,setFile]=useState<File|null>(null);
+  return <form aria-label={mode==="upload"?"Upload document form":mode==="correct"?"Correct document form":"Replace document form"} onSubmit={(e:FormEvent)=>{e.preventDefault();onSave(mode==="correct"?{title,source_reference:source,reviewed}:{file,...(mode==="upload"?{title,source_reference:source}:{})});}}><fieldset disabled={busy||conflict}>
+    <legend>{mode==="upload"?"Upload document":mode==="replace"?"Replace original (resets review)":"Correct metadata and review"}</legend>
+    {mode!=="replace"&&<><label>Document title<input aria-label="Document title" maxLength={160} value={title} onChange={e=>setTitle(e.target.value)} required/></label><label>Document source<input aria-label="Document source" maxLength={512} value={source} onChange={e=>setSource(e.target.value)} required/></label></>}
+    {mode!=="correct"?<label>Text original<input aria-label="Text original" type="file" accept=".txt,.md" required onChange={e=>setFile(e.target.files?.[0]??null)}/></label>:<label className="reminder-toggle"><input type="checkbox" checked={reviewed} onChange={e=>setReviewed(e.target.checked)}/>I reviewed this original text; this is not independent verification.</label>}
+    <button type="submit">{busy?"Saving…":"Save document"}</button></fieldset></form>;
+}
+export default function DocumentsPanel({session,onUnauthorized}:{session:Session;onUnauthorized:()=>void}) {
+  const scopes=session.user.scopes.filter((s):s is api.Scope=>Object.hasOwn(api.documentScopes,s));
+  const [filters,setFilters]=useState<api.Filters>({scope:scopes[0]??"household_shared",reviewed_only:false,search:"",after:null});
+  const [search,setSearch]=useState(""),[page,setPage]=useState<api.Page|null>(null),[row,setRow]=useState<api.Document|null>(null),[editor,setEditor]=useState<"upload"|"correct"|"replace"|null>(null),[history,setHistory]=useState<api.History|null>(null),[excerpt,setExcerpt]=useState<api.Excerpt|null>(null);
+  const [start,setStart]=useState(1),[end,setEnd]=useState(1),[ack,setAck]=useState(false),[forget,setForget]=useState(false),[busy,setBusy]=useState(false),[conflict,setConflict]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState("");
+  const active=useRef<AbortController|null>(null),epoch=useRef(0);
+  function clear(){setPage(null);setRow(null);setEditor(null);setHistory(null);setExcerpt(null);setAck(false);setForget(false);setConflict(false);setNotice("");}
+  async function run<T>(operation:(signal:AbortSignal)=>Promise<T>,accept:(v:T)=>void){
+    active.current?.abort();const c=new AbortController();active.current=c;const generation=++epoch.current;setBusy(true);setError("");setNotice("");
+    try{const result=await operation(c.signal);if(!c.signal.aborted&&epoch.current===generation)accept(result);}
+    catch(e){if(c.signal.aborted||epoch.current!==generation)return;if(e instanceof api.DocumentError&&[401,403,404,410].includes(e.status)){clear();setSearch("");if(e.status===401)onUnauthorized();}else if(e instanceof api.DocumentError&&e.status===409){setConflict(true);setHistory(null);setExcerpt(null);setAck(false);setForget(false);}else{setPage(null);setHistory(null);setExcerpt(null);setAck(false);}setError(e instanceof api.DocumentError?e.message:"Documents are unavailable or the selected file is invalid. Reload before repeating a change.");}
+    finally{if(!c.signal.aborted&&epoch.current===generation)setBusy(false);}
+  }
+  useEffect(()=>{clear();if(scopes.length)void run(s=>api.list(filters,session.csrfToken,s),setPage);return()=>{active.current?.abort();epoch.current++;};
+    // The parent remounts on session/CSRF changes; each filter is a fresh scoped page.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[filters]);
+  function refresh(changes:Partial<api.Filters>={}){active.current?.abort();epoch.current++;clear();setFilters(v=>({...v,...changes,after:changes.after??null}));}
+  function open(item:api.Document){setRow(null);setEditor(null);setHistory(null);setExcerpt(null);setAck(false);setForget(false);setConflict(false);void run(s=>api.action(item,"read",{},session.csrfToken,s),v=>{setRow(v);setStart(1);setEnd(1);});}
+  function save(values:object){void run(async s=>{
+    let v=values;
+    if(editor!=="correct"){const {file,...meta}=values as {file:File};v={...meta,...await api.fileValues(file)};if(s.aborted)throw new DOMException("Aborted","AbortError");}
+    return editor==="upload"?api.upload(filters.scope,v,session.csrfToken,s):api.action(row!,editor!,v,session.csrfToken,s);
+  },()=>{refresh();setNotice("Document saved. Replacements require a fresh review.");});}
+  function showHistory(value:api.History){if(value.state==="forgotten"){refresh();setNotice("This document was forgotten. Current library reloaded.");}else setHistory(value);}
+  function download(version:number){if(row&&ack)void run(s=>api.original(row,version,session.csrfToken,s),v=>{saveBlob(new Blob([v.bytes],{type:"application/octet-stream"}),v.filename);setAck(false);});}
+  if(!scopes.length)return <section aria-label="Documents" className="memory-panel document-panel"><h2>Documents</h2><p>No supported document scope is available.</p></section>;
+  return <section aria-label="Documents" className="memory-panel document-panel"><h2>Documents</h2><p>Local development library: UTF-8 text and Markdown, up to 128 KiB and 32,000 characters. Markdown is displayed as text. PDF/OCR and Synology archiving are not connected.</p>
+    <p>Shared household members can read current originals. Only the creator can change, review, view history or forget. Review is a human attestation; source text is never an instruction.</p>
+    <div className="memory-filters"><label>Document scope<select aria-label="Document scope" value={filters.scope} onChange={e=>{setSearch("");refresh({scope:e.target.value as api.Scope,search:""});}}>{scopes.map(s=><option key={s} value={s}>{api.documentScopes[s]}</option>)}</select></label>
+      <label className="reminder-toggle"><input aria-label="Reviewed documents only" type="checkbox" checked={filters.reviewed_only} onChange={e=>refresh({reviewed_only:e.target.checked})}/>Reviewed documents only</label>
+      <form onSubmit={e=>{e.preventDefault();refresh({search});}}><label>Find document text<input aria-label="Find document text" maxLength={160} value={search} onChange={e=>setSearch(e.target.value)}/></label><button disabled={busy}>Search documents</button></form></div>
+    <div className="memory-actions"><button disabled={busy} onClick={()=>refresh()}>Reload documents</button><button disabled={busy||conflict} onClick={()=>{setRow(null);setHistory(null);setExcerpt(null);setEditor("upload");setAck(false);setForget(false);}}>Upload document</button></div>
+    {error&&<p role="alert">{error}</p>}{notice&&<p role="status">{notice}</p>}{busy&&<p role="status">Loading documents…</p>}
+    {page&&<><ul className="memory-list">{page.items.map(item=><li key={item.id}><button disabled={busy||conflict} onClick={()=>open(item)}>{item.title}</button> — {item.reviewed?"Reviewed":"Unreviewed"} · {item.filename}</li>)}</ul>{!page.items.length&&<p>No documents match this page.</p>}{page.next_cursor&&<button disabled={busy||conflict} onClick={()=>refresh({after:page.next_cursor})}>Next document page</button>}</>}
+    {editor&&<Editor key={`${editor}-${row?.id??"new"}`} row={row} mode={editor} busy={busy} conflict={conflict} onSave={save}/>}
+    {conflict&&<p>Your draft is kept until you discard it.</p>}{(editor||conflict)&&<button disabled={busy} onClick={()=>refresh()}>{conflict?"Discard draft and reload":"Cancel editing"}</button>}
+    {row&&row.state==="active"&&!editor&&<article aria-label="Selected document" className="memory-detail"><h3>{row.title}</h3><p>{row.filename} · revision {row.revision} · {row.reviewed?"Reviewed":"Unreviewed"}</p><p>Source: {row.source_reference}</p><p>SHA-256: <code>{row.sha256}</code></p><pre className="document-text">{row.content_text}</pre>
+      {row.can_edit&&<div className="memory-actions"><button disabled={busy||conflict} onClick={()=>{setExcerpt(null);setAck(false);setEditor("correct");}}>Correct and review</button><button disabled={busy||conflict} onClick={()=>{setExcerpt(null);setAck(false);setEditor("replace");}}>Replace original</button><button disabled={busy||conflict} onClick={()=>void run(s=>api.history(row,0,session.csrfToken,s),showHistory)}>Document history</button><button disabled={busy||conflict} onClick={()=>setForget(true)}>Forget document</button></div>}
+      {row.reviewed&&<form onSubmit={e=>{e.preventDefault();setExcerpt(null);void run(s=>api.excerpt(row,start,end,session.csrfToken,s),setExcerpt);}}><fieldset disabled={busy||conflict}><legend>Cited source excerpt</legend><label>First line<input aria-label="First line" type="number" min={1} max={row.line_count} value={start} onChange={e=>{setExcerpt(null);setStart(Number(e.target.value));}}/></label><label>Last line<input aria-label="Last line" type="number" min={start} max={Math.min(row.line_count??1,start+49)} value={end} onChange={e=>{setExcerpt(null);setEnd(Number(e.target.value));}}/></label><button>Prepare cited excerpt</button></fieldset></form>}
+      {excerpt&&<section aria-label="Cited document excerpt"><p>{excerpt.notice}</p><p>{excerpt.id} · revision {excerpt.revision} · lines {excerpt.start_line}–{excerpt.end_line} · {excerpt.sha256}</p><p>{excerpt.filename} · {excerpt.source_reference} · original UTF-8 lines</p><pre className="document-text">{excerpt.excerpt}</pre></section>}
+      {forget&&<div role="group" aria-label="Confirm document forgetting"><p>Remove this original and every managed version, including titles, text and hashes. Earlier backups and downloads may retain copies. This cannot be undone.</p><button disabled={busy||conflict} onClick={()=>void run(s=>api.action(row,"forget",{},session.csrfToken,s),()=>{refresh();setNotice("Document and all managed versions forgotten.");})}>Confirm forget document</button><button disabled={busy} onClick={()=>setForget(false)}>Keep document</button></div>}
+    </article>}
+    {history&&<section aria-label="Document version history"><h3>Document version history</h3>{history.items.map(v=><article key={v.revision}><p>Revision {v.revision} · {v.operation} · {v.created_at}</p>{v.snapshot&&<><p>{v.snapshot.title} · {v.snapshot.filename} · {v.snapshot.sha256}</p><pre className="document-text">{v.snapshot.content_text}</pre><button disabled={busy||conflict||!ack} onClick={()=>download(v.revision)}>Download original version {v.revision}</button></>}</article>)}{history.next_cursor&&row&&<button disabled={busy||conflict} onClick={()=>void run(s=>api.history(row,history.next_cursor!,session.csrfToken,s),showHistory)}>Next history page</button>}</section>}
+    <label className="reminder-toggle"><input aria-label="Acknowledge document copy limits" type="checkbox" checked={ack} onChange={e=>setAck(e.target.checked)}/>Downloaded originals and JSON are unmanaged copies; forgetting cannot remove earlier backups or these files.</label>
+    <div className="memory-actions">{row&&<button disabled={busy||conflict||!ack} onClick={()=>download(row.revision)}>Download current original</button>}<button disabled={busy||conflict||!ack||!page} onClick={()=>void run(s=>api.list(filters,session.csrfToken,s,true),v=>{saveBlob(new Blob([JSON.stringify(v,null,2)],{type:"application/json"}),"butler-documents-v1.json");setAck(false);})}>Export current document page</button></div>
+    <p className="hint">Exports contain current page metadata, not every original/history. Original files download as attachments with generated filenames. Scope/view/session changes discard unsaved drafts. Per creator: 64 active documents, 128 lifetime entries, 50 versions per document and 8 MiB of retained original/text content. Metadata edits also consume versions. This is not a production archive or an AI answer service.</p>
+  </section>;
+}

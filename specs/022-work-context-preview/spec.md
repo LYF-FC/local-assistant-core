@@ -1,0 +1,11 @@
+# 022 — Selected synthetic Work context preview
+
+Outcome: a current authenticated workspace user explicitly selects 1–10 confirmed synthetic notes and expected revisions to inspect one ephemeral reference bundle. Preserve request order; reject the whole selection when any note is missing, stale, expired, forgotten, unconfirmed or source-ineligible. No automatic selection, family context bridge, model dispatch, capture, party mutation or execution.
+
+Independent default-disabled flag, synthetic development/test targets only, existing protected-file adapter and explicitly provisioned review read privileges. HTTPS/Host/Origin/session/CSRF/current workspace grant precede private credentials. Existing registry authority fences workspace/grant/source revocation through identity commit; sorted draft SHARE locks fence correction/forget during preparation. Recheck retention and session after private commit. A response is a time-limited snapshot, never a transferable permission; future use must reauthorize.
+
+Strict body: unique UUID selections, strict integer revisions 1–100, max_bytes 256–16384 (default 8192); reject extra fields. Budget is exact canonical UTF-8 JSON byte length of items, with no truncation. Validity is at most 60 seconds, capped by session expiry and note retention. Response contains current note snapshots and provenance only for the selected workspace. Private per-note prepared-read audit and public metadata-only context audit must succeed before content release. A later identity commit failure may leave prepared-read audit only; it never proves delivery.
+
+No new schema, privileges, dependency, persistent context store or derived copy. Existing forget/export/backup behavior is unchanged. No data leaves the local environment. Real content and independent host/key/derived-copy recovery remain gated.
+
+Acceptance: default/permission/origin/strict-body failures before secret access; actual restricted-login confirmed selection; order, exact budget, stale/mixed/unconfirmed/source/retention/forgotten denial; post-work session expiry, audit/identity commit failures with no payload; correction locking and grant revocation fencing; make check and exact-head hosted CI.

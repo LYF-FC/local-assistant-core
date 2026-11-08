@@ -1,0 +1,5 @@
+# Explicit synthetic request opt-in after adapter + review overlays. No worker service.
+services:
+  api:
+    environment:
+      BUTLER_WORK_DRAFT_CONFIRMATION_ENABLED: 'true'

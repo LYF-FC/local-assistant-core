@@ -1,0 +1,15 @@
+# Spec 009 — manual Discovery proposals and feedback
+
+Development/test slice of draft 004, not the complete Discovery agent.
+
+D01: authenticated owners can create dated, manually entered research proposals in assigned member_a_private/member_b_private scopes, with a topic, evidence references, explicit unknown assessments and a proposed experiment. No shared, finance, technical or work scope in this increment.
+D02: owners review only their own proposals and save/correct/clear explicit feedback (very interested, later, already covered, not relevant). A revision conflict never overwrites newer feedback. Positive interest grants no experiment, file, installation, provider or deployment authority.
+D03: a deterministic, explained order uses current proposal feedback only: very interested 100, later 10, unanswered 0, covered -10, not relevant -20. Dismissed proposals are hidden unless requested. Cursor pages are bounded at 25 (maximum 50); ordering is live, not a global snapshot. Changing feedback restarts paging. No inference/generalization to other topics or users.
+D04: store typed proposal envelopes in existing owner-private MemoryRecord experience entries. Existing audit/revisions/export/forget contracts apply without another authoritative copy or migration. Generic memory changes are untrusted: malformed/expired/forgotten envelopes cannot be ranked or updated through Discovery. A generic memory read remains subject to its existing scope/owner policy.
+D05: dates/lengths/schema/URLs and request origin/session/CSRF are validated; source URLs remain inert text and are never fetched, executed or opened automatically. Work data is not accepted as a new scope. No automatic source collector, source verification, schedule, model, network research, approval or job is activated.
+D06: a session-bound interface permits manual proposal entry and explicit feedback/undo, errors, bounded pages and dismissed filters. All pending data requests abort and payload clears on sign-out/session refresh/access denial; stale responses cannot restore old data.
+D07: synthetic unit, PostgreSQL and real TLS browser evidence cover ownership, scope revocation, conflicts, concurrent feedback, transaction rollback, malformed envelope handling, forgetting and ranking/feedback. Preserve all previous gates.
+
+The source timestamp is manually reported evidence, not verification. All assessment fields start as unknown unless supplied; an experiment description is a proposal only. Users inspect full provenance/history, export and forget through Memory. Topic-wide suppression, preference generalization/deduplication, collectors, notifications and measured adoption stay in draft 004.
+
+Spec 044 candidate extends the manual pilot with explicit v2 evidence-free ideas and revision-bound later detail enrichment, preserving v1 and all owner/feedback/history/unknown/action-authority boundaries. Its full contract and engineering evidence are in ../044-simpler-capture; this does not complete draft 004.

@@ -1,0 +1,10 @@
+# Explicit complete synthetic UI pilot; existing adapter/provisioning prerequisites remain.
+services:
+  api:
+    environment:
+      BUTLER_WORK_NOTES_INTERFACE_ENABLED: 'true'
+      BUTLER_WORK_NOTES_EXPORT_ENABLED: 'true'
+      BUTLER_WORK_SYNTHETIC_CAPTURE_ENABLED: 'true'
+      BUTLER_WORK_DRAFT_REVIEW_ENABLED: 'true'
+      BUTLER_WORK_DRAFT_CONFIRMATION_ENABLED: 'true'
+      BUTLER_WORK_NOTE_CHANGES_ENABLED: 'true'

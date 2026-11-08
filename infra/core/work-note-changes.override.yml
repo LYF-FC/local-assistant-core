@@ -1,0 +1,5 @@
+# Optional synthetic correction/forget preparation; explicit local provisioning required.
+services:
+  api:
+    environment:
+      BUTLER_WORK_NOTE_CHANGES_ENABLED: 'true'

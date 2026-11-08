@@ -1,0 +1,17 @@
+# Synthetic meeting preparation workbench
+
+## Outcome and scope
+A currently authorized synthetic Work user selects up to ten confirmed notes, arranges a cited meeting agenda, reviews selected action follow-ups/unknowns, and explicitly downloads a freshly rechecked Markdown copy. Group selection, agenda/follow-up presentation, source/revision citations, safe downloadable formatting, privacy lifecycle and complete browser verification in one larger coherent delivery. Commit count is not a quota or CI limit.
+
+## Requirements
+- Reuse the existing default-disabled synthetic notes/export interface and its exact-selection/revision/source/owner/retention/CSRF/current-session checks. No new API/schema/permission/provider/settings dependency. No drafts, automatic selection, model inference, task creation or outbound send.
+- Choose 1–10 currently available confirmed records from the displayed page, without silently treating the page as a complete workspace inventory. Preserve chosen order and source references. Metadata/title/optional meeting time stay in browser memory; no localStorage or new server content copy.
+- Deterministically group actions, decisions, questions and observations. Derive action due-by/after-meeting from explicit meeting time only. Unknown meeting time, due dates, owners and completion stay Unknown; confirmation is not task completion. Do not infer commitments or owners from text.
+- Show per-note source labels/UUIDs, note UUID/revision, owner availability, due/retention and the current snapshot deadline. Cite each selected note in a bounded escaped Markdown brief with source/version footnotes and the earliest copy-retention boundary.
+- Acknowledgement of separate downloaded-copy limitations is required. Download calls the existing export API again with include_drafts=false, the exact reviewed hash and acknowledgement, then constructs Markdown only from that fresh verified response. Export receipt still proves preparation of the governed note bundle, not actual Markdown saving/deletion or a signed meeting document.
+- Form/selection edits invalidate preview/acknowledgement; note reads/writes/paging, workspace/session changes, denial, expiry, cancellation and unmount clear/abort private meeting state and suppress late payload/download side effects. Revoke Blob URLs. Session-bound ephemeral state follows the existing conservative deadline.
+- Names/text are React text, not HTML. Markdown escapes dynamic text, uses generated citation labels and validated IDs, caps output at 64 KiB and uses UUID-only filenames. No arbitrary links/rendered HTML or persisted transcript.
+- Retain default-disabled real-content/model gates. Unmanaged files, original sources/latest/independent key/full-host and owner M2 acceptance remain separate; the feature is not complete spec005 or production acceptance.
+
+## Acceptance
+Pure tests cover all kinds, due/unknown/owner semantics, order/citations, defensive draft/workspace/source mismatch, Markdown escaping/provenance/retention and size. Browser tests cover real HTTPS selected confirmed preview/download with fresh export ID/hash, exclusion of drafts, acknowledgement/invalidation, responsive layout, expiry, denial/stale data and cancelled/late responses. Local browser exercises cannot alter the owner's CA trust store. Run make check plus required security/policy/full final hosted four jobs. Update canonical status for merged prior implementation review and this candidate.

@@ -1,0 +1,5 @@
+# Optional synthetic-only selected Work context; adapter/read provisioning required.
+services:
+  api:
+    environment:
+      BUTLER_WORK_CONTEXT_PREVIEW_ENABLED: 'true'

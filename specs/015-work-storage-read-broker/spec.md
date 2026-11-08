@@ -1,0 +1,12 @@
+# Spec 015 — Scoped synthetic work-storage read broker
+
+Connect merged #36 identity transaction authority to merged #35 synthetic storage through a trusted per-workspace engine mapping. No normal-runtime mapping/login/secret or employer content is enabled.
+
+FR-01: POST validation-read accepts only strict bounded limit; cookie/CSRF/Origin/current user/session/workspace grant authorize before any work connection opens. Provider defaults to absent and fails closed. Client cannot choose user, role, connection, SQL or credentials.
+FR-02: immutable trusted UUID→Engine map, same approved PostgreSQL host/port/database as identity store; reject unexpected URL options/driver/target. Verify actual database OID and a non-elevated non-owner restricted login delegated exactly one matching NOLOGIN workspace role (no inheritance/admin option). SET LOCAL ROLE inside a fresh bounded transaction, then verify effective role and active workspace. No privileged fallback/shared all-workspaces login.
+FR-03: fixed parameterized single-workspace ordered read, at most 25 synthetic records with has_more; explicit SQL workspace predicate plus RLS. No work writes except read-attempt audit, no arbitrary dispatch, model or connector.
+FR-04: migration 0009 creates append-only, forced-RLS work read_attempts with actor/session UUID, event, bounded source IDs/count and database time; no marker/content/credential copies. Provision helper grants explicit audit insert columns only, never timestamp/ID mutation. Unauthorized requests never open another workspace connection.
+FR-05: retain identity authority locks until outer audit/commit; recheck clock before and after work commit. Work audit records prepared reads, not delivered responses. If work audit/commit or outer identity commit fails, return no rows. Independent transactions are not falsely described as atomic distributed delivery; prepared events may remain after an outer failure. No blind retry.
+FR-06: actual restricted PostgreSQL sessions test target/role/login mismatches, identity/CSRF/permission denial, clock/revocation races, audit/commit failure, no pool role residue, restore/RLS/audit immutability and bounded output. Default-disabled route gets real TLS/browser denial coverage.
+
+Data stays in the same local PostgreSQL/application boundary; fixtures are synthetic only. Real credential provisioning/rotation and content lifecycle/retention/forget/export/keys/recovery remain separate before real data or debrief capture.

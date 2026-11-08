@@ -1,0 +1,5 @@
+# Explicit synthetic-only capture preparation; adapter and local provisioning required.
+services:
+  api:
+    environment:
+      BUTLER_WORK_SYNTHETIC_CAPTURE_ENABLED: 'true'

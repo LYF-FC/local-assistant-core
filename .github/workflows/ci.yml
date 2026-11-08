@@ -1,0 +1,154 @@
+name: Foundation CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 5 * * 1'
+permissions:
+  contents: read
+concurrency:
+  group: foundation-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  BUTLER_ENV: test
+  BUTLER_POSTGRES_PASSWORD: synthetic-ci-only-password-0123456789
+  BUTLER_SPEECH_ENABLED: 'false'
+jobs:
+  scope:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      backend: ${{ steps.scope.outputs.backend }}
+      frontend: ${{ steps.scope.outputs.frontend }}
+      postgres: ${{ steps.scope.outputs.postgres }}
+      containers: ${{ steps.scope.outputs.containers }}
+      mode: ${{ steps.scope.outputs.mode }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with: {persist-credentials: false, fetch-depth: 0}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with: {python-version: '3.12'}
+      - run: pip install uv==0.13.4
+      - run: uv sync --locked --extra dev
+        working-directory: backend
+      - run: uv run --locked python ../scripts/check_repository.py && uv run --locked python ../scripts/test_ci_scope.py
+        working-directory: backend
+      - id: scope
+        env:
+          BUTLER_CI_EVENT: ${{ github.event_name }}
+          BUTLER_CI_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          BUTLER_CI_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: python3 scripts/ci_scope.py
+  backend:
+    needs: scope
+    if: ${{ needs.scope.outputs.backend == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with: {persist-credentials: false}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with: {python-version: '3.12'}
+      - run: pip install uv==0.13.4
+      - run: uv sync --locked --extra dev
+        working-directory: backend
+      - run: uv run --locked ruff check . && uv run --locked ruff format --check .
+        working-directory: backend
+      - run: uv run --locked pytest -m 'not integration' --allow-unix-socket --cov=app --cov-report=term-missing
+        working-directory: backend
+      - run: uv run --locked bandit -r app -q
+        working-directory: backend
+      - run: uv run --locked pip-audit --local
+        working-directory: backend
+      - run: uv run --locked python ../scripts/check_repository.py
+        working-directory: backend
+  frontend:
+    needs: scope
+    if: ${{ needs.scope.outputs.frontend == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with: {node-version: '22', cache: 'npm', cache-dependency-path: frontend/package-lock.json}
+      - run: npm ci --ignore-scripts
+        working-directory: frontend
+      - run: npm test && npm run build && npm audit --audit-level=high
+        working-directory: frontend
+  postgres:
+    needs: scope
+    if: ${{ needs.scope.outputs.postgres == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: synthetic-ci-only-password-0123456789
+          POSTGRES_DB: butler_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d butler_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      BUTLER_POSTGRES_USER: postgres
+      BUTLER_POSTGRES_HOST: 127.0.0.1
+      BUTLER_POSTGRES_DB: butler_test
+      BUTLER_RUN_DB_TESTS: '1'
+      PGPASSWORD: synthetic-ci-only-password-0123456789
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with: {persist-credentials: false}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with: {python-version: '3.12'}
+      - run: pip install uv==0.13.4
+      - run: uv sync --locked --extra dev
+        working-directory: backend
+      - run: uv run --locked pytest -m integration --allow-hosts=127.0.0.1 --durations=30
+        working-directory: backend
+      - name: Synthetic logical backup and isolated restore
+        run: bash scripts/test-db-restore.sh
+  containers:
+    needs: scope
+    if: ${{ needs.scope.outputs.containers == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      BUTLER_BROWSER_TESTS: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with: {node-version: '22', cache: 'npm', cache-dependency-path: frontend/package-lock.json}
+      - run: npm ci --ignore-scripts && npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: sudo apt-get install -y libnss3-tools
+      - run: bash scripts/test-containers.sh
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: synthetic-records-ui
+          path: |
+            frontend/test-results/reminders-*.png
+            frontend/test-results/documents-*.png
+            frontend/test-results/tasks-*.png
+            frontend/test-results/memory-*.png
+            frontend/test-results/discovery-*.png
+            frontend/test-results/context-*.png
+            frontend/test-results/work-*.png
+          retention-days: 1
+          if-no-files-found: ignore
+  ci:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    needs: [scope, backend, frontend, postgres, containers]
+    if: ${{ always() }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with: {persist-credentials: false}
+      - env:
+          BUTLER_CI_RESULTS: ${{ toJSON(needs) }}
+        run: python3 scripts/ci_gate.py

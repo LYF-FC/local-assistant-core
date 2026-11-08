@@ -1,0 +1,5 @@
+# Layer after work-synthetic.override.yml for explicit synthetic review testing.
+services:
+  api:
+    environment:
+      BUTLER_WORK_DRAFT_REVIEW_ENABLED: 'true'

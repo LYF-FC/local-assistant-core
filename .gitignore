@@ -1,0 +1,43 @@
+.env
+.env.*
+!.env.example
+
+.DS_Store
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# JS
+node_modules/
+dist/
+.vite/
+
+# Local Butler runtime data
+.local/
+data/
+backups/
+exports/
+tmp/
+
+# IDE
+.idea/
+.vscode/
+
+
+# Verification/build outputs
+.pytest_cache/
+.ruff_cache/
+.coverage*
+htmlcov/
+*.egg-info/
+*.tsbuildinfo
+coverage/
+release-candidate/
+
+# Browser acceptance outputs never contain reusable auth state in source
+frontend/test-results/
+frontend/playwright-report/
