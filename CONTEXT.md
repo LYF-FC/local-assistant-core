@@ -8,4 +8,4 @@ The retained product scope includes an everyday MVP and later household, care, c
 
 See [architecture](ARCHITECTURE.md), [decisions](DECISIONS.md), [operations](OPERATIONS.md), [setup](SETUP.md) and [publication boundary](PUBLICATION.md).
 
-Current branch work: [spec 050 local original archive](docs/DOCUMENT_ARCHIVE.md) adds explicit private disk copies and cleanup obligations while retaining authoritative DB originals and bounded text/Markdown intake. PDF/OCR and live adapters remain open. Scope planning was merged in [PR #1](https://github.com/LYF-FC/local-assistant-core/pull/1); this feature is not merged or host-accepted yet.
+Spec 050 local original archive merged in [PR #2](https://github.com/LYF-FC/local-assistant-core/pull/2) at `8c6794b31ce2f0458beb1ffe26cdb0ca81ea113a`; its main CI passed all six jobs. Current branch [spec 051](docs/PDF_INGESTION.md) extends that lifecycle with isolated bounded PDF text extraction. OCR, live adapters and operational acceptance remain open.

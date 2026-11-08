@@ -15,6 +15,7 @@ export BUTLER_CI_CA_FILE="$BUTLER_CI_CA_DIR/root.crt"
 export COMPOSE_PROJECT_NAME=butler-ci
 export BUTLER_SPEECH_ENABLED=false
 compose() { docker compose -f infra/core/compose.yml "$@"; }
+pdf_compose() { docker compose -f infra/core/compose.yml -f infra/core/document-archive.override.yml -f infra/core/pdf-ingestion.override.yml "$@"; }
 archive_compose() { docker compose -f infra/core/compose.yml -f infra/core/document-archive.override.yml "$@"; }
 synthetic_compose() { docker compose -f infra/core/compose.yml -f infra/core/work-synthetic.override.yml "$@"; }
 review_compose() { docker compose -f infra/core/compose.yml -f infra/core/work-synthetic.override.yml -f infra/core/work-draft-review.override.yml -f infra/core/work-draft-confirmation.override.yml -f infra/core/work-context-preview.override.yml -f infra/core/work-synthetic-capture.override.yml -f infra/core/work-note-changes.override.yml -f infra/core/work-notes-interface.override.yml "$@"; }
@@ -22,6 +23,7 @@ cleanup() {
   status=$?
   set +e
   if [[ "$status" != 0 ]]; then compose logs --no-color --tail 80; fi
+  pdf_compose down --volumes --remove-orphans
   archive_compose down --volumes --remove-orphans
   synthetic_compose down --volumes --remove-orphans
   rm -rf "$BUTLER_CI_CA_DIR"
@@ -81,6 +83,30 @@ if [[ "${BUTLER_BROWSER_TESTS:-0}" == 1 ]]; then
   archive_compose cp caddy:/data/caddy/pki/authorities/local/root.crt "$BUTLER_CI_CA_FILE"
   BUTLER_DOCUMENT_ARCHIVE_BROWSER_TESTS=1 bash scripts/test-ci-browser.sh document-archive.spec.ts
   archive_compose down --volumes --remove-orphans
+  # Explicit offline parser phase: no database credentials, TCP network or archive mount in worker.
+  pdf_compose up --build -d --wait --wait-timeout 240
+  pdf_compose run --rm -T --no-deps api python -m app.document_archive /var/lib/butler-document-archive
+  pdf_compose run --rm -T migrate python - seed < scripts/browser-fixtures.py
+  PDF_WORKER_ID=$(pdf_compose ps -q pdf_worker)
+  [[ "$(docker inspect --format '{{.HostConfig.NetworkMode}}' "$PDF_WORKER_ID")" == none ]]
+  [[ "$(pdf_compose exec -T pdf_worker id -u)" == 10001 ]]
+  pdf_compose exec -T pdf_worker python - <<'PYPDFPARENT'
+try:
+    with open('/proc/1/mem', 'rb') as source:
+        source.read(1)
+except PermissionError:
+    print('Parser parent memory is protected')
+else:
+    raise AssertionError('Parser parent memory was readable')
+PYPDFPARENT
+  if pdf_compose exec -T pdf_worker env | sed -n '/^BUTLER_POSTGRES_/p' | read -r _; then
+    echo 'Parser unexpectedly received database configuration' >&2; exit 1
+  fi
+  python3 scripts/pdf-worker-cases.py > "$BUTLER_CI_CA_DIR/pdf-cases.json"
+  pdf_compose run --rm -T --no-deps -v "$PWD/scripts/pdf-worker-checks.py:/opt/check.py:ro" pdf_worker python /opt/check.py < "$BUTLER_CI_CA_DIR/pdf-cases.json"
+  pdf_compose cp caddy:/data/caddy/pki/authorities/local/root.crt "$BUTLER_CI_CA_FILE"
+  BUTLER_PDF_BROWSER_TESTS=1 BUTLER_PDF_BROWSER_CASES="$BUTLER_CI_CA_DIR/pdf-cases.json" bash scripts/test-ci-browser.sh pdf-ingestion.spec.ts
+  pdf_compose down --volumes --remove-orphans
   # Independent disposable acceptance phases must not consume one shared source's
   # 30-login budget as the suite grows. Preserve the real limiter; create a fresh
   # test stack rather than clearing counters, waiting or weakening authentication.

@@ -139,3 +139,5 @@ Companion to the [complete register](FEATURE_REGISTER.md). These are prerequisit
 | REM-01 | Specs 046/047; recurrence/calendar/channel contracts remain open |
 | DOC-X01 | Spec 048; durable storage consistency; sandboxed PDF/OCR and archive restore |
 | DOC-X02 | DOC-X01; key/derived-copy lifecycle; authenticated older-restore suppression |
+
+Spec 051 builds on merged spec 050 and extends spec 048; it delivers only bounded PDF text derivation within DOC-X01/CORE-10 and the parser foundation of DOC-02. OCR, reviewed structured fields, restricted mail intake and live Synology remain successive dependencies. No register ID is removed or declared fully accepted by this increment.

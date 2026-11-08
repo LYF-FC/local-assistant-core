@@ -6,8 +6,9 @@ The [scope](docs/SCOPE.md), [135-entry register](docs/FEATURE_REGISTER.md), [dep
 
 | State | Capability / next evidence |
 |---|---|
-| In progress | Spec 050: private local original archive, exact verification, retry/forgetting and recovery checks. Database originals retained; PDF/OCR follows the storage boundary. |
-| Next | Bounded PDF extraction and subsequent OCR isolation/provenance, after storage lifecycle review. |
+| Merged foundation | Spec 050 local original archive ([PR #2](https://github.com/LYF-FC/local-assistant-core/pull/2)); authoritative database originals retained. |
+| In progress | Spec 051 bounded PDF ingestion: isolated local text extraction, exact originals, review/provenance, page citations, retry and recovery. |
+| Next | Separately bounded OCR and uncertain structured extraction, followed by reviewed intake/filing foundations. |
 | Next by dependency | Scoped local answers; calendar/briefing; recurrence/one notification path; forwarded invoice intake/filing; operations and independent recovery. |
 | Later, retained | Household/food, care/coaching, connected life, NOMAD/education, professional/creative/financial modules and governed platform evolution below. |
 | Done | Documentation scope reconciliation delivered by [PR #1](https://github.com/LYF-FC/local-assistant-core/pull/1). The imported baseline has independent [engineering evidence](docs/VALIDATION.md), not inherited merged PR history or production acceptance. |

@@ -1,6 +1,6 @@
 # Private local original archive — spec 050
 
-This development/test increment adds an explicit local disk copy of every retained original version of a document. The existing bounded UTF-8 `.txt`/`.md` upload, replacement, review, search, citations and downloads remain unchanged. Database originals remain authoritative during the storage transition. PDF/OCR, automatic ingestion/filing, moving originals out of PostgreSQL, live Synology, generated answers and production/key/older-backup acceptance remain later work.
+This development/test increment adds an explicit local disk copy of every retained original version of a document. The existing bounded UTF-8 `.txt`/`.md` upload, replacement, review, search, citations and downloads remain unchanged. Database originals remain authoritative during the storage transition. This spec is extended by [spec 051 PDF ingestion](PDF_INGESTION.md); its storage/cleanup contract is retained. OCR, automatic ingestion/filing, moving originals out of PostgreSQL, live Synology, generated answers and production/key/older-backup acceptance remain later work.
 
 ## Owner workflow
 

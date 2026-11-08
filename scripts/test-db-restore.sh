@@ -78,6 +78,7 @@ SQL
 (cd backend && uv run --locked python ../scripts/reminder-restore-fixtures.py seed)
 (cd backend && uv run --locked python ../scripts/document-restore-fixtures.py seed)
 (cd backend && uv run --locked python ../scripts/document-archive-restore-fixtures.py seed)
+(cd backend && uv run --locked python ../scripts/pdf-restore-fixtures.py seed)
 (cd backend && BUTLER_DRAFT_RESTORE_PHASE=seed uv run --locked python ../scripts/work-draft-restore.py)
 (cd backend && uv run --locked python ../scripts/work-retention-fixtures.py seed)
 (cd backend && uv run --locked python ../scripts/work-restore-fixtures.py seed)
@@ -119,7 +120,7 @@ docker exec "$CONTAINER_ID" createdb -U postgres butler_test_restore
 docker exec -i "$CONTAINER_ID" pg_restore -U postgres -d butler_test_restore --exit-on-error < "$DUMP"
 RESULT=$(docker exec "$CONTAINER_ID" psql -U postgres -d butler_test_restore -Atc "SELECT value FROM recovery_sentinel WHERE id=1")
 [[ "$RESULT" == synthetic-recovery-ok ]]
-[[ "$(docker exec "$CONTAINER_ID" psql -U postgres -d butler_test_restore -Atc "SELECT version_num FROM alembic_version")" == 0023_document_archive ]]
+[[ "$(docker exec "$CONTAINER_ID" psql -U postgres -d butler_test_restore -Atc "SELECT version_num FROM alembic_version")" == 0024_pdf_ingestion ]]
 [[ "$(docker exec "$CONTAINER_ID" psql -U postgres -d butler_test_restore -Atc "SELECT result_status FROM audit_events WHERE event_type='recovery.sentinel'")" == success ]]
 if docker exec "$CONTAINER_ID" psql -U postgres -d butler_test_restore -v ON_ERROR_STOP=1 -c "UPDATE audit_events SET result_status='tampered' WHERE event_type='recovery.sentinel'" >/dev/null 2>&1; then
   echo "Restored audit guard did not reject mutation" >&2
@@ -139,6 +140,7 @@ done
 (cd backend && BUTLER_POSTGRES_DB=butler_test_restore uv run --locked python ../scripts/reminder-restore-fixtures.py check)
 (cd backend && BUTLER_POSTGRES_DB=butler_test_restore uv run --locked python ../scripts/document-restore-fixtures.py check)
 (cd backend && BUTLER_DOCUMENT_ARCHIVE_DIRECTORY="$BUTLER_SUPPRESSION_DIR/archive-restored" BUTLER_POSTGRES_DB=butler_test_restore uv run --locked python ../scripts/document-archive-restore-fixtures.py check)
+(cd backend && BUTLER_DOCUMENT_ARCHIVE_DIRECTORY="$BUTLER_SUPPRESSION_DIR/archive-restored" BUTLER_POSTGRES_DB=butler_test_restore uv run --locked python ../scripts/pdf-restore-fixtures.py check)
 echo "Synthetic restore, interrupted outbox, forgotten memory, work identity registry and audit guard verified"
 
 # Copied ACLs do not let the source database role read the restored namespace.

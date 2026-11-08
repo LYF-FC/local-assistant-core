@@ -54,11 +54,11 @@ jobs:
       - run: pip install uv==0.13.4
       - run: uv sync --locked --extra dev
         working-directory: backend
-      - run: uv run --locked ruff check . && uv run --locked ruff format --check .
+      - run: uv run --locked ruff check . ../pdf-worker && uv run --locked ruff format --check . ../pdf-worker
         working-directory: backend
       - run: uv run --locked pytest -m 'not integration' --allow-unix-socket --cov=app --cov-report=term-missing
         working-directory: backend
-      - run: uv run --locked bandit -r app -q
+      - run: uv run --locked bandit -r app ../pdf-worker -q
         working-directory: backend
       - run: uv run --locked pip-audit --local
         working-directory: backend
