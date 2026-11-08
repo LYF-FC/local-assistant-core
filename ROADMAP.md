@@ -1,6 +1,6 @@
 # Roadmap
 
-The [scope](docs/SCOPE.md), [135-entry register](docs/FEATURE_REGISTER.md), [dependencies](docs/FEATURE_DEPENDENCIES.md) and [MVP acceptance contract](docs/MVP_ACCEPTANCE.md) define the retained product scope. This page orders delivery; brevity here does not remove requirements. Historical versions are dependency stages, not dates, PR quotas or evidence of a released MVP. Version fields of 0.1.0 in package manifests do not establish release acceptance.
+The [scope](docs/SCOPE.md), [147-entry register](docs/FEATURE_REGISTER.md), [dependencies](docs/FEATURE_DEPENDENCIES.md) and [MVP acceptance contract](docs/MVP_ACCEPTANCE.md) define the retained product scope. This page orders delivery; brevity here does not remove requirements. Historical versions are dependency stages, not dates, PR quotas or evidence of a released MVP. Version fields of 0.1.0 in package manifests do not establish release acceptance.
 
 ## Delivery Kanban
 
@@ -14,6 +14,16 @@ The [scope](docs/SCOPE.md), [135-entry register](docs/FEATURE_REGISTER.md), [dep
 | Done | Documentation scope reconciliation delivered by [PR #1](https://github.com/LYF-FC/local-assistant-core/pull/1). The imported baseline has independent [engineering evidence](docs/VALIDATION.md), not inherited merged PR history or production acceptance. |
 
 Add a verified delivering public PR link beside each completed checkbox only after merge. Keep green open PRs In progress. Host/provider acceptance and release certification remain separate gates.
+
+## Reusable-installation milestone
+
+Owner-approved INSTALL-01–12 add [independent installations, onboarding and feature lifecycle](docs/CONFIGURABLE_INSTALLATIONS.md). Plan the identity/configuration contracts early, implement them in coherent reviewed increments and complete them before any private-data conversion or reusable-installation release. This does not block independent bounded document work or grant production readiness. Keep all existing domain scope; no feature is dropped because it is optional.
+
+| Stage | Exit gate |
+|---|---|
+| Configuration and identity design | Versioned private config, stable software keys, installation-local identities, household membership/permission migration and dependency catalogue specified. |
+| Onboarding and activation | Secure owner/member provisioning; feature/secret readiness; server-side enable/disable and worker reconciliation; reusable safe templates. |
+| Independent adoption and updates | Two isolated synthetic households pass lifecycle, export/restore and upgrade tests; existing-installation conversion separately rehearsed/approved with rollback. |
 
 ## Substantial MVP batches
 

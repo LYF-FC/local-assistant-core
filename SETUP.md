@@ -15,3 +15,7 @@ Online migrations also reject an existing scope table without the generic namesp
 The [optional original archive](docs/DOCUMENT_ARCHIVE.md) uses an explicitly selected development overlay and an empty private volume initialized once. Base setup stays disabled. Provision only a new isolated synthetic stack; do not attach an existing private NAS/share or deployment. PostgreSQL originals remain authoritative and parser/production gates stay closed.
 
 The [optional PDF worker](docs/PDF_INGESTION.md) adds `infra/core/pdf-ingestion.override.yml` to a fresh isolated synthetic stack. It requires Linux seccomp, a shared private Unix-socket volume and UID 10001. No host networking, database credentials or original-file mount is granted to the worker. Without the overlay, PDF originals can be retained but extraction reports unavailable.
+
+## Planned reusable onboarding
+
+The [INSTALL-01–12 scope](docs/CONFIGURABLE_INSTALLATIONS.md) adds future household-specific setup, private configuration, protected credential provisioning and optional feature/dependency controls. Each household needs supported hardware and independent storage/backups. Future templates create fresh identities and contain no reusable credentials or personal records. Current first-run helpers and fixed synthetic/example scopes are development tools, not the completed onboarding system. Do not use this requirement as authority to convert an existing database or configure a real service.
