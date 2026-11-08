@@ -9,6 +9,7 @@ Implemented engineering includes HTTPS identity/session controls, explicit scope
 - [Setup](SETUP.md), [architecture](ARCHITECTURE.md), [security](SECURITY.md).
 - [Development](docs/DEVELOPMENT.md), [tests](docs/TESTING.md), [CI](docs/CI_COMPUTE.md).
 - [Document library](docs/DOCUMENT_LIBRARY.md), [tasks](docs/MANUAL_TASKS_AGENDA.md), [reminders](docs/TASK_REMINDERS.md).
+- [Full scope](docs/SCOPE.md), [feature register](docs/FEATURE_REGISTER.md), [MVP acceptance](docs/MVP_ACCEPTANCE.md), [roadmap](ROADMAP.md).
 - [Publication boundary](PUBLICATION.md), [validation state](docs/VALIDATION.md).
 
 Run `make check` using Python 3.12, uv 0.13.4 and Node 22. Dependencies are locked. Real database tests need an explicitly disposable `butler_test` database; container acceptance uses separate synthetic stacks. Never supply real household/employer records or production secrets for tests.
