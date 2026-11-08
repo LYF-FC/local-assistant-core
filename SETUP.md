@@ -19,3 +19,7 @@ The [optional PDF worker](docs/PDF_INGESTION.md) adds `infra/core/pdf-ingestion.
 ## Planned reusable onboarding
 
 The [INSTALL-01–12 scope](docs/CONFIGURABLE_INSTALLATIONS.md) adds future household-specific setup, private configuration, protected credential provisioning and optional feature/dependency controls. Each household needs supported hardware and independent storage/backups. Future templates create fresh identities and contain no reusable credentials or personal records. Current first-run helpers and fixed synthetic/example scopes are development tools, not the completed onboarding system. Do not use this requirement as authority to convert an existing database or configure a real service.
+
+## Planned model evaluation
+
+[Task-model and dense/MoE research](docs/LLM_RESEARCH.md) adds no installation dependency or default model. Verify hardware/runtime/license fit and approve bounded synthetic experiments before obtaining weights or enabling inference. Task-specific selection, if justified, will use versioned private configuration and feature controls; missing local models never imply cloud fallback. Existing setup and private-deployment protections remain unchanged.

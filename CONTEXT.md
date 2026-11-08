@@ -13,3 +13,7 @@ Spec 050 local original archive merged in [PR #2](https://github.com/LYF-FC/loca
 ## Configurable installations — scope extension
 
 The shared core is intended for independent households, each owning its configuration, credentials, records, hardware and backups. INSTALL-01–12 define secure onboarding, configurable household identities, optional feature lifecycle and versioned adoption. See [contract](docs/CONFIGURABLE_INSTALLATIONS.md). These are approved requirements, not delivered capabilities; the existing private installation stays unchanged.
+
+## Model research scope
+
+RND-04/05 investigate task-specific local models and dense-versus-MoE trade-offs against measured single-model baselines. Different conversation/coding/document tasks can be evaluated independently; selection preserves current permissions and local-first isolation. See [contract](docs/LLM_RESEARCH.md). Research is approved; no runtime model or routing feature is delivered.

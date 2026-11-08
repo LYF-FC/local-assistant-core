@@ -17,3 +17,7 @@ An optional non-root, read-only, network-free Poppler worker receives bounded or
 ## Planned installation and feature boundaries
 
 Separate shared code, schema-validated private configuration and private operational state. Stable software feature/policy keys coexist with installation-local household/user/workspace identities; display names never define authorization or record mappings. Independent installations use separate data/credential namespaces and backups. Feature activation combines dependency/readiness checks with current permissions and server/worker enforcement; core identity, authorization, audit and recovery are not optional. See [INSTALL-01–12](docs/CONFIGURABLE_INSTALLATIONS.md). Current fixed seed scopes are not silently generalized or converted by this scope document.
+
+## Planned model-selection evaluation
+
+Application task-to-model selection is distinct from internal MoE expert routing. RND-04/05 evaluate whether either architecture or task specialization improves actual quality/resource outcomes; shared inference must not merge household/Work context or grant tool authority. Preserve replaceable adapters, bounded resource scheduling and explicit unavailable states with deterministic core availability. Configuration under INSTALL-02/03/10 follows a later evidence-backed ADR; no remote fallback or stack change is implied. See [model research](docs/LLM_RESEARCH.md).
