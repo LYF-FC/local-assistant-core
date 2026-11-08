@@ -141,3 +141,5 @@ Companion to the [complete register](FEATURE_REGISTER.md). These are prerequisit
 | DOC-X02 | DOC-X01; key/derived-copy lifecycle; authenticated older-restore suppression |
 
 Spec 051 builds on merged spec 050 and extends spec 048; it delivers only bounded PDF text derivation within DOC-X01/CORE-10 and the parser foundation of DOC-02. OCR, reviewed structured fields, restricted mail intake and live Synology remain successive dependencies. No register ID is removed or declared fully accepted by this increment.
+
+Spec 052 extends the spec 051 parser with explicit bounded OCR, preserving all storage/source/review boundaries. Structured field candidates with uncertainty, duplicate detection, mail intake and live filing remain dependencies of DOC-01–03; OCR alone does not complete them.

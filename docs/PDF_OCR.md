@@ -1,0 +1,23 @@
+# Explicit bounded PDF OCR — spec 052
+
+This branch extends the merged PDF library with **Run OCR (up to 2 pages)**. Upload continues using native PDF text extraction; image-only documents remain no-text until the creator explicitly requests OCR. The original is never replaced, and no automatic fallback or external service is enabled. OCR is a foundation for DOC-02, not complete structured invoice extraction or filing.
+
+OCR is uncertain. Compare every recognized name, number, amount and date with the original before checking review. Nonempty recognition is not accuracy certification; no confidence score is invented. Current/history/citation views distinguish OCR. Each attempt creates an `extracted` version and resets review, including identical text or failed attempts. Earlier immutable derivations remain in history. Owners retain exact original downloads, current scope/revision checks, quotas, audited changes and managed forgetting. Shared viewers have no extraction controls. Source text remains inert data.
+
+## Limits and confinement
+
+The existing optional network-free private worker includes Poppler rendering and Tesseract with fixed `eng+fra+spa` language data. Native text extraction remains limited to 12 pages; OCR supports at most two pages with an 18-second total processing deadline. Each page renders to grayscale with a maximum 1600-pixel long side, checked dimensions/payload length and 3 MiB output ceiling. Original/text limits remain 128 KiB/32,000 characters. Existing per-command CPU (3 seconds), address-space (256 MiB), descriptor (32), output/diagnostic and wall bounds remain; OpenMP concurrency is fixed to one. Raster bytes flow through bounded pipes and memory, never persistent files.
+
+Existing default-deny seccomp, read-only opens, denied network/process/file mutation operations, read-only container, non-root user, dropped capabilities and protected parent remain. Worker has no database credentials, archive mount or Docker socket. The API selects one fixed OCR discriminator and validates that the reply engine matches the requested mode; source hashes/page spans stay sealed. Parser diagnostics/source text are not logged. The build fingerprint includes package inventory, guard/worker/Python and the exact three language-model byte sequences. The installed engine/library notices declare Apache-2.0/MIT and the three language-data packages declare Apache-2.0. Distribution copyright notices accompany the packages; no model/media is vendored into this repository.
+
+Failed/blank/encrypted/invalid/resource-limited/unavailable attempts retain the original, expose an unreviewed state and never silently truncate. A larger or unreadable document may remain unsupported. Mixed blank pages are listed. Repair the optional worker before deliberately retrying; no file presence authorizes ingestion or a retry.
+
+## Migration and recovery
+
+Migration `0025_pdf_ocr` extends only the existing metadata validator, without rewriting earlier snapshots or adding a second store. OCR provenance is `poppler-tesseract-v1`, with the existing raw/derived hashes and page/line spans. The generic `pdf_text` origin still means derived PDF text; the extraction engine distinguishes native text from OCR. Downgrade refuses any retained current or historical OCR metadata. Normal forgetting scrubs this metadata; migration 0024 independently refuses retained extracted-operation evidence. Never remove history to bypass either guard.
+
+The same DB-plus-separate-archive backup and recovery procedure applies. Existing synthetic restore sentinels now cover active and forgotten OCR derivations, hashes, versions and archive copies. This does not certify real-document accuracy, independent clean-host/key recovery or older-backup suppression. Production/private-data/NAS/mail/model integrations remain separately authorized gates.
+
+## References and verification
+
+Fixed interfaces follow the [Tesseract command-line documentation](https://tesseract-ocr.github.io/tessdoc/Command-Line-Usage.html) and [Debian Poppler rendering manual](https://manpages.debian.org/trixie/poppler-utils/pdftoppm.1.en.html). Synthetic fixtures are image-only renderings of deliberately generated source lines, with a recorded raster checksum; no external records or media are used. Tests cover real confined multilingual recognition, blank/mixed/page-limit states, malformed replies/rasters, one processing deadline, authorized lifecycle/review/citations and migration/restore. Final exact-head CI evidence belongs in PR metadata before readiness; no whole-MVP or real-host acceptance is claimed.

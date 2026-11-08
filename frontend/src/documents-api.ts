@@ -6,7 +6,7 @@ export type Filters = { scope: Scope; reviewed_only: boolean; search: string; af
 export type Page = { schema_version: 1; mode: "document_page"; actor_id: string; checked_at: string; page_limit: 25; managed_copy: false | null; filters: Filters; items: Document[]; next_cursor: string | null };
 export type History = { schema_version: 1; document_id: string; current_revision: number; state: "active" | "forgotten"; items: { revision: number; actor_id: string; operation: string; created_at: string; snapshot: Document | null }[]; next_cursor: number | null };
 export type PageSpan = {page:number;start_line:number;end_line:number};
-export type Extraction = {engine:"poppler-text-v1";version:string;status:"ready"|"no_text"|"encrypted"|"invalid"|"resource_limit"|"unavailable";pages:number;page_spans:PageSpan[];empty_pages:number[]};
+export type Extraction = {engine:"poppler-text-v1"|"poppler-tesseract-v1";version:string;status:"ready"|"no_text"|"encrypted"|"invalid"|"resource_limit"|"unavailable";pages:number;page_spans:PageSpan[];empty_pages:number[]};
 export type Excerpt = Document & { start_line: number; end_line: number; excerpt: string; notice: string;page_spans?:PageSpan[] };
 const object = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 const uuid = (v: unknown): v is string => typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
@@ -29,14 +29,14 @@ export function parseDocument(v: unknown, full = true, history = false): Documen
   return {...meta,state:"active",title:v.title,filename:v.filename,source_reference:v.source_reference,reviewed:v.reviewed,sha256:v.sha256,byte_size:v.byte_size,line_count:v.line_count as number,text_origin:pdf?"pdf_text":"original_utf8",...(pdf?{extraction,text_sha256:v.text_sha256 as string}:{}),...(full ? {content_text:v.content_text as string} : {})};
 }
 export function parseExtraction(v:unknown,lines:number):Extraction{
- if(!object(v)||v.engine!=="poppler-text-v1"||!text(v.version,80)||! /^(unavailable|[0-9.]{1,15}(\+[a-f0-9]{64})?)$/.test(v.version)||!["ready","no_text","encrypted","invalid","resource_limit","unavailable"].includes(v.status as string)||!Number.isSafeInteger(v.pages)||(v.pages as number)<0||(v.pages as number)>12||!Array.isArray(v.page_spans)||v.page_spans.length>12||!Array.isArray(v.empty_pages)||v.empty_pages.length>12)invalid();
+ if(!object(v)||!["poppler-text-v1","poppler-tesseract-v1"].includes(v.engine as string)||!text(v.version,80)||! /^(unavailable|[0-9.]{1,15}(\+[a-f0-9]{64})?)$/.test(v.version)||!["ready","no_text","encrypted","invalid","resource_limit","unavailable"].includes(v.status as string)||!Number.isSafeInteger(v.pages)||(v.pages as number)<0||(v.pages as number)>(v.engine==="poppler-tesseract-v1"?2:12)||!Array.isArray(v.page_spans)||v.page_spans.length>12||!Array.isArray(v.empty_pages)||v.empty_pages.length>12)invalid();
  if((v.status==="unavailable")!==(v.version==="unavailable"))invalid();
  const pages=v.pages as number;
  const spans:PageSpan[]=v.page_spans.map((span,i)=>{if(!object(span)||span.page!==i+1||!integer(span.start_line)||!integer(span.end_line)||span.end_line<span.start_line)invalid();return{page:i+1,start_line:span.start_line,end_line:span.end_line};});
  const empty:number[]=v.empty_pages.map((page,i)=>{if(!integer(page)||page>pages||(i>0&&page<=(v.empty_pages as number[])[i-1]))invalid();return page;});
  if(v.status==="ready"){if(!lines||!pages||spans.length!==pages||spans.some((span,i)=>span.start_line!==(i?spans[i-1].end_line+1:1))||spans.at(-1)?.end_line!==lines)invalid();}
  else if(lines||spans.length||empty.length||(v.status==="no_text"?!pages:pages!==0))invalid();
- return{engine:"poppler-text-v1",version:v.version,status:v.status as Extraction["status"],pages,page_spans:spans,empty_pages:empty};
+ return{engine:v.engine as Extraction["engine"],version:v.version,status:v.status as Extraction["status"],pages,page_spans:spans,empty_pages:empty};
 }
 export class DocumentError extends Error {
   constructor(public status:number) { super(status === 409 ? "The document changed or a library limit was reached. Your draft is kept; discard and reload before retrying." : status === 422 ? "Check the document details, file limits and requested lines." : [401,403,404,410].includes(status) ? "Documents are no longer available. Reload your session or library." : "Documents are unavailable. Reload before repeating a change."); }

@@ -1,5 +1,7 @@
 # Bounded local PDF ingestion — spec 051
 
+The [spec 052 OCR extension](PDF_OCR.md) adds explicit two-page OCR to this lifecycle; native text extraction remains the default. Its uncertain recognition and tighter limits do not change the contracts below.
+
 This increment extends specs 048/050 with PDF originals and local text extraction. The same permissions, archive, immutable history, audit, quota, export and forgetting contracts apply. It replaces only the text/Markdown-only intake restriction. OCR, uncertain structured fields, email intake, live NAS, generated answers and complete key/older-backup recovery remain open.
 
 ## Workflow and limits

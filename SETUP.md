@@ -15,3 +15,7 @@ Online migrations also reject an existing scope table without the generic namesp
 The [optional original archive](docs/DOCUMENT_ARCHIVE.md) uses an explicitly selected development overlay and an empty private volume initialized once. Base setup stays disabled. Provision only a new isolated synthetic stack; do not attach an existing private NAS/share or deployment. PostgreSQL originals remain authoritative and parser/production gates stay closed.
 
 The [optional PDF worker](docs/PDF_INGESTION.md) adds `infra/core/pdf-ingestion.override.yml` to a fresh isolated synthetic stack. It requires Linux seccomp, a shared private Unix-socket volume and UID 10001. No host networking, database credentials or original-file mount is granted to the worker. Without the overlay, PDF originals can be retained but extraction reports unavailable.
+
+## Explicit bounded OCR — spec 052
+
+No extra host dependency, network, credentials or automatic OCR is enabled. The optional PDF-worker overlay includes packaged Tesseract English/French/Spanish data; use **Run OCR (up to 2 pages)** only in the new isolated synthetic stack. Base/unconfigured extraction remains unavailable. Existing private deployments stay untouched. See [OCR setup and limits](docs/PDF_OCR.md).

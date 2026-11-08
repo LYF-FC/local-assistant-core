@@ -1,0 +1,13 @@
+# Explicit bounded PDF OCR — spec 052
+
+## Specify / clarify
+
+Owners can explicitly derive uncertain text from scanned PDF originals through the existing isolated worker, then inspect and review it before literal search/citations. No automatic OCR on upload or fallback, source replacement, structured invoice fields, provider/NAS/mail access or production activation. OCR is local and synthetic development only. Existing text extraction stays the default. This extends specs 048/050/051 and DOC-02/DOC-X01/CORE-10 without replacing their storage/permission/recovery contracts or declaring those full capabilities complete.
+
+Use fixed local Poppler rendering and Tesseract with English/French/Spanish language data. Limit OCR to two pages, grayscale raster long side 1600 pixels, 3 MiB per intermediate image, existing 128 KiB originals/32,000 text characters and owner/version quotas. Native children retain no-network/process/filesystem-write seccomp and CPU/address-space/descriptor/output limits. Bound the complete request to 18 seconds within existing client IO limits; no persistent intermediate images. Unsupported/encrypted/no-text/invalid/resource-limit/unavailable states retain originals and never silently truncate or permit review. OCR recognition is uncertain even when nonempty; mixed blank pages remain explicit.
+
+Persist distinct OCR engine/build provenance with existing raw/derived hashes and page spans. Explicit OCR creates an extracted version and resets review, even if text is unchanged; current revision/session/CSRF/scope/creator checks and audit-before-release persist. No user input becomes executable arguments. Review is human attestation, not OCR accuracy certification. An unsuccessful explicit attempt creates an unreviewed failure version while earlier immutable history remains available. Forget scrubs every managed derivation and archive copy; old backups remain a separate gate.
+
+## Acceptance / checklist
+
+Prove real confined rasterization and OCR from an image-only synthetic PDF, FR/ES/EN configured language data and clear uncertainty UI. Prove page/size/output/time/memory limits and blank/encrypted/invalid states, mixed pages, exact originals, review reset, reviewed OCR page citations, history/archive/forget/restore, replay and authority/audit compatibility. Reject malformed/unexpected OCR receipts and mismatched engine modes. Migration permits OCR provenance without rewriting old snapshots and refuses destructive downgrade while OCR history exists. Exercise focused tests first, one final required check sequence, privacy review, one completed batch push and full exact-head CI before review readiness. Never merge automatically.

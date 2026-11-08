@@ -24,14 +24,23 @@ assert code == 0
 matches = worker.re.findall(rb"pdftotext version ([0-9.]+)", version)
 assert len(matches) == 1
 cases = json.loads(sys.stdin.buffer.read(1024 * 1024))
-assert isinstance(cases, list) and 1 <= len(cases) <= 10
+assert isinstance(cases, list) and 1 <= len(cases) <= 20
 for case in cases:
     raw = base64.b64decode(case["original"], validate=True)
     assert len(raw) <= 131072
-    result = worker.extract(raw, matches[0].decode())
+    result = worker.extract(raw, matches[0].decode(), ocr=case.get("mode")=="ocr")
     assert result["status"] == case["status"], (case["name"], result["status"])
     if case["status"] == "ready":
         assert result["text"] == case["text"]
         assert result["pages"] == case["pages"]
         assert result["page_spans"][-1]["end_line"] == len(result["text"].split("\n"))
 print("Synthetic PDF states and actual syscall/CPU/memory/output confinement passed")
+
+started = worker.time.monotonic()
+try:
+    worker.command("probe_cpu", deadline=started+0.2)
+except worker.BoundedFailure:
+    assert worker.time.monotonic()-started < 2
+else:
+    raise AssertionError("Whole-request deadline was ignored")
+print("Synthetic image-only OCR, mixed/blank/limit states and request deadline passed")

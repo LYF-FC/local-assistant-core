@@ -46,3 +46,7 @@ Connector access routes and accounts; calendar write/mirror ownership and confli
 ## PDF ingestion reconciliation — spec 051
 
 Spec 051 extends specs 048 and 050 rather than duplicates their library/archive stores. It supersedes the earlier text/Markdown-only intake restriction for bounded PDF originals; all owner, review-reset, byte-fidelity, immutable history, quota, audit, export, forgetting and recovery contracts remain. Raw and derived text hashes are distinct. OCR, source-email provenance, structured field uncertainty, live NAS, generated answers, key lifecycle and older-backup suppression remain retained requirements. The 135-entry register is unchanged in membership.
+
+## Explicit OCR reconciliation — spec 052
+
+Spec 052 supersedes the OCR-unsupported restriction only for explicit two-page synthetic PDF derivation. It reuses the existing library/worker/archive rather than duplicating them. All 135 register IDs and prior permission/source/review/audit/forget/recovery contracts remain. Structured fields, recognition quality/uncertainty acceptance on real documents, duplicate detection, automatic intake, NAS and full recovery are retained. No private deployment activation is inferred.

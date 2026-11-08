@@ -13,7 +13,7 @@ from app import document_archiving, documents, identity
 from app.config import settings
 from app.db import SessionLocal
 from app.models import DocumentRecord, DocumentVersion, User
-from pdf_fixtures import pdf
+from pdf_fixtures import pdf, scanned_pdf
 
 assert settings.env == "test" and settings.postgres_user == "postgres"
 assert settings.postgres_db in {"butler_test", "butler_test_restore"}
@@ -30,7 +30,11 @@ info = {
     "empty_pages": [],
 }
 owner_id = UUID("22222222-2222-4222-8222-222222222222")
-for name in ["active", "forgotten"]:
+for name in ["active", "forgotten", "ocr_active", "ocr_forgotten"]:
+    ocr = name.startswith("ocr_")
+    raw = scanned_pdf() if ocr else pdf()
+    derived = "Synthetic invoice\nFacture facture\nFactura total\nTOTAL 123.45" if ocr else "Synthetic invoice 100.00"
+    info = dict(info, engine="poppler-tesseract-v1" if ocr else "poppler-text-v1", page_spans=[{"page": 1, "start_line": 1, "end_line": len(derived.split("\n"))}])
     identifier = uuid5(NAMESPACE_URL, "synthetic-pdf-restore-" + name)
     with SessionLocal.begin() as db:
         owner = db.get(User, owner_id)
@@ -74,7 +78,7 @@ for name in ["active", "forgotten"]:
             documents.snapshot(db, owner, row, "extracted", raw)
             documents.audit(db, owner, row, "extracted")
             db.flush()
-            if name == "forgotten":
+            if name.endswith("forgotten"):
                 row.state = "forgotten"
                 row.revision = 4
                 row.updated_at = identity.now_utc()
@@ -107,7 +111,7 @@ for name in ["active", "forgotten"]:
                     .order_by(DocumentVersion.revision)
                 )
             )
-            if name == "active":
+            if name.endswith("active"):
                 assert (
                     row.state == "active"
                     and row.revision == 3
@@ -157,7 +161,7 @@ for name in ["active", "forgotten"]:
                 pass
             else:
                 raise AssertionError("Restored PDF seal missing")
-    if phase == "seed" and name == "active":
+    if phase == "seed" and name.endswith("active"):
         with SessionLocal.begin() as db:
             row = db.get(DocumentRecord, identifier)
             owner = db.get(User, owner_id)
