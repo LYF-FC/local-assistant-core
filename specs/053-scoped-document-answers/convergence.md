@@ -1,0 +1,5 @@
+# Convergence
+
+The bounded spec 053 source-question/quotation workflow is implemented. Local standard checks passed (946 backend, 383 client/build, repository policy and 14 CI policy tests); all 718 actual PostgreSQL cases and the complete existing recovery drill passed. Five enabled trusted-HTTPS simulated-model browser scenarios passed. Focused final audit checks verify source line/model provenance without content persistence and actual committed preparation/source locks; client receipt checks/build and security/dependency/policy/privacy review passed.
+
+All 149 register/dependency IDs remain, with INSTALL-01–12 and RND-04/05 requirements unchanged. No schema/index/conversation store, weight download, actual-model activation, private deployment change, full conversation/free-form synthesis, whole-MVP or operational acceptance claimed. Final exact-head hosted evidence is recorded in PR metadata before readiness, without evidence-only source pushes. Deliver as one feature commit and one PR; owner merge remains separate.

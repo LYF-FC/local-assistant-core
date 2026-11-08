@@ -1,0 +1,32 @@
+# Explicit synthetic test fixture only; never connects to a host model or downloads weights.
+services:
+  api:
+    environment:
+      BUTLER_DOCUMENT_ANSWERS_ENABLED: "true"
+      BUTLER_DOCUMENT_ANSWER_MODEL: synthetic-citation:fixture
+      BUTLER_DOCUMENT_ANSWER_DIGEST: "1111111111111111111111111111111111111111111111111111111111111111"
+      BUTLER_OLLAMA_URL: http://127.0.0.1:11435
+  synthetic_answer_model:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    network_mode: service:api
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      BUTLER_ENV: test
+      PYTHONDONTWRITEBYTECODE: "1"
+    command: [python, /opt/synthetic-answer-model.py]
+    volumes:
+      - ../../scripts/synthetic-answer-model.py:/opt/synthetic-answer-model.py:ro
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 16
+    mem_limit: 96m
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:11435/health', timeout=1).close()"]
+      interval: 5s
+      timeout: 2s
+      retries: 10

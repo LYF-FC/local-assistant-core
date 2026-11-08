@@ -16,6 +16,7 @@ export COMPOSE_PROJECT_NAME=butler-ci
 export BUTLER_SPEECH_ENABLED=false
 compose() { docker compose -f infra/core/compose.yml "$@"; }
 pdf_compose() { docker compose -f infra/core/compose.yml -f infra/core/document-archive.override.yml -f infra/core/pdf-ingestion.override.yml "$@"; }
+answers_compose() { docker compose -f infra/core/compose.yml -f infra/core/answers-synthetic.override.yml "$@"; }
 archive_compose() { docker compose -f infra/core/compose.yml -f infra/core/document-archive.override.yml "$@"; }
 synthetic_compose() { docker compose -f infra/core/compose.yml -f infra/core/work-synthetic.override.yml "$@"; }
 review_compose() { docker compose -f infra/core/compose.yml -f infra/core/work-synthetic.override.yml -f infra/core/work-draft-review.override.yml -f infra/core/work-draft-confirmation.override.yml -f infra/core/work-context-preview.override.yml -f infra/core/work-synthetic-capture.override.yml -f infra/core/work-note-changes.override.yml -f infra/core/work-notes-interface.override.yml "$@"; }
@@ -23,6 +24,7 @@ cleanup() {
   status=$?
   set +e
   if [[ "$status" != 0 ]]; then compose logs --no-color --tail 80; fi
+  answers_compose down --volumes --remove-orphans
   pdf_compose down --volumes --remove-orphans
   archive_compose down --volumes --remove-orphans
   synthetic_compose down --volumes --remove-orphans
@@ -107,6 +109,12 @@ PYPDFPARENT
   pdf_compose cp caddy:/data/caddy/pki/authorities/local/root.crt "$BUTLER_CI_CA_FILE"
   BUTLER_PDF_BROWSER_TESTS=1 BUTLER_PDF_BROWSER_CASES="$BUTLER_CI_CA_DIR/pdf-cases.json" bash scripts/test-ci-browser.sh pdf-ingestion.spec.ts
   pdf_compose down --volumes --remove-orphans
+  # Fresh local-only simulated model phase; no existing host runtime is contacted.
+  answers_compose up --build -d --wait --wait-timeout 180
+  answers_compose run --rm -T migrate python - seed < scripts/browser-fixtures.py
+  answers_compose cp caddy:/data/caddy/pki/authorities/local/root.crt "$BUTLER_CI_CA_FILE"
+  BUTLER_ANSWERS_BROWSER_TESTS=1 bash scripts/test-ci-browser.sh answers.spec.ts
+  answers_compose down --volumes --remove-orphans
   # Independent disposable acceptance phases must not consume one shared source's
   # 30-login budget as the suite grows. Preserve the real limiter; create a fresh
   # test stack rather than clearing counters, waiting or weakening authentication.

@@ -27,3 +27,7 @@ The [INSTALL-01–12 scope](docs/CONFIGURABLE_INSTALLATIONS.md) adds future hous
 ## Planned model evaluation
 
 [Task-model and dense/MoE research](docs/LLM_RESEARCH.md) adds no installation dependency or default model. Verify hardware/runtime/license fit and approve bounded synthetic experiments before obtaining weights or enabling inference. Task-specific selection, if justified, will use versioned private configuration and feature controls; missing local models never imply cloud fallback. Existing setup and private-deployment protections remain unchanged.
+
+## Scoped source answers — spec 053
+
+Base document answers use source-only mode and never contact a model. The explicitly selected `answers-synthetic.override.yml` is only a disposable test fixture: fixed synthetic model, local loopback service, no weights or host runtime. No real model is selected/downloaded/activated by this batch. Future authorized activation requires an explicit local model tag/manifest digest, approved local endpoint and separately verified runtime/license/quality/resource/privacy gates. See [configuration](docs/DOCUMENT_ANSWERS.md).

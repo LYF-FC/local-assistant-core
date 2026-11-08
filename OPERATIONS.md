@@ -26,3 +26,7 @@ INSTALL-01–12 require independent per-household configuration/secrets/records/
 ## Planned model research and operating budgets
 
 RND-04/05 require explicit task/hardware/budget manifests, runtime/weight/quantization provenance, memory/context limits, cold/warm/switching/concurrency measurements and honest failures before model recommendations. No automatic download, background benchmark schedule, model replacement or expansion of tool/network privileges follows from this planning change. Deterministic jobs remain available during inference outages. See [model research](docs/LLM_RESEARCH.md).
+
+## Scoped source answers — spec 053
+
+Document questions and source bundles are ephemeral: no question/prompt/answer content or query hash enters the audit, database history, browser storage or cache. Metadata-only preparation records may represent interrupted/unknown selection; no automatic retries occur. Model failure retains authorized source inspection. Existing document export/forget/backup/recovery remains authoritative, without a duplicate context store. Real runtime retention, offline egress, model/template/context/resource limits and timeout/cancellation behavior require separately authorized acceptance before activation. See [bounds](docs/DOCUMENT_ANSWERS.md).

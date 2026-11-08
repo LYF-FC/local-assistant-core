@@ -1,0 +1,8 @@
+# Plan, analysis and dependencies
+
+1. Reuse document authority, reviewed source rules, row locks, byte quotas/provenance and metadata-only audit. Add no conversation tables or duplicate content/index store. Existing restoration remains authoritative.
+2. Build bounded deterministic lexical evidence selection and strict model passage validation. Keep absent/conflicting evidence and model unavailability explicit; an exact quotation is not generated narrative or a verified fact.
+3. Add a default-disabled replaceable local HTTP selector using a fixed schema and configured local endpoint/model manifest. Synthetic tests only; do not call an existing host model, download weights or select a production model. Follow the primary [chat](https://docs.ollama.com/api/chat) and [local manifests](https://docs.ollama.com/api/tags) interfaces; provider details remain behind the adapter.
+4. Use two audited transactions: preparation commits first; dispatch reauthorizes/locks/rebuilds current sources and validates output before audited release. Reject drift, expired sessions, unsupported scopes and unsafe replies. No executor/tool authority.
+5. Add strict ephemeral UI, original-source navigation and FR/ES/EN selection. Default source-only mode remains useful while inference is unavailable; disclose lexical limits and bounded evidence.
+6. Group retrieval/adapter/citations/UI and their tests/docs into one commit/PR. Focused tests first, then required complete local checks once and exact scope-selected hosted CI. This backend/permission change requires full coverage; documentation-only follow-ups do not justify repeating feature verification. All 149 IDs and installation/model research boundaries remain.

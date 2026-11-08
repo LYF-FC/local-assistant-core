@@ -15,12 +15,13 @@ function Editor({row,mode,busy,conflict,onSave}:{row:api.Document|null;mode:"upl
     {mode!=="correct"?<label>Original file<input aria-label="Original file" type="file" accept=".txt,.md,.pdf" required onChange={e=>setFile(e.target.files?.[0]??null)}/></label>:<label className="reminder-toggle"><input type="checkbox" disabled={row?.extraction!==undefined&&row.extraction.status!=="ready"} checked={reviewed} onChange={e=>setReviewed(e.target.checked)}/>I reviewed this text against its source; this is not independent verification.</label>}
     <button type="submit">{busy?"Saving…":"Save document"}</button></fieldset></form>;
 }
-export default function DocumentsPanel({session,onUnauthorized}:{session:Session;onUnauthorized:()=>void}) {
+export default function DocumentsPanel({session,onUnauthorized,initialDocument}:{session:Session;onUnauthorized:()=>void;initialDocument?:api.Document}) {
   const scopes=session.user.scopes.filter((s):s is api.Scope=>Object.hasOwn(api.documentScopes,s));
-  const [filters,setFilters]=useState<api.Filters>({scope:scopes[0]??"household_shared",reviewed_only:false,search:"",after:null});
+  const [filters,setFilters]=useState<api.Filters>({scope:initialDocument?.scope??scopes[0]??"household_shared",reviewed_only:false,search:"",after:null});
   const [search,setSearch]=useState(""),[page,setPage]=useState<api.Page|null>(null),[row,setRow]=useState<api.Document|null>(null),[editor,setEditor]=useState<"upload"|"correct"|"replace"|null>(null),[history,setHistory]=useState<api.History|null>(null),[excerpt,setExcerpt]=useState<api.Excerpt|null>(null);
   const [start,setStart]=useState(1),[end,setEnd]=useState(1),[ack,setAck]=useState(false),[forget,setForget]=useState(false),[busy,setBusy]=useState(false),[conflict,setConflict]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState("");
   const [archive,setArchive]=useState<api.ArchiveState|null>(null);
+  const initialTarget=useRef(initialDocument),initialFilters=useRef(filters);
   const active=useRef<AbortController|null>(null),epoch=useRef(0);
   function clear(){setArchive(null);setPage(null);setRow(null);setEditor(null);setHistory(null);setExcerpt(null);setAck(false);setForget(false);setConflict(false);setNotice("");}
   async function run<T>(operation:(signal:AbortSignal)=>Promise<T>,accept:(v:T)=>void){
@@ -29,7 +30,7 @@ export default function DocumentsPanel({session,onUnauthorized}:{session:Session
     catch(e){if(c.signal.aborted||epoch.current!==generation)return;if(e instanceof api.DocumentError&&[401,403,404,410].includes(e.status)){clear();setSearch("");if(e.status===401)onUnauthorized();}else if(e instanceof api.DocumentError&&e.status===409){setConflict(true);setHistory(null);setExcerpt(null);setAck(false);setForget(false);}else{setPage(null);setHistory(null);setExcerpt(null);setAck(false);}setError(e instanceof api.DocumentError?e.message:"Documents are unavailable or the selected file is invalid. Reload before repeating a change.");}
     finally{if(!c.signal.aborted&&epoch.current===generation)setBusy(false);}
   }
-  useEffect(()=>{clear();if(scopes.length)void run(s=>api.list(filters,session.csrfToken,s),setPage);return()=>{active.current?.abort();epoch.current++;};
+  useEffect(()=>{const target=filters===initialFilters.current?initialTarget.current:undefined;if(filters!==initialFilters.current)initialTarget.current=undefined;clear();if(scopes.length)void run(async s=>({page:await api.list(filters,session.csrfToken,s),selected:target?await api.action(target,"read",{},session.csrfToken,s):null}),v=>{initialTarget.current=undefined;setPage(v.page);if(v.selected)setRow(v.selected);});return()=>{active.current?.abort();epoch.current++;};
     // The parent remounts on session/CSRF changes; each filter is a fresh scoped page.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[filters]);

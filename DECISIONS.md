@@ -29,3 +29,7 @@ Retain the original 135 requirements and add INSTALL-01–12, bringing the regis
 ## Task/model specialization investigation — approved 8 November 2026
 
 Add RND-04/05 to the prior 147 requirements (149 total), retaining all existing scope. Compare one general local model with task specialists, and dense with sparse MoE, using current primary sources and reproducible task/hardware measurements. No architecture is preferred in advance; keep negative findings and adopt/defer/reject rationale. Multi-model routing implementation, weight downloads/experiments and production promotion remain separate steps. [Contract](docs/LLM_RESEARCH.md).
+
+## Scoped source answers — spec 053
+
+Begin local document answering with exact source quotations rather than unvalidated generated assertions. Model-disabled source search remains useful offline. Keep the local selector behind a default-disabled explicit model/digest configuration, current grants, two-phase audit and strict citation validation. This chooses an adapter protocol, not model weights, dense/MoE architecture, task-routing strategy or production activation. Free-form synthesis/conversation and real FR/ES/EN quality remain retained requirements.

@@ -8,7 +8,7 @@ The retained product scope includes an everyday MVP and later household, care, c
 
 See [architecture](ARCHITECTURE.md), [decisions](DECISIONS.md), [operations](OPERATIONS.md), [setup](SETUP.md) and [publication boundary](PUBLICATION.md).
 
-Specs 050/051 merged in [PR #2](https://github.com/LYF-FC/local-assistant-core/pull/2) and [PR #3](https://github.com/LYF-FC/local-assistant-core/pull/3). PR #3 main `3fe5cce93878deec2301bcb33051c239c057acee` passed all six jobs in run 42504016023. Current [spec 052](docs/PDF_OCR.md) adds explicit bounded uncertain OCR to that same lifecycle. Structured invoice fields, live adapters and operational acceptance remain open.
+Specs 050/051/052 merged through [PR #2](https://github.com/LYF-FC/local-assistant-core/pull/2), [PR #3](https://github.com/LYF-FC/local-assistant-core/pull/3) and [PR #4](https://github.com/LYF-FC/local-assistant-core/pull/4). PR #4 main `232dbc693a3f9aafcc477f638b99508ef560e8e4` passed all six jobs in run 42521890786. Current [spec 053](docs/DOCUMENT_ANSWERS.md) adds scoped source-backed questions, exact quotation answers and a default-disabled local selector. Real-model activation/quality, free-form conversation, structured invoice fields, live adapters and operational acceptance remain open.
 
 ## Configurable installations — scope extension
 

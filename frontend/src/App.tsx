@@ -65,7 +65,7 @@ export default function App() {
       </form>}
       {error && <p role="alert" className="error">{error}</p>}
       <p>Use Tasks and agenda to organize manual tasks, or Memory to inspect and update explicit entries.</p>
-      <div className="command"><input aria-label="Ask Butler" placeholder="Search or ask Butler…" disabled /><button disabled>Ask</button></div>
+      <p>Choose Document answers to ask about reviewed sources, or Documents to manage originals and review.</p>
     </section>
     {secure && session && !busy && <RecordsWorkspace key={session.csrfToken} session={session} onUnauthorized={() => setSession(null)} />}
   </main>;
