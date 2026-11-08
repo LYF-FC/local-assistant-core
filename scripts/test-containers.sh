@@ -15,12 +15,14 @@ export BUTLER_CI_CA_FILE="$BUTLER_CI_CA_DIR/root.crt"
 export COMPOSE_PROJECT_NAME=butler-ci
 export BUTLER_SPEECH_ENABLED=false
 compose() { docker compose -f infra/core/compose.yml "$@"; }
+archive_compose() { docker compose -f infra/core/compose.yml -f infra/core/document-archive.override.yml "$@"; }
 synthetic_compose() { docker compose -f infra/core/compose.yml -f infra/core/work-synthetic.override.yml "$@"; }
 review_compose() { docker compose -f infra/core/compose.yml -f infra/core/work-synthetic.override.yml -f infra/core/work-draft-review.override.yml -f infra/core/work-draft-confirmation.override.yml -f infra/core/work-context-preview.override.yml -f infra/core/work-synthetic-capture.override.yml -f infra/core/work-note-changes.override.yml -f infra/core/work-notes-interface.override.yml "$@"; }
 cleanup() {
   status=$?
   set +e
   if [[ "$status" != 0 ]]; then compose logs --no-color --tail 80; fi
+  archive_compose down --volumes --remove-orphans
   synthetic_compose down --volumes --remove-orphans
   rm -rf "$BUTLER_CI_CA_DIR"
   return "$status"
@@ -71,6 +73,14 @@ if [[ "${BUTLER_BROWSER_TESTS:-0}" == 1 ]]; then
     echo 'Runtime account unexpectedly accepted the privileged synthetic fixture' >&2; exit 1
   fi
   bash scripts/test-ci-browser.sh
+  # Separate opt-in archive phase, with a fresh bounded synthetic identity budget.
+  compose down --volumes --remove-orphans
+  archive_compose up -d --wait --wait-timeout 180
+  archive_compose run --rm -T --no-deps api python -m app.document_archive /var/lib/butler-document-archive
+  archive_compose run --rm -T migrate python - seed < scripts/browser-fixtures.py
+  archive_compose cp caddy:/data/caddy/pki/authorities/local/root.crt "$BUTLER_CI_CA_FILE"
+  BUTLER_DOCUMENT_ARCHIVE_BROWSER_TESTS=1 bash scripts/test-ci-browser.sh document-archive.spec.ts
+  archive_compose down --volumes --remove-orphans
   # Independent disposable acceptance phases must not consume one shared source's
   # 30-login budget as the suite grows. Preserve the real limiter; create a fresh
   # test stack rather than clearing counters, waiting or weakening authentication.

@@ -8,7 +8,7 @@ Implemented engineering includes HTTPS identity/session controls, explicit scope
 
 - [Setup](SETUP.md), [architecture](ARCHITECTURE.md), [security](SECURITY.md).
 - [Development](docs/DEVELOPMENT.md), [tests](docs/TESTING.md), [CI](docs/CI_COMPUTE.md).
-- [Document library](docs/DOCUMENT_LIBRARY.md), [tasks](docs/MANUAL_TASKS_AGENDA.md), [reminders](docs/TASK_REMINDERS.md).
+- [Document library](docs/DOCUMENT_LIBRARY.md), [optional local archive](docs/DOCUMENT_ARCHIVE.md), [tasks](docs/MANUAL_TASKS_AGENDA.md), [reminders](docs/TASK_REMINDERS.md).
 - [Full scope](docs/SCOPE.md), [feature register](docs/FEATURE_REGISTER.md), [MVP acceptance](docs/MVP_ACCEPTANCE.md), [roadmap](ROADMAP.md).
 - [Publication boundary](PUBLICATION.md), [validation state](docs/VALIDATION.md).
 

@@ -7,3 +7,5 @@ The retained product scope includes an everyday MVP and later household, care, c
 [Baseline verification](docs/VALIDATION.md) demonstrates synthetic engineering, while [readiness](docs/V0_1_READINESS.md) records remaining operational gates. All current development uses synthetic data. Existing private repositories/deployments stay unchanged; tested upstream releases may be adopted only through separately reviewed private conversion/backup/rehearsal/rollback. No real integration, production activation, private-data migration or outbound AI is authorized by this planning work.
 
 See [architecture](ARCHITECTURE.md), [decisions](DECISIONS.md), [operations](OPERATIONS.md), [setup](SETUP.md) and [publication boundary](PUBLICATION.md).
+
+Current branch work: [spec 050 local original archive](docs/DOCUMENT_ARCHIVE.md) adds explicit private disk copies and cleanup obligations while retaining authoritative DB originals and bounded text/Markdown intake. PDF/OCR and live adapters remain open. Scope planning was merged in [PR #1](https://github.com/LYF-FC/local-assistant-core/pull/1); this feature is not merged or host-accepted yet.

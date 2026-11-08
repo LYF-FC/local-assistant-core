@@ -82,3 +82,11 @@ export async function fileValues(file:File):Promise<{filename:string;original_ba
   let raw=""; for (const byte of bytes) raw+=String.fromCharCode(byte);
   return {filename:file.name,original_base64:btoa(raw)};
 }
+
+export type ArchiveState = {schema_version:1;document_id:string;revision:number;state:"disabled"|"unarchived"|"partial"|"verified";versions:number;verified_versions:number;verified_bytes:number;checked_at:string};
+export async function archive(row:Document,copy:boolean,csrf:string,signal:AbortSignal):Promise<ArchiveState> {
+  const v=await request(`/${row.id}/archive${copy?"":"/status"}`,{scope:row.scope,expected_revision:row.revision},csrf,signal);
+  if (!object(v)||v.schema_version!==1||v.document_id!==row.id||v.revision!==row.revision||!integer(v.versions)||v.versions!==row.revision||v.versions>50||!Number.isSafeInteger(v.verified_versions)||(v.verified_versions as number)<0||(v.verified_versions as number)>v.versions||!Number.isSafeInteger(v.verified_bytes)||(v.verified_bytes as number)<0||(v.verified_bytes as number)>v.versions*131072||!date(v.checked_at)||!["disabled","unarchived","partial","verified"].includes(v.state as string)) invalid();
+  if ((v.state==="verified")!==(v.verified_versions===v.versions)||(["disabled","unarchived"].includes(v.state as string)&&v.verified_versions!==0)||(v.verified_versions===0?v.verified_bytes!==0:(v.verified_bytes as number)<(v.verified_versions as number))) invalid();
+  return v as ArchiveState;
+}

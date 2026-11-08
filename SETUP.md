@@ -11,3 +11,5 @@ Normal updates use explicit reviewed migrations and role setup; backup first. Do
 AI/speech installers are optional, disabled development helpers. No model is installed as a publication side effect. Preserve non-commercial restrictions for any CC BY-NC speech model and review other model licenses separately.
 
 Online migrations also reject an existing scope table without the generic namespace before executing migration DDL. This is a refusal, not a conversion tool. Review any offline SQL manually; publishing code does not authorize changes to an existing installation.
+
+The [optional original archive](docs/DOCUMENT_ARCHIVE.md) uses an explicitly selected development overlay and an empty private volume initialized once. Base setup stays disabled. Provision only a new isolated synthetic stack; do not attach an existing private NAS/share or deployment. PostgreSQL originals remain authoritative and parser/production gates stay closed.
