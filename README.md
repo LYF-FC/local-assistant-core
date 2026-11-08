@@ -11,6 +11,7 @@ Implemented engineering includes HTTPS identity/session controls, explicit scope
 - [Document library](docs/DOCUMENT_LIBRARY.md), [optional local archive](docs/DOCUMENT_ARCHIVE.md), [tasks](docs/MANUAL_TASKS_AGENDA.md), [reminders](docs/TASK_REMINDERS.md).
 - [Full scope](docs/SCOPE.md), [feature register](docs/FEATURE_REGISTER.md), [MVP acceptance](docs/MVP_ACCEPTANCE.md), [roadmap](ROADMAP.md).
 - [Planned configurable installations](docs/CONFIGURABLE_INSTALLATIONS.md): onboarding, private configuration and feature controls are scope, not delivered setup.
+- [Planned model research](docs/LLM_RESEARCH.md): task-specific local models and dense/MoE evaluation; no model selected.
 - [Publication boundary](PUBLICATION.md), [validation state](docs/VALIDATION.md).
 
 Run `make check` using Python 3.12, uv 0.13.4 and Node 22. Dependencies are locked. Real database tests need an explicitly disposable `butler_test` database; container acceptance uses separate synthetic stacks. Never supply real household/employer records or production secrets for tests.

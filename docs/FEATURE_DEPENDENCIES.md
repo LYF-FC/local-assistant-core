@@ -126,6 +126,8 @@ Companion to the [complete register](FEATURE_REGISTER.md). These are prerequisit
 | RND-01 | Service/version inventory, manifests, licenses, advisories, evidence and exception expiry |
 | RND-02 | RND-01; sourced benchmarks; migration/restore/rollback review |
 | RND-03 | Safe public research; deduplication, severity and configured budgets/cadence |
+| RND-04 | RND-01/02; synthetic task datasets and executable baselines; intended hardware/quality/resource budgets; CORE-06/07/10; INSTALL-02/03; workspace isolation |
+| RND-05 | RND-04 evaluation protocol; dated primary model/runtime/license sources; total versus active weights, context/KV/quantization and memory/concurrency measurements |
 | DISC-01 | Explicit scoped memory, correctable preferences and feedback |
 | DISC-02 | DISC-01; safe collectors, checkpoints, retry and notification policy |
 | DISC-03 | Separate household/professional rights, privacy/license/quality evaluation |

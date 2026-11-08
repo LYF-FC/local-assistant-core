@@ -4,7 +4,7 @@ Local Assistant Core is a local-first assistant for private/shared household and
 
 ## Reading and authority
 
-- [Complete feature register](FEATURE_REGISTER.md): all 147 retained references, bounded evidence and remaining acceptance.
+- [Complete feature register](FEATURE_REGISTER.md): all 149 retained references, bounded evidence and remaining acceptance.
 - [Dependencies](FEATURE_DEPENDENCIES.md): prerequisites for every register ID.
 - [MVP acceptance](MVP_ACCEPTANCE.md): measurable everyday outcomes and release gates.
 - [Reconciliation](SCOPE_RECONCILIATION.md): overlaps, supersessions, alternatives and unresolved decisions.
@@ -36,7 +36,7 @@ This is a prerequisite for private installation adoption and a usable reusable-i
 | Professional workflows | Prospect/client/career/shop pipelines, approved outreach, project continuity, debriefs, meetings, reporting/advisory and authorized connectors under strict Work isolation | WORK-01–07; WCOMP-01–04 |
 | Creative production | Local metadata/sidecars/catalogues, approved references, scoped style memory, first assemblies, reviewable editing/audio/color suggestions, validated correction learning and versioned workflows | WORK-08–10; CREATIVE-01–07; CREATIVE-X01 |
 | Financial planning | Verified consolidation, goals, long-term trajectories, policy/portfolio oversight, deterministic scenarios/stress tests, structure/property/cost/financing research, opportunity/decision continuity and review packs | FIN-01–17 |
-| Platform evolution | Optional licensed voice, per-service lifecycle research, bounded Discovery collectors/digests, privacy-first aggregate mail-authentication monitoring and separately governed external-model research/gateway | CORE-12; RND-01–03; DISC-01–03; DMARC-01–02; AI-01–03 |
+| Platform evolution | Optional licensed voice, per-service lifecycle research, bounded Discovery collectors/digests, privacy-first aggregate mail-authentication monitoring and separately governed external-model research/gateway | CORE-12; RND-01–05; DISC-01–03; DMARC-01–02; AI-01–03 |
 | Supported service and measured scale | Accepted reliability/capacity, access review, maintained backups, independent restoration, upgrade/rollback and only measured worker/standby scaling | PLATFORM-01–04; MVP-01–05 |
 
 ## Shared contracts and exclusions
@@ -48,3 +48,7 @@ Records carry stable IDs, owner/workspace, source, timestamp/timezone, version, 
 Household scopes are `household_shared`, `member_a_private`, `member_b_private`, `parents_child`, `member_business`, `finance_private`, `technical_admin`. Work uses the separate `work_private` registry, with independent grants and recovery controls; it is not an eighth household scope. Fresh generic schemas do not authorize conversion of existing private data.
 
 Autonomous transfers/trading, medical decisions, legal commitments and unapproved high-impact communications remain excluded from action authority. No silent cloud-model fallback, general production shell or automatic media monitoring. External AI stays disabled; any future exception requires the constitution's scoped policy and separate authorization. Real calendar/mail/NAS/messaging/Work sources, production activation and private-data migration each need separate authorization. Development and evidence use synthetic data only.
+
+## Task-specific LLM and dense/MoE investigation
+
+RND-04/05 add [model research](LLM_RESEARCH.md) within service R&D and product innovation. Investigate whether conversation, coding, cited answers and extraction benefit from different local models, comparing against a single general-model/deterministic baseline. Separately compare dense and sparse MoE architectures on actual supported hardware, measuring quality, memory, context, speed, concurrency, switching and operational cost. Application task routing and a model's internal experts are different mechanisms. No specialist model, MoE runtime, download, remote fallback or deployment is selected by this scope. Use synthetic bounded experiments and existing feature/configuration/permission boundaries; multiple models are not an unconditional MVP requirement.
