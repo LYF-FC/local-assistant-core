@@ -15,3 +15,11 @@ The MVP has not been released or accepted. [Public baseline CI](VALIDATION.md) p
 Use the [MVP acceptance matrix](MVP_ACCEPTANCE.md) for closure evidence and the [roadmap](../ROADMAP.md) for dependency-aware batches. Release gates require full exact-main CI, security/key/recovery runbooks, independent monitoring and measured host acceptance. Synthetic development does not activate a provider or production. Existing private installations remain unchanged until separate migration/adoption authorization.
 
 Spec 050 branch work adds optional local disk copies with immutable cleanup obligations, byte verification and retry/forgetting; it retains authoritative DB originals. See [archive limits](DOCUMENT_ARCHIVE.md). This does not close PDF/OCR, validated Synology, clean-host/key/older-backup or whole-MVP gates; merged delivery and host acceptance remain pending.
+
+## Configurable-installation acceptance still open
+
+INSTALL-01–12 are approved planning scope. Secure onboarding, flexible household identities, private configuration/templates, feature activation/disable enforcement, cross-installation isolation and update/migration acceptance remain unimplemented/unaccepted by this change. Complete them before reusable private adoption. See [contract and scenarios](CONFIGURABLE_INSTALLATIONS.md#acceptance).
+
+## Task/model research still open
+
+RND-04/05 are planned investigation, not measured quality, selected weights or delivered routing. Define current hardware/task/license/budget assumptions and compare general/specialist dense/MoE candidates before recommendations. No single-model or multi-model production acceptance follows from the scope entry. See [research acceptance](LLM_RESEARCH.md#plan-tasks-and-acceptance).

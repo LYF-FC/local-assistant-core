@@ -1,6 +1,6 @@
 # Roadmap
 
-The [scope](docs/SCOPE.md), [135-entry register](docs/FEATURE_REGISTER.md), [dependencies](docs/FEATURE_DEPENDENCIES.md) and [MVP acceptance contract](docs/MVP_ACCEPTANCE.md) define the retained product scope. This page orders delivery; brevity here does not remove requirements. Historical versions are dependency stages, not dates, PR quotas or evidence of a released MVP. Version fields of 0.1.0 in package manifests do not establish release acceptance.
+The [scope](docs/SCOPE.md), [149-entry register](docs/FEATURE_REGISTER.md), [dependencies](docs/FEATURE_DEPENDENCIES.md) and [MVP acceptance contract](docs/MVP_ACCEPTANCE.md) define the retained product scope. This page orders delivery; brevity here does not remove requirements. Historical versions are dependency stages, not dates, PR quotas or evidence of a released MVP. Version fields of 0.1.0 in package manifests do not establish release acceptance.
 
 ## Delivery Kanban
 
@@ -15,6 +15,16 @@ The [scope](docs/SCOPE.md), [135-entry register](docs/FEATURE_REGISTER.md), [dep
 | Done | Documentation scope reconciliation delivered by [PR #1](https://github.com/LYF-FC/local-assistant-core/pull/1). The imported baseline has independent [engineering evidence](docs/VALIDATION.md), not inherited merged PR history or production acceptance. |
 
 Add a verified delivering public PR link beside each completed checkbox only after merge. Keep green open PRs In progress. Host/provider acceptance and release certification remain separate gates.
+
+## Reusable-installation milestone
+
+Owner-approved INSTALL-01–12 add [independent installations, onboarding and feature lifecycle](docs/CONFIGURABLE_INSTALLATIONS.md). Plan the identity/configuration contracts early, implement them in coherent reviewed increments and complete them before any private-data conversion or reusable-installation release. This does not block independent bounded document work or grant production readiness. Keep all existing domain scope; no feature is dropped because it is optional.
+
+| Stage | Exit gate |
+|---|---|
+| Configuration and identity design | Versioned private config, stable software keys, installation-local identities, household membership/permission migration and dependency catalogue specified. |
+| Onboarding and activation | Secure owner/member provisioning; feature/secret readiness; server-side enable/disable and worker reconciliation; reusable safe templates. |
+| Independent adoption and updates | Two isolated synthetic households pass lifecycle, export/restore and upgrade tests; existing-installation conversion separately rehearsed/approved with rollback. |
 
 ## Substantial MVP batches
 
@@ -42,8 +52,12 @@ Operational, privacy and recovery contracts begin in batch 1 and close across al
 | Professional/research (v0.7) | WORK-01–07, WCOMP-01–04; FIN-12/15 manual research; expanded RND/DISC | Strict work/family isolation and independent recovery before real sources; approved outreach, prospect/client/career/shop/project continuity and sourced meeting/reporting/advisory. Manual opportunity/property pipelines and approved creative references may begin here. |
 | Creative (v0.8) | WORK-08–10, CREATIVE-01–07, CREATIVE-X01 | Licensed local media, scoped approved style/reference records, verified editing/interchange route, clip organization, then first assemblies, then supervised correction/audio/color learning. Originals/linked media/project versions remain recoverable; creator approves export; sending/publication needs separate authority. |
 | Advanced finance/assistance (v0.9) | FIN-01–17 beyond MVP basics; CORE-12 voice | Verified imports, deterministic reproducible long-term plans/policy/portfolio/stress scenarios, property costing/financing, opportunity review and professional review packs. Voice begins with opt-in push-to-talk and license/quality gates; wake word is optional later. No autonomous money movement or commitments. |
-| Governed platform work (cross-cutting) | RND-01–03, DISC-01–03, DMARC-01/02, AI-01–03 | Service lifecycle research is distinct from product Discovery. Bounded mail-authentication reports do not authorize mailbox/DNS changes. External-model research/gateway remains disabled until separately authorized policy, payload, retention, budget and denial gates pass. |
+| Governed platform work (cross-cutting) | RND-01–05, DISC-01–03, DMARC-01/02, AI-01–03 | Service lifecycle research is distinct from product Discovery. Bounded mail-authentication reports do not authorize mailbox/DNS changes. External-model research/gateway remains disabled until separately authorized policy, payload, retention, budget and denial gates pass. |
 | Supported service (v1.0) | Accepted scope plus PLATFORM-02/03 | Measured reliability/capacity, access review, documented maintenance/upgrade/rollback and independent recovery. MVP can be adopted through reviewed releases before the complete long-term vision. |
 | Measured scale (v1.1+) | Additional workers/standby only when justified | Queue age, latency, memory/disk pressure or recovery needs; fencing/promotion/failover tests. No cluster requirement or high-availability claim from extra workers alone. |
 
 See [reconciliation](docs/SCOPE_RECONCILIATION.md) for duplicates, superseded planning and unresolved feasibility. No live integration, production deployment, private-data conversion or auto-merge is authorized by this roadmap.
+
+## Model research alongside local-answer design
+
+RND-04/05 investigate task-specialized models and dense/MoE trade-offs under the [research contract](docs/LLM_RESEARCH.md). Start with hardware/task/quality budgets and a general-model baseline; evaluate a small current licensed shortlist only through bounded approved experiments. Report useful quality/resource gains, swapping/concurrency costs, isolation/refusal and deterministic availability. Adopt/defer/reject remains open; do not add a multi-model platform or MoE dependency from a paper or advertised active-parameter count alone. Coordinate with CORE-06/07/10, per-service R&D, product Discovery and INSTALL-02/03/10 without delaying the MVP for unproven specialization.

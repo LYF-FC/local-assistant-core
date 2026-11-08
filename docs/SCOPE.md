@@ -4,7 +4,7 @@ Local Assistant Core is a local-first assistant for private/shared household and
 
 ## Reading and authority
 
-- [Complete feature register](FEATURE_REGISTER.md): all 135 retained references, bounded evidence and remaining acceptance.
+- [Complete feature register](FEATURE_REGISTER.md): all 149 retained references, bounded evidence and remaining acceptance.
 - [Dependencies](FEATURE_DEPENDENCIES.md): prerequisites for every register ID.
 - [MVP acceptance](MVP_ACCEPTANCE.md): measurable everyday outcomes and release gates.
 - [Reconciliation](SCOPE_RECONCILIATION.md): overlaps, supersessions, alternatives and unresolved decisions.
@@ -17,6 +17,14 @@ The [constitution](../.specify/memory/constitution.md) and current explicit deci
 
 Two adult identities use explicit shared/private spaces, controlled memory, local text conversation in French/Spanish/English and a responsive desktop/mobile interface over private access. A user sees an agenda/briefing, asks about an authorized document, adds a deterministic reminder and forwards an invoice. Local extraction proposes filing; human review confirms the result; original references and audit survive restart; failures support safe retry. Include calendar read/reconciliation, general recurring routines, one explicitly authorized external notification path, a dedicated inbox, bounded PDF/OCR, durable archive/search, scoped local-model cited answers, basic manual financial goal/source capture, operational inventory/status and tested clean-host recovery. Calendar writes follow separate ownership/conflict acceptance. Full acceptance is still open.
 
+## Reusable private installations — owner-approved extension
+
+[INSTALL-01–12](CONFIGURABLE_INSTALLATIONS.md) add reusable household installations, private versioned configuration, secure onboarding, stable installation-local identities, credential provisioning, safe templates, feature activation/dependencies, tested updates and explicit legacy conversion. Each household supplies its own reviewed hardware and keeps its database, records, secrets, storage and backups independent. No public shared-data service is introduced.
+
+Feature controls are not permission grants: identity, authorization, audit and recovery remain mandatory foundations. Disabling a feature stops its active behavior safely without silently deleting records or bypassing export/recovery obligations. Current fixed example scopes remain implemented behavior until a separately reviewed migration supports configurable household members; this planning addition changes no schema or runtime.
+
+This is a prerequisite for private installation adoption and a usable reusable-installation release. Design begins before new hard-coded household assumptions spread; bounded independent document work can continue. Complete onboarding, migration and lifecycle acceptance before converting existing private data. See the [acceptance contract](CONFIGURABLE_INSTALLATIONS.md#acceptance).
+
 ## Retained later scope
 
 | Stage | Retained outcomes | Register families |
@@ -28,7 +36,7 @@ Two adult identities use explicit shared/private spaces, controlled memory, loca
 | Professional workflows | Prospect/client/career/shop pipelines, approved outreach, project continuity, debriefs, meetings, reporting/advisory and authorized connectors under strict Work isolation | WORK-01–07; WCOMP-01–04 |
 | Creative production | Local metadata/sidecars/catalogues, approved references, scoped style memory, first assemblies, reviewable editing/audio/color suggestions, validated correction learning and versioned workflows | WORK-08–10; CREATIVE-01–07; CREATIVE-X01 |
 | Financial planning | Verified consolidation, goals, long-term trajectories, policy/portfolio oversight, deterministic scenarios/stress tests, structure/property/cost/financing research, opportunity/decision continuity and review packs | FIN-01–17 |
-| Platform evolution | Optional licensed voice, per-service lifecycle research, bounded Discovery collectors/digests, privacy-first aggregate mail-authentication monitoring and separately governed external-model research/gateway | CORE-12; RND-01–03; DISC-01–03; DMARC-01–02; AI-01–03 |
+| Platform evolution | Optional licensed voice, per-service lifecycle research, bounded Discovery collectors/digests, privacy-first aggregate mail-authentication monitoring and separately governed external-model research/gateway | CORE-12; RND-01–05; DISC-01–03; DMARC-01–02; AI-01–03 |
 | Supported service and measured scale | Accepted reliability/capacity, access review, maintained backups, independent restoration, upgrade/rollback and only measured worker/standby scaling | PLATFORM-01–04; MVP-01–05 |
 
 ## Shared contracts and exclusions
@@ -40,3 +48,7 @@ Records carry stable IDs, owner/workspace, source, timestamp/timezone, version, 
 Household scopes are `household_shared`, `member_a_private`, `member_b_private`, `parents_child`, `member_business`, `finance_private`, `technical_admin`. Work uses the separate `work_private` registry, with independent grants and recovery controls; it is not an eighth household scope. Fresh generic schemas do not authorize conversion of existing private data.
 
 Autonomous transfers/trading, medical decisions, legal commitments and unapproved high-impact communications remain excluded from action authority. No silent cloud-model fallback, general production shell or automatic media monitoring. External AI stays disabled; any future exception requires the constitution's scoped policy and separate authorization. Real calendar/mail/NAS/messaging/Work sources, production activation and private-data migration each need separate authorization. Development and evidence use synthetic data only.
+
+## Task-specific LLM and dense/MoE investigation
+
+RND-04/05 add [model research](LLM_RESEARCH.md) within service R&D and product innovation. Investigate whether conversation, coding, cited answers and extraction benefit from different local models, comparing against a single general-model/deterministic baseline. Separately compare dense and sparse MoE architectures on actual supported hardware, measuring quality, memory, context, speed, concurrency, switching and operational cost. Application task routing and a model's internal experts are different mechanisms. No specialist model, MoE runtime, download, remote fallback or deployment is selected by this scope. Use synthetic bounded experiments and existing feature/configuration/permission boundaries; multiple models are not an unconditional MVP requirement.

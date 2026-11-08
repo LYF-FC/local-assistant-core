@@ -18,3 +18,11 @@ Optional [PDF ingestion operations](docs/PDF_INGESTION.md) require a separately 
 ## Explicit bounded OCR — spec 052
 
 The optional PDF worker now includes fixed OCR language models. Failed/over-limit OCR retains the source and creates an unreviewed failure version; choose text extraction or explicit OCR again after checking the cause. Do not treat recognized names/dates/numbers as authoritative. Back up build/model provenance. Migration 0025 refuses downgrade with retained OCR content/snapshots; normal managed forgetting scrubs that metadata, while migration 0024 still protects extracted-operation history. See [limits and recovery](docs/PDF_OCR.md).
+
+## Planned installation operations
+
+INSTALL-01–12 require independent per-household configuration/secrets/records/backups, auditable feature changes, safe worker/dependency shutdown, upgrade compatibility and rollback. Disabling never abandons bound data-cleanup obligations. Versioned template exports omit private data and secret values by default. This is scope only; no production onboarding or toggle interface is delivered. Existing operations and migration refusal remain in force. See [installation lifecycle](docs/CONFIGURABLE_INSTALLATIONS.md).
+
+## Planned model research and operating budgets
+
+RND-04/05 require explicit task/hardware/budget manifests, runtime/weight/quantization provenance, memory/context limits, cold/warm/switching/concurrency measurements and honest failures before model recommendations. No automatic download, background benchmark schedule, model replacement or expansion of tool/network privileges follows from this planning change. Deterministic jobs remain available during inference outages. See [model research](docs/LLM_RESEARCH.md).
