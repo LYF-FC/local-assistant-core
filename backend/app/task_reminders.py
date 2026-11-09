@@ -92,14 +92,16 @@ def document(row):
     }
 
 
-def record_event(db, user, row, operation, *, system=False, before=None):
+def record_event(db, user, row, operation, *, system=False, before=None, routine_schedule=False):
+    if routine_schedule and (not system or operation != "scheduled"):
+        raise ValueError("Routine authorization applies only to initial scheduling")
     db.flush()
     db.add(
         TaskReminderEvent(
             reminder_id=row.id,
             owner_id=row.owner_id,
             revision=row.revision,
-            actor_id=None if system else user.id,
+            actor_id=user.id if routine_schedule or not system else None,
             operation=operation,
             recorded_at=row.updated_at,
             snapshot=document(row),
@@ -109,7 +111,11 @@ def record_event(db, user, row, operation, *, system=False, before=None):
         AuditEvent(
             environment=settings.env,
             initiator_type="system" if system else "human",
-            initiator_id="reminder_worker" if system else str(user.id),
+            initiator_id="routine_worker"
+            if routine_schedule
+            else "reminder_worker"
+            if system
+            else str(user.id),
             scope_key=row.scope_key,
             event_type="reminders." + operation,
             entity_type="task_reminder",

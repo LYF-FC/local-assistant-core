@@ -224,6 +224,45 @@ services:
     - -m
     - app.reminder_worker
     - --loop
+  routine_worker:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    depends_on:
+      role_setup:
+        condition: service_completed_successfully
+    security_opt:
+    - no-new-privileges:true
+    read_only: true
+    cap_drop:
+    - ALL
+    tmpfs:
+    - /tmp
+    pids_limit: 128
+    mem_limit: 512m
+    environment:
+      BUTLER_ENV: ${BUTLER_ENV:-development}
+      BUTLER_APP_VERSION: 0.1.0-dev
+      BUTLER_POSTGRES_DB: ${BUTLER_POSTGRES_DB:-butler}
+      BUTLER_POSTGRES_USER: butler_runtime
+      BUTLER_POSTGRES_PASSWORD: ${BUTLER_RUNTIME_PASSWORD:?BUTLER_RUNTIME_PASSWORD is required}
+      BUTLER_POSTGRES_HOST: postgres
+      BUTLER_POSTGRES_PORT: '5432'
+      BUTLER_OLLAMA_URL: ${BUTLER_OLLAMA_URL:-http://host.docker.internal:11434}
+      BUTLER_SPEECH_ENABLED: ${BUTLER_SPEECH_ENABLED:-false}
+      BUTLER_SPEECH_MODEL: ${BUTLER_SPEECH_MODEL:-phonon:40m-multilingual}
+      BUTLER_SPEECH_VOICE: ${BUTLER_SPEECH_VOICE:-default}
+      BUTLER_AUTH_ORIGIN: ${BUTLER_AUTH_ORIGIN:-https://localhost:8443}
+    profiles:
+    - routines
+    restart: unless-stopped
+    networks:
+    - data
+    command:
+    - python
+    - -m
+    - app.routine_worker
+    - --loop
 
 volumes:
   postgres_data: null

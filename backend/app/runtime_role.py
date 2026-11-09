@@ -125,6 +125,7 @@ def configure(connection, password: str) -> None:
             "memory_records",
             "manual_tasks",
             "calendar_sources",
+            "routines",
             "document_records",
             "task_reminders",
             "reminder_preferences",
@@ -146,6 +147,16 @@ def configure(connection, password: str) -> None:
         )
         cursor.execute(
             sql.SQL("GRANT SELECT, INSERT ON public.task_reminder_events TO {}").format(
+                sql.Identifier(ROLE)
+            )
+        )
+        cursor.execute(
+            sql.SQL(
+                "GRANT SELECT, INSERT ON public.routine_revisions, public.routine_occurrences TO {}"
+            ).format(sql.Identifier(ROLE))
+        )
+        cursor.execute(
+            sql.SQL("GRANT UPDATE (snapshot) ON public.routine_revisions TO {}").format(
                 sql.Identifier(ROLE)
             )
         )

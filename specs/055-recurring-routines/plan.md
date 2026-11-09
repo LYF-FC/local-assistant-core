@@ -1,0 +1,9 @@
+# Plan / analysis
+
+Reuse specs 046/047 structured tasks, owner-private reminders, current-grant locking, metadata events and quiet/day budgets. ORG-03 is general recurrence, not spec 054 imported recurrence identity; external messaging/CORE-13 and live calendar stay separate. Retain all 149 scope IDs and INSTALL/RND gates. Fixed member scopes are the existing schema, not a configurable-family-size promise.
+
+Add routine current/sealed revision and immutable occurrence-receipt tables. Precompute bounded finite IANA plans behind a shared preview/save resolver; worker commits current authorization, cursor, task/history/reminder/receipt and system audit in one transaction. No provider effect/lease or parallel execution platform needed for an atomic local DB effect. Parent/history SQL guards, unique local-date receipts and restricted grants preserve identity/replay boundaries. Add optional data-network-only worker profile, never activate a private service.
+
+Build strict ephemeral UI/client for preview/create/correct/pause/resume, current task status in receipts, owner history/download and explicit aggregate forgetting. Reuse manual task/reminder hooks; preserve existing future-reminder SQL guard. Validate focused cases while implementing, then one required complete local sequence with actual PG/migration/recovery and HTTPS evidence. Backend/security/schema/worker changes require full CI under current selector. Record PR evidence without evidence-only pushes; after push end turn with expected CI, as requested.
+
+Constitution: deterministic records/current grants/audit, local-only data, explicit future scheduling and bounded worker availability. Aggregate forget covers copied generated task text. Protected logical backup includes new tables without external storage/keys. Restored intent requires stopped consumers/current authority review. No production, real-account integration, model activation, external send or private-data conversion.

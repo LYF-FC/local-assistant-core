@@ -16,6 +16,7 @@ from app.document_routes import router as document_router
 from app.job_routes import router as job_router
 from app.memory_routes import router as memory_router
 from app.reminder_routes import router as reminder_router
+from app.routine_routes import router as routine_router
 from app.task_routes import router as task_router
 from app.work_routes import router as work_router
 
@@ -46,6 +47,7 @@ def create_app() -> FastAPI:
     application.include_router(job_router)
     application.include_router(memory_router)
     application.include_router(task_router)
+    application.include_router(routine_router)
     application.include_router(calendar_router)
     application.include_router(document_router)
     application.include_router(answer_router)

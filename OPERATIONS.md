@@ -34,3 +34,7 @@ Document questions and source bundles are ephemeral: no question/prompt/answer c
 ## Calendar and briefing — spec 054
 
 Calendar sources retain last good bounded windows while offline/failed, expose capture age/coverage and refuse conflicting updates atomically. Source/history quotas pause new changes without blocking explicit forget. Normal logical backups include current/revision payloads; restore fixtures verify recurrence/zone provenance and forgotten scrubbing. Downgrade removes these tables and requires reviewed protected backup/rollback. Event text/UIDs/cursors and briefing content stay out of audit/logs. See [operator limits](docs/CALENDARS.md).
+
+## Recurring routines — spec 055
+
+Routine and reminder consumers remain independently opt-in; the base stack does not start either. Generation uses at most 100 routines/pass with one task each, current grants, atomic cursor/receipt/audit and no model. Counts-only failure output preserves private text. Stop consumers for migration/restore and review restored intent before restart; old backups can replay later-cancelled intent. New logical recovery sentinels verify paused plans, task/reminder lineage and forgotten scrubbing. [Limits/rollback](docs/RECURRING_ROUTINES.md).

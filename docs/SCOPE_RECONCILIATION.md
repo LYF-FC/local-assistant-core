@@ -66,3 +66,7 @@ Spec 053 extends literal document retrieval into a complete bounded question/evi
 ## Calendar and briefing — spec 054
 
 Spec 054 extends spec 046's manual agenda with a normalized calendar read boundary and current confirmed memory references. Historical spec 007 is a planned calendar/task/notification boundary, not evidence of an already delivered connector; its requirements remain retained. ORG-01/MVP-02 overlap in integrity acceptance, not duplicate features to remove. ORG-03 recurring delivery is distinct from recurring occurrence identity; ORG-05 optional mirror and calendar writes remain later reviewed extensions. Full needs/upcoming-action briefing and dashboard remain open. No original requirement is superseded by the bounded manual/synthetic fallback. All 149 IDs, INSTALL/RND scope and private adoption restrictions remain.
+
+## Recurring routines — spec 055
+
+ORG-03 general recurring intent/completion is distinct from ORG-01/spec 054 imported recurrence identity. Spec 055 reuses manual tasks (046) and private in-app scheduling/delivery policies (047), rather than creating duplicate authoritative tasks, completion or notification stores. New routine/local-date receipts preserve generation lineage. Its finite daily/weekly rules do not supersede monthly/exception/calendar/delegated extensions, external notification/CORE-13 or INSTALL feature-disable lifecycle. Full 149-entry scope remains; private adoption, actual providers and independent clean-host recovery retain separate acceptance.

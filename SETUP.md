@@ -35,3 +35,7 @@ Base document answers use source-only mode and never contact a model. The explic
 ## Calendar and briefing — spec 054
 
 Use Calendar and briefing with synthetic normalized JSON as described in [calendar guide](docs/CALENDARS.md). Existing migrations/role setup include 0026; no calendar credential, provider endpoint, parser dependency, background poller or model is configured. Do not supply real accounts/data or alter an existing installation from this development batch.
+
+## Recurring routines — spec 055
+
+Existing migration/runtime-role setup now includes 0027 and the optional `routines` profile. The development UI previews finite plans and requires explicit future-task/private-reminder authorization; saving never starts a service. No credentials, provider or real deployment configuration is added. Review [routine guide](docs/RECURRING_ROUTINES.md) before any separately authorized update/activation; do not alter a private installation from this development batch.

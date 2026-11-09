@@ -18,4 +18,8 @@ The shared core is intended for independent households, each owning its configur
 
 RND-04/05 investigate task-specific local models and dense-versus-MoE trade-offs against measured single-model baselines. Different conversation/coding/document tasks can be evaluated independently; selection preserves current permissions and local-first isolation. See [contract](docs/LLM_RESEARCH.md). Research is approved; no runtime model or routing feature is delivered.
 
-Spec 054 develops [bounded calendar snapshots and daily briefing](docs/CALENDARS.md) using synthetic complete windows, explicit recurrence identity, timezone/coverage/conflict reconciliation and current task/memory references. Live calendar, full dashboard/needs briefing and installation configuration remain open.
+Merged [PR #8](https://github.com/LYF-FC/local-assistant-core/pull/8) delivers spec 054: [bounded calendar snapshots and daily briefing](docs/CALENDARS.md) using synthetic complete windows, explicit recurrence identity, timezone/coverage/conflict reconciliation and current task/memory references. Live calendar, full dashboard/needs briefing and installation configuration remain open.
+
+Spec 055 develops [finite recurring routines](docs/RECURRING_ROUTINES.md), atomic task/private-reminder generation and current completion/lifecycle history. External notification, calendar coupling, full recurrence and operational/installation acceptance remain open.
+
+PR #8 main `0324d0002e970fb097df509a0377fe53c3ffeae8` passed all six jobs in run 42593958307. This is engineering evidence, not provider/host/MVP acceptance.
