@@ -106,3 +106,40 @@ def export(
             'attachment; filename="butler-invoice-history-v1.json"'
         )
     return response
+
+
+@router.post("/{identifier}/plan")
+def plan(
+    identifier: UUID, body: invoices.Plan, request: Request, db: Annotated[Session, Depends(get_db)]
+):
+    return execute(
+        db, request, lambda token, csrf: invoices.operate(db, token, csrf, identifier, body, "plan")
+    )
+
+
+@router.post("/{identifier}/approve_plan")
+def approve_plan(
+    identifier: UUID,
+    body: invoices.ApprovePlan,
+    request: Request,
+    db: Annotated[Session, Depends(get_db)],
+):
+    return execute(
+        db,
+        request,
+        lambda token, csrf: invoices.operate(db, token, csrf, identifier, body, "approve_plan"),
+    )
+
+
+@router.post("/{identifier}/withdraw_plan")
+def withdraw_plan(
+    identifier: UUID,
+    body: invoices.Expected,
+    request: Request,
+    db: Annotated[Session, Depends(get_db)],
+):
+    return execute(
+        db,
+        request,
+        lambda token, csrf: invoices.operate(db, token, csrf, identifier, body, "withdraw_plan"),
+    )

@@ -25,3 +25,7 @@ The separately provisioned [private local archive](DOCUMENT_ARCHIVE.md) now prov
 ## Invoice field review — spec 056
 
 [Spec 056](INVOICE_REVIEW.md) extends the earlier library boundary with invoice-field candidates, explicit human decisions and scoped duplicate hints. The original source/review/export/forget contracts remain authoritative; document forgetting now also scrubs derived invoice history/keys atomically. Earlier no-invoice statements describe the prior library increment. Mail intake, email provenance, filing and full invoice acceptance remain open.
+
+## Reviewed invoice filing plans — spec 057
+
+[Spec 057](INVOICE_FILING_PLANS.md) adds source-bound logical filing plans within the invoice aggregate. It preserves original bytes and current-source authority without adding a file destination, mail source or executor. Aggregate document forgetting also scrubs plan history through existing invoice forgetting.

@@ -41,3 +41,7 @@ Finite daily/weekly IANA plans, sealed routine history and unique local-date rec
 ## Invoice field review — spec 056
 
 Two protected invoice current/history tables derive only from existing reviewed document revisions. Fixed bounded label extraction proposes six fields; explicit human decisions and source-line/page/hash evidence remain separate from suggestions. Current-source drift withholds stale values/match keys. Scoped read-only duplicates use exact bytes or human-reviewed issuer/number; creator authority and metadata audit commit protect all release paths. Aggregate document forgetting atomically scrubs derived history/keys. No new worker, model, network adapter or original store. See [contract](docs/INVOICE_REVIEW.md).
+
+## Reviewed invoice filing plans — spec 057
+
+An optional versioned plan extends the invoice aggregate and sealed revision snapshots. Deterministic bounded logical folder/name suggestions and manual alternatives share current owner/source/grant locks and metadata audit. Approval/withdrawal are invoice revisions with permanent `execution_authorized: false`; no file/job/network adapter exists. Field review/reset clears the current plan and document drift withholds it. No new schema or service. [Contract](docs/INVOICE_FILING_PLANS.md).

@@ -6,7 +6,7 @@ from uuid import UUID
 from pydantic import Field, field_validator
 from sqlalchemy import or_, select, update
 
-from app import documents, identity
+from app import documents, identity, invoice_filing
 from app import invoice_fields as fields
 from app.manual_tasks import Scoped, authority, stamp
 from app.models import DocumentRecord as Source
@@ -29,6 +29,19 @@ class Confirm(Expected):
         if value is not True:
             raise ValueError("Explicit original verification required")
         return value
+
+
+class Plan(Expected):
+    folder: str | None = Field(default=None, max_length=204)
+    filename: str | None = Field(default=None, max_length=160)
+
+
+class ApprovePlan(Expected):
+    acknowledge_plan_only: Literal[True]
+    acknowledge_duplicate_limits: Literal[True]
+    _explicit = field_validator(
+        "acknowledge_plan_only", "acknowledge_duplicate_limits", mode="before"
+    )(Confirm.explicit.__func__)
 
 
 class History(Scoped):
@@ -215,7 +228,7 @@ def duplicate_page(db, user, source, row, after):
 
 
 def operate(db, token, csrf, identifier, body, operation):
-    write = operation in {"prepare", "review", "forget"}
+    write = operation in {"prepare", "review", "forget", "plan", "approve_plan", "withdraw_plan"}
     current = authority(db, token, csrf, body.scope, exclusive_user=write, event_prefix="invoices")
     if isinstance(current, identity.Result):
         return current
@@ -231,7 +244,17 @@ def operate(db, token, csrf, identifier, body, operation):
     if source is None:
         return identity.denied(db, 404, "invoices.not_found", user=user)
     if (
-        operation in {"prepare", "review", "forget", "history", "export"}
+        operation
+        in {
+            "prepare",
+            "review",
+            "forget",
+            "history",
+            "export",
+            "plan",
+            "approve_plan",
+            "withdraw_plan",
+        }
         and source.owner_id != user.id
     ):
         return identity.denied(db, 403, "invoices.owner_denied", user=user)
@@ -319,6 +342,31 @@ def operate(db, token, csrf, identifier, body, operation):
         return identity.denied(db, 409, "invoices.source_review_required", user=user)
     if row and row.revision >= 100:
         return identity.denied(db, 429, "invoices.history_limit", user=user)
+    if operation in {"plan", "approve_plan", "withdraw_plan"}:
+        if row is None or row.state != "reviewed" or row.source_revision != source.revision:
+            return identity.denied(db, 409, "invoices.current_field_review_required", user=user)
+        plan = row.data.get("filing_plan")
+        if operation == "plan":
+            try:
+                plan = invoice_filing.propose(source, row, body.folder, body.filename)
+            except ValueError:
+                return identity.denied(db, 422, "invoices.invalid_filing_plan", user=user)
+        elif not plan or plan["state"] not in (
+            {"proposed"} if operation == "approve_plan" else {"proposed", "approved"}
+        ):
+            return identity.denied(db, 409, "invoices.filing_plan_changed", user=user)
+        else:
+            plan = {
+                **plan,
+                "state": "approved" if operation == "approve_plan" else "withdrawn",
+                "approved_revision": row.revision + 1 if operation == "approve_plan" else None,
+            }
+        row.data = {**row.data, "filing_plan": plan}
+        row.revision += 1
+        row.updated_at = identity.now_utc()
+        remember(db, user, row)
+        audit(db, user, source, row, operation)
+        return identity.Result(200, receipt(source, row, user))
     now = identity.now_utc()
     if operation == "prepare":
         if row is None:
@@ -348,7 +396,7 @@ def operate(db, token, csrf, identifier, body, operation):
             return identity.denied(db, 422, "invoices.invalid_decisions", user=user)
         row.state = "reviewed"
         row.revision += 1
-        row.data = {**row.data, "decisions": decisions}
+        row.data = {**row.data, "decisions": decisions, "filing_plan": None}
         row.issuer_key, row.number_key = (
             fields.key(decisions["issuer"]["value"]),
             fields.key(decisions["invoice_number"]["value"]),

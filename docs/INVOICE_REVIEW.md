@@ -23,3 +23,7 @@ Current user/session/grant, document and invoice authority remain locked through
 Migration `0028_invoice_review` follows `0027_recurring_routines`; existing migration/runtime-role setup supplies protected current/history tables and restricted grants. Back up and stop writers before any separately authorized adoption. Downgrade removes invoice tables and derived history; use a reviewed protected backup/rollback rather than claiming it preserves those records. The full logical restore test checks reviewed evidence, unknowns, provenance, keys and forgotten snapshots. These disposable tests do not certify independent clean-host recovery or private deployment readiness.
 
 Restricted mail intake, email provenance, proposed names/destinations, retry/crash-safe exactly-once filing, live Synology access and full MVP-03 acceptance remain dependencies. See [scope reconciliation](SCOPE_RECONCILIATION.md) and [MVP gates](MVP_ACCEPTANCE.md).
+
+## Reviewed invoice filing plans — spec 057
+
+[Spec 057 filing plans](INVOICE_FILING_PLANS.md) extend reviewed invoice payloads/history with logical folder/name suggestions, manual alternatives and non-executable approval/withdrawal. Every new field review/reset clears the current plan; source drift and aggregate forgetting protect plans with the same source boundary. Approval grants no file/job/network authority. Earlier no-filing statements still describe effects: no actual filing is implemented.
