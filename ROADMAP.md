@@ -17,7 +17,7 @@ For a quick counted inventory, see the [feature overview](docs/FEATURE_OVERVIEW.
 | Merged foundation | Spec 056 invoice field review, scoped duplicate hints and derived-copy lifecycle ([PR #11](https://github.com/LYF-FC/local-assistant-core/pull/11)). |
 | Merged foundation | Spec 057 reviewed logical filing plans ([PR #12](https://github.com/LYF-FC/local-assistant-core/pull/12)): suggestions, corrections, non-executable approval/withdrawal and history. |
 | Merged foundation | Spec 058 bounded offline email originals/single-attachment intake ([PR #13](https://github.com/LYF-FC/local-assistant-core/pull/13)), exact replay, creator-only provenance and aggregate forgetting. |
-| In progress | Spec 059 counted overview/dashboard and critical review of all 149 references; recommendations and gap candidates are pending owner decisions, not runtime delivery. |
+| Merged documentation | Spec 059 counted overview/dashboard and critical review of all 149 references; recommendations and gap candidates are pending owner decisions, not runtime delivery. |
 | Next | Authorized local-model quality/activation and fuller conversation/synthesis, alongside early installation configuration design. Live restricted mailbox/job recovery and separately authorized exactly-once filing remain dependencies after offline intake/proposal review. |
 | Next by dependency | Live calendar adapter/full briefing; recurrence/one notification path; forwarded invoice intake/filing; operations and independent recovery. |
 | Later, retained | Household/food, care/coaching, connected life, NOMAD/education, professional/creative/financial modules and governed platform evolution below. |
@@ -74,3 +74,6 @@ RND-04/05 investigate task-specialized models and dense/MoE trade-offs under the
 ## Critical review recommendations — pending owner decisions
 
 [The individual and whole-product review](docs/FEATURE_REVIEW.md) recommends shared implementation contracts rather than a subsystem per requirement, installation-local identity/configuration/readiness early, then a coherent UI-01 attention inbox and complete everyday journeys. Retained time-sensitive care/asset slices may warrant earlier opt-in increments, but this is a recommendation rather than an approved MVP/version change. Full scope and the current dependency gates remain. Candidate refinements/additions are outside the 149 count until explicitly approved; no v1.2 allocation is made.
+
+
+Spec059 overview/critical review merged in [PR #14](https://github.com/LYF-FC/local-assistant-core/pull/14); its recommendations remain unapproved. Current branch batch: [spec060 installation configuration foundation](docs/INSTALLATION_SETUP.md), grouping identity/versioned defaults, session-bound preview/apply, sanitized templates and informational dependency/readiness view. This advances only parts of INSTALL-01/02/03/06/08 after review/merge; no activation controls or flexible membership are claimed. Existing runtime MVP journeys and later approved contracts stay open.

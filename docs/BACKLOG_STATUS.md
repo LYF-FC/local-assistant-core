@@ -11,3 +11,6 @@ INSTALL-01–12 add reusable household configuration/onboarding/feature activati
 RND-04/05 add planned task-specific model and dense/MoE research with bounded synthetic evaluations; no runtime adoption is implied. See [contract](LLM_RESEARCH.md).
 
 [Spec 059 overview and critical review](FEATURE_REVIEW.md) is a documentation/tooling batch, not a new runtime capability or approved scope expansion. [Counters](FEATURE_OVERVIEW.md) show 17/99 partial foundations, 82 planned/not evidenced and 0 full retained-contract acceptance after PR13. All 149 references remain; candidate gaps and proposed ordering changes await explicit owner decisions.
+
+
+PR14 merged spec059 overview/review; its candidate additions remain unapproved. Spec060 branch groups [installation identity, versioned defaults, reviewed templates and informational readiness](INSTALLATION_SETUP.md). INSTALL-01/02/03/06/08 foundations are partial at most after merge; no source counters are promoted before then. External reminders/live sources, actual filing/recovery, flexible memberships, feature activation and later domains remain open.

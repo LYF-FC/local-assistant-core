@@ -53,3 +53,8 @@ One immutable envelope table links exact raw-message bytes to initial document r
 ## Feature overview and scope review — spec 059
 
 The feature dashboard is an offline generated documentation artifact, outside the application/runtime. The canonical register, reviewed stage/snapshot metadata and separately labelled per-reference critique generate Markdown/HTML deterministically. Only the exact validated artifact/data paths may take documentation CI; generator/template/policy changes remain full. Shared-implementation suggestions preserve domain stores/authority, not a global JSON database, memory/index or agent per feature. No deployed service or integration changes. [Review](docs/FEATURE_REVIEW.md).
+
+
+### Installation configuration foundation (spec060 branch)
+
+[Installation setup](docs/INSTALLATION_SETUP.md) adds a sealed singleton UUID/revision, bounded schema1 language/timezone defaults and immutable matching history. Current technical-admin authority uses a dedicated membership lock under the existing user→singleton transaction boundary; task scopes stay restricted. Session/source/payload-bound preview receipts confer no standalone authority. The static catalogue describes build/setup readiness without probing hosts or activating capabilities. Templates omit identity/records/secrets; backups preserve identity. Existing namespace and runtime controls remain authoritative.

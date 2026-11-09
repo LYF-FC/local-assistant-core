@@ -88,3 +88,6 @@ Use [RECOVERY_ASSESSMENT](RECOVERY_ASSESSMENT.md) for an audited, non-mutating i
 ## Discovery review inbox and selected digest — spec 045 candidate
 
 Migration 0019 and its non-public fixed-search-path helpers are part of checked schema/role setup. The logical drill retains digest preparation metadata with its originating session retired and private grant removed; it stores no digest body. This tests preservation, not restored current authority, latest completeness or independent recovery. Existing global session quarantine and full-host/key/owner acceptance remain mandatory. See [review inbox guide](DISCOVERY_REVIEW_INBOX.md).
+
+
+Spec060 [installation configuration](INSTALLATION_SETUP.md) participates in full logical backup/restore: UUID, defaults, revision snapshots and attribution are retained without reinitialization or activation. The synthetic restore harness compares the restored record/history with a private temporary manifest. A sanitized setup template excludes identity/history and is not a recovery backup. Downgrading0030 destroys the new state; reviewed backup recovery is required.

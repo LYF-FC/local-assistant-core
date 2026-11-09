@@ -54,3 +54,8 @@ Migration 0029 protects raw email/initial source linkage with restricted scrub-c
 ## Feature overview and scope review — spec 059
 
 After a verified feature merge or approved scope change, reconcile register/roadmap and docs/FEATURE_PROGRESS.json, including its snapshot fingerprint, then run `python3 scripts/build_feature_overview.py`. Repository policy checks generated output and ID/review coverage without network or writes; `--check` can be run directly. Export local copies only through an explicit `--export-dir PATH`. Do not query CI just to refresh a static view or certify operational health from its counters. GitHub shows Markdown and downloadable HTML source; no hosting/service/telemetry is activated.
+
+
+### Installation setup foundation (spec060 branch)
+
+Follow [the setup/template/identity and rollback contract](docs/INSTALLATION_SETUP.md). Current technical administrators explicitly preview/apply defaults; no provider/worker is activated. Review preference/timezone disclosure before exporting an unmanaged template. At100 revisions changed writes stop, while reads/export remain available. Backups preserve identity/history; templates cannot restore them. Migration0030 downgrade destroys these records and needs a reviewed protected-backup rollback. No private upgrade or deployment authorization is implied.

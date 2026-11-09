@@ -1,0 +1,7 @@
+# Plan / analyze
+
+Implement one seeded installation singleton plus sealed revisions, a pure preference/template schema and compiled informational capability catalogue, current-admin preview/apply/read/history/export routes, and a setup UI. Reuse current identity/authority/audit/transport. Short-lived preview receipts use the current session token digest as HMAC key and bind normalized payload, current UUID/revision and expiry; they never grant permission independently. No new secret provisioning or external effect. Existing fixed member scopes and feature runtime controls are not replaced.
+
+Keep INSTALL activation/disable/onboarding/credential/dependency lifecycle/full cross-install adoption contracts open. This is an administrator setup/configuration journey, not dynamic households or a fake feature toggle. Shared defaults do not rewrite existing records. Setup templates are deliberately a tiny allowlist; private backup/restore remains separate. All 149 scope IDs and the six unapproved review candidates remain intact.
+
+PR14 merge7ca19aca0d3e9e6b0efeb29ff478bba6695a5678 verified; its exact head run 42655139787 all six jobs green. Main run 42657816092 initially in progress, no exact-main certification or polling. Focused tests first, then final makecheck/security/actualPG/migrations/fullrestore and affected HTTPS. Use CI owner `butler` for Compose; fixed native PG/restore owner `postgres`, runtime `butler_runtime`. Reset whole labelled testDB(public+work). One commit/PR/push then stop.

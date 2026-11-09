@@ -78,7 +78,9 @@ class Export(Query):
         return value
 
 
-def authority(db, token, csrf, scope, *, exclusive_user=False, event_prefix="tasks"):
+def authority(
+    db, token, csrf, scope, *, exclusive_user=False, event_prefix="tasks", scope_lock="tasks"
+):
     if not token or not 40 <= len(token) <= 128:
         return identity.denied(db, 401, event_prefix + ".session_denied")
     user_id = db.scalar(
@@ -107,7 +109,12 @@ def authority(db, token, csrf, scope, *, exclusive_user=False, event_prefix="tas
         return identity.denied(db, 403, event_prefix + ".csrf_denied", user=user)
     granted = (
         db.scalar(
-            text("SELECT public.butler_lock_task_scope(:actor,:scope)"),
+            text(
+                {
+                    "tasks": "SELECT public.butler_lock_task_scope(:actor,:scope)",
+                    "installation": "SELECT public.butler_lock_installation_scope(:actor,:scope)",
+                }[scope_lock]
+            ),
             {"actor": user.id, "scope": scope},
         )
         if db.get_bind().dialect.name == "postgresql"
