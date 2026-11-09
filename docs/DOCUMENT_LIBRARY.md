@@ -29,3 +29,7 @@ The separately provisioned [private local archive](DOCUMENT_ARCHIVE.md) now prov
 ## Reviewed invoice filing plans — spec 057
 
 [Spec 057](INVOICE_FILING_PLANS.md) adds source-bound logical filing plans within the invoice aggregate. It preserves original bytes and current-source authority without adding a file destination, mail source or executor. Aggregate document forgetting also scrubs plan history through existing invoice forgetting.
+
+## Offline email intake — spec 058
+
+[Spec 058 offline email intake](OFFLINE_EMAIL_INTAKE.md) creates an ordinary unreviewed document from one validated attachment, preserving a creator-only original envelope separately. Shared document views never expose raw mail. Document forgetting now also scrubs the envelope/initial filename/attachment checksum, retaining a disclosed private exact-message checksum tombstone to deny replay. Replacement preserves original intake provenance; it never rewrites old mail.

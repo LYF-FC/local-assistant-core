@@ -124,7 +124,7 @@ PYPDFPARENT
   answers_compose --profile routines run --rm -T --no-deps routine_worker python -m app.routine_worker --once
   answers_compose run --rm -T migrate python - check < scripts/routine-browser-fixtures.py
   # Calendar cases share this existing fresh phase, preserving real login rate limits.
-  BUTLER_ANSWERS_BROWSER_TESTS=1 BUTLER_CALENDAR_BROWSER_TESTS=1 BUTLER_ROUTINES_BROWSER_TESTS=1 BUTLER_INVOICE_BROWSER_TESTS=1 bash scripts/test-ci-browser.sh answers.spec.ts calendars.spec.ts routines.spec.ts invoices.spec.ts
+  BUTLER_ANSWERS_BROWSER_TESTS=1 BUTLER_CALENDAR_BROWSER_TESTS=1 BUTLER_ROUTINES_BROWSER_TESTS=1 BUTLER_INVOICE_BROWSER_TESTS=1 BUTLER_EMAIL_BROWSER_TESTS=1 bash scripts/test-ci-browser.sh answers.spec.ts calendars.spec.ts routines.spec.ts invoices.spec.ts emails.spec.ts
   answers_compose down --volumes --remove-orphans
   # Independent disposable acceptance phases must not consume one shared source's
   # 30-login budget as the suite grows. Preserve the real limiter; create a fresh

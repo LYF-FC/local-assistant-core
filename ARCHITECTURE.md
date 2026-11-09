@@ -45,3 +45,7 @@ Two protected invoice current/history tables derive only from existing reviewed 
 ## Reviewed invoice filing plans — spec 057
 
 An optional versioned plan extends the invoice aggregate and sealed revision snapshots. Deterministic bounded logical folder/name suggestions and manual alternatives share current owner/source/grant locks and metadata audit. Approval/withdrawal are invoice revisions with permanent `execution_authorized: false`; no file/job/network adapter exists. Field review/reset clears the current plan and document drift withholds it. No new schema or service. [Contract](docs/INVOICE_FILING_PLANS.md).
+
+## Offline email intake — spec 058
+
+One immutable envelope table links exact raw-message bytes to initial document revision 1/attachment checksum. Bounded standard-library MIME decoding accepts one attachment and delegates original validation/PDF extraction to existing document creation. Owner serialization and one DB transaction protect per-owner/scope exact replay, quotas and audit. Shared attachments never expose raw email; metadata/exports remain creator-only. Aggregate source forgetting scrubs the envelope and derived invoice/plan history, retaining only a private exact-message replay tombstone. No mail network/job/model adapter. [Contract](docs/OFFLINE_EMAIL_INTAKE.md).

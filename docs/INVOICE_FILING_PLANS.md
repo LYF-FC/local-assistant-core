@@ -21,3 +21,7 @@ No new tables, migration, dependency, configuration or service is added: optiona
 Invoice-only forgetting terminally scrubs all plans/history/keys and retains the original. Document forgetting scrubs source and derived content/history atomically. Withdrawal preserves history; it is not erasure. Downloaded exports and older backups cannot be recalled. UI drafts stay in memory and clear with source/revision/scope/view/session changes.
 
 Restricted mail/email provenance, destination authorization/configuration, real root/symlink/collision/capacity checks, limited local/Synology apply/rollback and crash/retry-safe exactly-once effects remain open. DOC-04 inventory, reorganization previews and rollback manifests are distinct retained scope. Retained established-rule auto-filing remains future configured execution policy; these plan records do not implement or authorize it. Proposal review alone does not complete MVP-03 or authorize private adoption.
+
+## Offline email intake — spec 058
+
+[Spec 058](OFFLINE_EMAIL_INTAKE.md) can supply original email/attachment provenance through a bounded offline import. It does not activate mailbox rules, jobs or actual filing; existing approvals remain non-executable. Shared attachment/plan views do not grant raw-email access. Aggregate document forgetting scrubs managed envelope and plan copies together; disclosed message-checksum replay tombstones and old unmanaged copies retain their documented limits.

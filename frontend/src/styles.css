@@ -407,3 +407,5 @@ dialog::backdrop { background: rgba(25, 24, 20, .5); }
 .invoice-panel { margin-block: 1rem; border-block: 1px solid #8794a5; padding-block: 1rem; overflow-wrap: anywhere; }
 .invoice-panel fieldset { margin-block: .75rem; min-width: 0; }
 .filing-path{display:block;overflow-wrap:anywhere;white-space:normal}
+
+.email-provenance code{overflow-wrap:anywhere}

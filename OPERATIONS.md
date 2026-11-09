@@ -46,3 +46,7 @@ Invoice values, quotes and keys remain out of logs/audit; current source drift w
 ## Reviewed invoice filing plans — spec 057
 
 Plans share invoice quotas, current-source invalidation, creator history/export and aggregate scrubbing. No filesystem effect occurs; approved restored plans remain non-executable. Logical recovery verifies approved/proposed history and forgotten copies. Before rollback stop writers and preserve a protected backup: older binaries do not implement plan invalidation and must not continue invoice writes under this contract. [Operator guide](docs/INVOICE_FILING_PLANS.md).
+
+## Offline email intake — spec 058
+
+Migration 0029 protects raw email/initial source linkage with restricted scrub-column grants. Creator raw-mail capacity is 4 MiB plus existing document quotas. Normal logical recovery tests exact envelope bytes and forgotten tombstones; restore starts no poller/consumer. Downgrade drops raw provenance and requires protected backup/export and reviewed rollback. Stop writers: older binaries lack envelope-forget semantics and must not continue writes/forgetting of linked sources. Message hashes/headers stay out of logs/audit; raw export/download and older backups remain outside recall. [Guide](docs/OFFLINE_EMAIL_INTAKE.md).

@@ -49,3 +49,7 @@ Extend source review with deterministic bounded candidates and explicitly attest
 ## Reviewed invoice filing plans — spec 057
 
 Deliver reviewed logical naming/destination proposals before an apply adapter. Reuse source-bound invoice history and forgetting; avoid duplicate original/approval stores. A plan approval cannot become a ticket for future autonomous execution. Unknown fields need explicit manual paths; destination inventory/authorization/collision/containment and exactly-once effects remain separate. [Limits](docs/INVOICE_FILING_PLANS.md).
+
+## Offline email intake — spec 058
+
+Preserve original email before live mailbox integration using a strict offline single-attachment boundary. Raw email can contain incidental private context, so shared document access does not grant envelope access. Exact raw-message replay is distinct from semantic forwarded-copy/business dedup. Terminal forgetting retains only a disclosed private message-checksum tombstone; scrub raw content, initial filename and attachment checksum. Do not treat sender headers or plan approval as authority. [Rationale/limits](docs/OFFLINE_EMAIL_INTAKE.md).

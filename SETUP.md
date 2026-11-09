@@ -49,3 +49,7 @@ Existing migration/runtime-role setup now includes `0028_invoice_review`. No pac
 ## Reviewed invoice filing plans — spec 057
 
 No migration beyond 0028, new dependency, configured root, provider, secret or worker is introduced. Use synthetic reviewed invoices and logical destinations through document detail. Approval never authorizes a filesystem root or future execution. Keep the fixture-owner matrix and private deployment protections unchanged. [Workflow](docs/INVOICE_FILING_PLANS.md).
+
+## Offline email intake — spec 058
+
+Existing migration/runtime-role setup now includes 0029. No package, mailbox account, secret, provider endpoint, background poller, model or filing root is added. Use synthetic `.eml` files through Documents; the constrained MIME format is explicit in the [intake guide](docs/OFFLINE_EMAIL_INTAKE.md). Preserve the fixture-owner matrix: default Compose owner `butler`, native PG/restore owner `postgres`, application/worker `butler_runtime`. Private installation/adoption remains separately authorized.

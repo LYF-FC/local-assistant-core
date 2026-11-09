@@ -13,8 +13,9 @@ The [scope](docs/SCOPE.md), [149-entry register](docs/FEATURE_REGISTER.md), [dep
 | Merged foundation | Spec 054 calendar reconciliation/day briefing ([PR #8](https://github.com/LYF-FC/local-assistant-core/pull/8)); synthetic/manual adapter boundary, live provider acceptance remains open. |
 | Merged foundation | Spec 055 finite recurring routines ([PR #9](https://github.com/LYF-FC/local-assistant-core/pull/9)), current-authority task/private-reminder generation and completion/lifecycle history. |
 | Merged foundation | Spec 056 invoice field review, scoped duplicate hints and derived-copy lifecycle ([PR #11](https://github.com/LYF-FC/local-assistant-core/pull/11)). |
-| In progress | Spec 057 reviewed logical filing plans: bounded folder/name suggestions, manual correction, non-executable approval/withdrawal and history. |
-| Next | Authorized local-model quality/activation and fuller conversation/synthesis, alongside early installation configuration design. Restricted invoice intake/email provenance and separately authorized exactly-once filing remain dependencies after proposal review. |
+| Merged foundation | Spec 057 reviewed logical filing plans ([PR #12](https://github.com/LYF-FC/local-assistant-core/pull/12)): suggestions, corrections, non-executable approval/withdrawal and history. |
+| In progress | Spec 058 bounded offline email originals/single-attachment intake, exact replay, creator-only provenance and aggregate forgetting. |
+| Next | Authorized local-model quality/activation and fuller conversation/synthesis, alongside early installation configuration design. Live restricted mailbox/job recovery and separately authorized exactly-once filing remain dependencies after offline intake/proposal review. |
 | Next by dependency | Live calendar adapter/full briefing; recurrence/one notification path; forwarded invoice intake/filing; operations and independent recovery. |
 | Later, retained | Household/food, care/coaching, connected life, NOMAD/education, professional/creative/financial modules and governed platform evolution below. |
 | Done | Documentation scope reconciliation delivered by [PR #1](https://github.com/LYF-FC/local-assistant-core/pull/1). The imported baseline has independent [engineering evidence](docs/VALIDATION.md), not inherited merged PR history or production acceptance. |

@@ -1,0 +1,7 @@
+# Plan / analyze
+
+Add a bounded pure standard-library MIME parser and creator-only offline intake API, one sealed envelope table/migration 0029, and an aggregate source-forget hook. Reuse document creation/original extraction/quotas/review, invoice/plans, scoped authority/audit and current locks. Creator serialization makes exact raw-message dedup atomic per owner/scope; it is not semantic forwarded-copy dedup. Raw mail is a separate sensitive original and is never exposed through shared-document views. No mail network endpoint/credentials, queue, model, dependency or filing worker is added.
+
+Detailed preserved DOC-01/03/MVP-03 contracts retain original email/attachment, restricted future mailbox source, ambiguous review and authorized filing/recovery. This offline boundary extends existing originals and spec057 proposals, not their replacement. DOC-04 file audit remains separate. All 149 IDs including INSTALL/RND stay retained. No new constitution exception; no data leaves the installation.
+
+PR12 merged at 0615500a4f0aa0523c70fc757b81e02100632a6e; PR12 exact feature head run 42633945211 passed all six jobs. Main run 42636751778 was in progress at start; do not infer full-main certification or poll. Focused tests first, then final makecheck/security/full disposable PostgreSQL/migration/restore and affected HTTPS phase. Reset entire disposable database including Work schema. Respect Compose migrationowner `butler`, runtimebutler_runtime and nativePGowner `postgres`. One commit/push/draftPR then stop.

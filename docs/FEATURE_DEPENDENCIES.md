@@ -170,4 +170,8 @@ Spec 056 extends specs 048/051/052 reviewed originals and extraction with bounde
 
 ## Reviewed invoice filing plans — spec 057
 
-Spec 057 extends spec 056 with reviewed logical naming/destination proposals and non-executable approval/withdrawal. DOC-03 remains partial: restricted mail/email lineage (DOC-01), configured destination authorization, real contained/collision-safe apply/rollback and retry/crash reconciliation still gate MVP-03. No new original, executor or approval store; DOC-04 inventory/cleanup remains distinct. All 149IDs and INSTALL/RND scope remain.
+Spec 057 extends spec 056 with reviewed logical naming/destination proposals and non-executable approval/withdrawal. DOC-03 remains partial: restricted mail/email lineage (DOC-01), configured destination authorization, real contained/collision-safe apply/rollback and retry/crash reconciliation still gate MVP-03. No new original, executor or approval store; DOC-04 inventory/cleanup remains distinct. All 149 IDs and INSTALL/RND scope remain.
+
+## Offline email intake — spec 058
+
+Spec 058 extends document originals/extraction and specs 056/057 with offline exact raw-email/single-attachment provenance and per-owner/scope exact replay. DOC-01 advances without a live mailbox; restricted source/sender rules, cursors/jobs/recovery and broader MIME remain dependencies. DOC-03 actual authorized contained apply/rollback and retry/crash reconciliation still gate MVP-03. Duplicate hints and plan approvals keep their original bounded/non-executable contracts; DOC-04 and all 149 IDs/INSTALL/RND remain.
