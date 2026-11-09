@@ -74,3 +74,7 @@ ORG-03 general recurring intent/completion is distinct from ORG-01/spec 054 impo
 ## Invoice field review — spec 056
 
 Spec 056 extends existing document review/extraction instead of introducing a second original store or parser. Invoice candidates remain proposals until explicitly human reviewed, including unknowns. Exact-byte and reviewed-key duplicate hints overlap DOC-02 intake checking; they do not supersede DOC-04 inventory, naming/location audit, change previews or rollback manifests. DOC-03 filing proposals and DOC-01 email provenance remain retained dependencies of full MVP-03. Derived forgetting reuses aggregate document authority while invoice-only forgetting retains the original. All 149 IDs, INSTALL-01–12 and RND-04/05 remain intact.
+
+## Reviewed invoice filing plans — spec 057
+
+Spec 057 delivers only DOC-03 proposal/review dependencies on spec 056. Plan approval explicitly grants no execution; existing generic approval/job machinery is not duplicated or silently activated. Logical paths are not NAS authorization roots or a destination inventory. DOC-01 email lineage, DOC-03 limited apply/recovery and full MVP-03 remain retained; read-only duplicates/plans do not supersede DOC-04 audits, previews or rollback manifests. All 149 IDs and unchanged INSTALL/RND extension requirements remain. Retained established-rule auto-filing is later configured execution policy; this plan state does not authorize it.

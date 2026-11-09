@@ -167,3 +167,7 @@ Spec 055 extends specs 046/047 with bounded daily/weekly routine plans, task/pri
 ## Invoice field review — spec 056
 
 Spec 056 extends specs 048/051/052 reviewed originals and extraction with bounded invoice candidates, human confirmed/unknown decisions, exact provenance, current-source invalidation and scoped duplicate hints. DOC-02 advances; DOC-01 mail/email provenance and DOC-03 destination/name proposals and exactly-once filing still gate MVP-03. DOC-04 inventory/cleanup remains distinct. No original parent mapping or any of the 149 IDs is superseded.
+
+## Reviewed invoice filing plans — spec 057
+
+Spec 057 extends spec 056 with reviewed logical naming/destination proposals and non-executable approval/withdrawal. DOC-03 remains partial: restricted mail/email lineage (DOC-01), configured destination authorization, real contained/collision-safe apply/rollback and retry/crash reconciliation still gate MVP-03. No new original, executor or approval store; DOC-04 inventory/cleanup remains distinct. All 149IDs and INSTALL/RND scope remain.

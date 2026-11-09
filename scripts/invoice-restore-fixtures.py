@@ -6,7 +6,7 @@ from uuid import NAMESPACE_URL, UUID, uuid5
 
 from sqlalchemy import select
 
-from app import documents, identity, invoice_fields, invoice_review
+from app import documents, identity, invoice_fields, invoice_filing, invoice_review
 from app.config import settings
 from app.db import SessionLocal
 from app.models import DocumentRecord, InvoiceReview, InvoiceRevision, User
@@ -87,6 +87,28 @@ with SessionLocal.begin() as db:
             row.issuer_key, row.number_key = "synthetic restore vendor", "r-001"
             invoice_review.remember(db, owner, row)
             db.flush()
+            row.data = {
+                **row.data,
+                "filing_plan": invoice_filing.propose(
+                    doc, row, "invoices/manual", "synthetic-restore.txt"
+                ),
+            }
+            row.revision += 1
+            row.updated_at = identity.now_utc()
+            invoice_review.remember(db, owner, row)
+            db.flush()
+            row.data = {
+                **row.data,
+                "filing_plan": {
+                    **row.data["filing_plan"],
+                    "state": "approved",
+                    "approved_revision": 4,
+                },
+            }
+            row.revision += 1
+            row.updated_at = identity.now_utc()
+            invoice_review.remember(db, owner, row)
+            db.flush()
             if name == "forgotten":
                 invoice_review.forget_for_document(db, owner, doc)
         else:
@@ -104,13 +126,20 @@ with SessionLocal.begin() as db:
                 assert (
                     row.state == "reviewed"
                     and row.issuer_key == "synthetic restore vendor"
-                    and len(history) == 2
+                    and len(history) == 4
                 )
                 assert (
                     row.data["source"]["sha256"] == doc.sha256
                     and row.data["decisions"]["total"]["value"] is None
                 )
                 assert row.data["candidates"]["total"][0]["value"] == "99.00"
+                plan = row.data["filing_plan"]
+                assert plan["state"] == "approved" and plan["execution_authorized"] is False
+                assert (
+                    plan["source_sha256"] == doc.sha256 and plan["source_revision"] == doc.revision
+                )
+                assert history[3].snapshot["data"]["filing_plan"] == plan
+                assert history[2].snapshot["data"]["filing_plan"]["state"] == "proposed"
             else:
                 assert (
                     row.state == "forgotten"
@@ -118,8 +147,8 @@ with SessionLocal.begin() as db:
                     and row.issuer_key is None
                     and row.number_key is None
                 )
-                assert all(r.snapshot is None for r in history) and len(history) == 3
+                assert all(r.snapshot is None for r in history) and len(history) == 5
                 assert doc.state == "active" and doc.content_text == content
 print(
-    "Synthetic invoice source/decision/provenance/history and forgotten-derived recovery verified"
+    "Synthetic invoice source/decision/non-executable filing plan/history and forgotten-derived recovery verified"
 )

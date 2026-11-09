@@ -45,3 +45,7 @@ Existing migration/runtime-role setup now includes 0027 and the optional `routin
 ## Invoice field review — spec 056
 
 Existing migration/runtime-role setup now includes `0028_invoice_review`. No package, model, credentials, service or provider configuration is added. Use synthetic reviewed documents through document-detail invoice review. Follow the [fixture-owner matrix](docs/TESTING.md): Compose owner `butler`, isolated native integration/restore owner `postgres`, API/workers `butler_runtime`. Private installation adoption remains separately authorized. See [guide](docs/INVOICE_REVIEW.md).
+
+## Reviewed invoice filing plans — spec 057
+
+No migration beyond 0028, new dependency, configured root, provider, secret or worker is introduced. Use synthetic reviewed invoices and logical destinations through document detail. Approval never authorizes a filesystem root or future execution. Keep the fixture-owner matrix and private deployment protections unchanged. [Workflow](docs/INVOICE_FILING_PLANS.md).

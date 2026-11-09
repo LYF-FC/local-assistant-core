@@ -101,7 +101,10 @@ def wait_for_source_lock(admin):
     raise AssertionError("Invoice request did not reach actual source wait")
 
 
-@pytest.mark.parametrize("operation", ["read", "review", "history", "export", "duplicates"])
+@pytest.mark.parametrize(
+    "operation",
+    ["read", "review", "history", "export", "duplicates", "plan", "approve_plan", "withdraw_plan"],
+)
 def test_expiry_after_actual_source_wait(scenario, monkeypatch, operation):
     client, h, _, admin, uid = scenario
     doc = source(client, h)
@@ -113,7 +116,18 @@ def test_expiry_after_actual_source_wait(scenario, monkeypatch, operation):
             db.scalar(
                 select(DocumentRecord).where(DocumentRecord.id == UUID(doc["id"])).with_for_update()
             )
-            payload = {"acknowledge_copy_limits": True} if operation == "export" else {}
+            payload = (
+                {"acknowledge_copy_limits": True}
+                if operation == "export"
+                else {"acknowledge_plan_only": True, "acknowledge_duplicate_limits": True}
+                if operation == "approve_plan"
+                else {}
+            )
+            if operation in {"plan", "approve_plan", "withdraw_plan"}:
+                payload.update(
+                    expected_document_revision=doc["revision"],
+                    expected_review_revision=r["review_revision"],
+                )
             pending = pool.submit(call, client, h, doc, operation, r, **payload)
             wait_for_source_lock(admin)
             monkeypatch.setattr(
@@ -171,4 +185,69 @@ def test_human_review_quota_keeps_aggregate_forget_available(scenario):
         r = response.json()
     assert r["review_revision"] == 100
     assert call(client, h, doc, "review", r).status_code == 429
+    from test_invoice_filing import plan_call
+
+    assert plan_call(client, h, doc, "plan", r).status_code == 429
     assert document_call(client, h, doc, "forget").status_code == 200
+
+
+def test_runtime_filing_plan_concurrent_source_and_sealed_history(scenario):
+    from test_invoice_filing import approved, plan_call
+
+    client, h, _, admin, _ = scenario
+    doc = source(client, h)
+    r = approved(client, h, doc, confirm(client, h, doc))
+    with admin() as db:
+        row = db.get(InvoiceReview, UUID(doc["id"]))
+        assert row.data["filing_plan"]["state"] == "approved"
+        assert row.data["filing_plan"]["execution_authorized"] is False
+        assert (
+            db.scalar(
+                select(InvoiceRevision.snapshot).where(
+                    InvoiceRevision.document_id == row.document_id, InvoiceRevision.revision == 4
+                )
+            )["data"]["filing_plan"]
+            == row.data["filing_plan"]
+        )
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        with admin.begin() as db:
+            locked = db.scalar(
+                select(DocumentRecord).where(DocumentRecord.id == UUID(doc["id"])).with_for_update()
+            )
+            pending = pool.submit(plan_call, client, h, doc, "withdraw_plan", r)
+            wait_for_source_lock(admin)
+            locked.title = "Synthetic changed plan source"
+            locked.revision += 1
+            locked.updated_at = identity.now_utc()
+        assert pending.result(timeout=5).status_code == 409
+    assert call(client, h, doc, "read").json()["review"] is None
+
+
+def test_runtime_plan_audit_failure_then_derived_forget_scrubs_all(scenario, runtime_engine):
+    from test_invoice_filing import approved, plan_call
+
+    client, h, _, admin, _ = scenario
+    doc = source(client, h)
+    r = approved(client, h, doc, confirm(client, h, doc))
+
+    def fail(conn, cursor, statement, parameters, context, executemany):
+        if statement.startswith("INSERT INTO audit_events"):
+            raise SQLAlchemyError("Synthetic plan audit failure")
+
+    event.listen(runtime_engine, "before_cursor_execute", fail)
+    try:
+        assert plan_call(client, h, doc, "withdraw_plan", r).status_code == 503
+    finally:
+        event.remove(runtime_engine, "before_cursor_execute", fail)
+    with admin() as db:
+        assert db.get(InvoiceReview, UUID(doc["id"])).data["filing_plan"]["state"] == "approved"
+    assert call(client, h, doc, "forget", r).status_code == 200
+    with admin() as db:
+        row = db.get(InvoiceReview, UUID(doc["id"]))
+        assert row.data is None and row.revision == 5
+        assert all(
+            x.snapshot is None
+            for x in db.scalars(
+                select(InvoiceRevision).where(InvoiceRevision.document_id == row.document_id)
+            )
+        )

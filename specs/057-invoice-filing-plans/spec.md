@@ -1,0 +1,25 @@
+# 057 — Reviewed invoice filing plans
+
+## Specify
+
+A creator prepares a safe logical folder/name proposal from current human-reviewed invoice fields, corrects it manually, explicitly approves or withdraws it, and inspects/exports its history. Shared readers inspect current plans. This is the proposal/review dependency of DOC-03/MVP-03, not a filesystem adapter or execution approval. No data leaves the installation; no mailbox, model, network, file creation/move/rename, job enqueue or private deployment change. All 149 scope IDs remain.
+
+## Clarify / checklist
+
+- Extend spec 056 invoice payload/history and source/grant/owner/audit locks. No duplicate document store, approval queue or schema table. Legacy payloads lacking a plan mean no plan; existing exports remain readable. Parent invoice revisions (100 plus terminal forget) bound all plan changes.
+- Require an active reviewed current document and current reviewed invoice for every plan mutation. Creator only; shared/private/current-session/CSRF/origin rules remain. Expected document/invoice revisions reject conflicts; no automatic retry. Source drift hides the entire current plan. Every invoice field review or candidate reset clears the current plan, even if values are equal; history retains prior provenance until forgetting.
+- Fixed policy `invoice-filing-v1`: default suggestions require confirmed issuer, invoice number and ISO issue date; unknowns never invent a value/date. Normalize labels with Unicode NFKD to ASCII lowercase slugs, bounded issuer48/number32; refuse empty labels. Folder `invoices/<year>/<issuer>`, filename `<date>_<issuer>_<number>_<full-document-uuid>.<original-type>` (pdf/txt). Slug normalization can collide; UUID suffix preserves source distinction, not business identity. Manual paths are explicit alternatives, not inferred field truth.
+- Logical paths only, never host paths or an authorization root: exactly `invoices` followed by 1–2 nonempty lowercase ASCII alphanumeric/hyphen/underscore segments (64 chars/segment). Filename 1–160 ASCII characters plus safe grammar, correct original pdf/txt suffix; no separators, repeated dots, trailing dots, absolute/UNC/drive/URL/encoded/Unicode/control paths or Windows reserved device stems. Maximum path384 bytes. Manual path/folder provided together; missing required confirmed fields can be resolved by explicit manual proposal. Future adapters still need real root/permissions/symlink/collision/capacity checks.
+- Persist proposal state, policy, source/document/checksum and field-review revision provenance, relative path, and explicit `execution_authorized: false`. Approval requires literal acknowledgements of plan-only intent and duplicate/collision limits, plus a current proposed state. Approval does not authorize later automatic execution, including after restore. Withdraw proposed/approved plans; repeated state changes conflict. Correcting/reproposing approved plans resets approval. No event/job/file effect. Original-byte/source-reference provenance stays in the document; email lineage remains unimplemented.
+- Duplicate hints are existing spec 056 read-only source hints, not a destination inventory or collision guarantee. Show this limitation before approval; no imports suppressed, originals merged or destinations overwritten. Preserve DOC-04 inventory/audit/rollback scope.
+- Read/history/export/forget reuse invoice controls: values/path components and derived hashes never enter audit/logs. Plan-only history metadata records operation and revisions. Invoice-only or aggregate document forgetting scrubs all plan copies/history atomically; downloads/old backups remain outside recall. Plan withdrawal is history, not erasure. Quota never blocks terminal forgetting.
+- UI drafts stay in memory, clear on selected source/revision/scope/view/session changes; field/plan edits reset attestations. Conflicts retain draft; source failure/denial clears sensitive state. No background or automatic mutation retries. Approval receipt and actions clearly say no filing occurred.
+
+## Acceptance
+
+1. Deterministic multilingual-label slug suggestions, unknown/manual alternatives, strict safe path/type/length/reserved-name rejection and inert source instructions.
+2. Propose/edit/approve/withdraw lifecycle, explicit boolean acknowledgement, replay/conflict handling and plan reset on field review/reprepare; source drift withholds current paths.
+3. Owner/shared/private/admin/revocation/session/CSRF/origin negatives, expiry after actual source wait, concurrent updates, audit failure rollback and quota/forget behavior.
+4. Actual restricted PostgreSQL grants/sealed history and full restore prove approved plans remain non-executable and current/forgotten plan histories survive/scrub correctly.
+5. Strict client receipts, mobile HTTPS lifecycle/unknown/manual/conflict/view-clearing acceptance with default Compose owner `butler`; retain actual fixture ownership guards/runtime refusal.
+6. Required checks/security/privacy and all 149-ID/canonical reconciliation; one commit/PR/push, expected CI then stop without polling/merge.

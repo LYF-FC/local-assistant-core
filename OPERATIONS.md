@@ -42,3 +42,7 @@ Routine and reminder consumers remain independently opt-in; the base stack does 
 ## Invoice field review — spec 056
 
 Invoice values, quotes and keys remain out of logs/audit; current source drift withholds fields. History/export is creator-only, five revisions/page; downloaded copies/old backups are outside recall. Invoice-only forget retains the source; document forget scrubs both atomically. Migration 0028 and full logical restore cover current/forgotten reviews. Downgrade removes derived tables/history and needs reviewed protected backup/rollback. No service/provider activation follows. See [limits](docs/INVOICE_REVIEW.md).
+
+## Reviewed invoice filing plans — spec 057
+
+Plans share invoice quotas, current-source invalidation, creator history/export and aggregate scrubbing. No filesystem effect occurs; approved restored plans remain non-executable. Logical recovery verifies approved/proposed history and forgotten copies. Before rollback stop writers and preserve a protected backup: older binaries do not implement plan invalidation and must not continue invoice writes under this contract. [Operator guide](docs/INVOICE_FILING_PLANS.md).

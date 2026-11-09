@@ -45,3 +45,7 @@ Begin recurrence with explicit finite plans, earlier-fold/skip-gap rules and lat
 ## Invoice field review — spec 056
 
 Extend source review with deterministic bounded candidates and explicitly attested confirmed/unknown fields before mailbox/filing work. Human review is not model confidence or payment authority. Duplicate hints preserve conflicting originals and never approve deletion/filing; DOC-04 cleanup remains distinct. Derived-only forgetting is terminal and retains the original; aggregate document forgetting scrubs derived copies in the same transaction. See [contract](docs/INVOICE_REVIEW.md).
+
+## Reviewed invoice filing plans — spec 057
+
+Deliver reviewed logical naming/destination proposals before an apply adapter. Reuse source-bound invoice history and forgetting; avoid duplicate original/approval stores. A plan approval cannot become a ticket for future autonomous execution. Unknown fields need explicit manual paths; destination inventory/authorization/collision/containment and exactly-once effects remain separate. [Limits](docs/INVOICE_FILING_PLANS.md).
