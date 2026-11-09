@@ -31,3 +31,7 @@ The [INSTALL-01–12 scope](docs/CONFIGURABLE_INSTALLATIONS.md) adds future hous
 ## Scoped source answers — spec 053
 
 Base document answers use source-only mode and never contact a model. The explicitly selected `answers-synthetic.override.yml` is only a disposable test fixture: fixed synthetic model, local loopback service, no weights or host runtime. No real model is selected/downloaded/activated by this batch. Future authorized activation requires an explicit local model tag/manifest digest, approved local endpoint and separately verified runtime/license/quality/resource/privacy gates. See [configuration](docs/DOCUMENT_ANSWERS.md).
+
+## Calendar and briefing — spec 054
+
+Use Calendar and briefing with synthetic normalized JSON as described in [calendar guide](docs/CALENDARS.md). Existing migrations/role setup include 0026; no calendar credential, provider endpoint, parser dependency, background poller or model is configured. Do not supply real accounts/data or alter an existing installation from this development batch.

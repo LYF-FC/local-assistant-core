@@ -113,7 +113,8 @@ PYPDFPARENT
   answers_compose up --build -d --wait --wait-timeout 180
   answers_compose run --rm -T migrate python - seed < scripts/browser-fixtures.py
   answers_compose cp caddy:/data/caddy/pki/authorities/local/root.crt "$BUTLER_CI_CA_FILE"
-  BUTLER_ANSWERS_BROWSER_TESTS=1 bash scripts/test-ci-browser.sh answers.spec.ts
+  # Calendar cases share this existing fresh phase, preserving real login rate limits.
+  BUTLER_ANSWERS_BROWSER_TESTS=1 BUTLER_CALENDAR_BROWSER_TESTS=1 bash scripts/test-ci-browser.sh answers.spec.ts calendars.spec.ts
   answers_compose down --volumes --remove-orphans
   # Independent disposable acceptance phases must not consume one shared source's
   # 30-login budget as the suite grows. Preserve the real limiter; create a fresh
