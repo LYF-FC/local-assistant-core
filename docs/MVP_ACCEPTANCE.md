@@ -29,3 +29,7 @@ This is the acceptance contract for CORE/ORG/DOC/REM/UI foundations, basic FIN-0
 ## Reusable-installation adoption gate
 
 Before a reusable-installation release or private-data adoption, satisfy [INSTALL-01–12](CONFIGURABLE_INSTALLATIONS.md#acceptance): independently provisioned households, flexible member identities/explicit grants, private configuration and secrets, optional-feature readiness/dependencies and disable/re-enable behavior, sanitized template onboarding, safe updates and rehearsed legacy conversion. These are additional acceptance requirements, not evidence of current behavior. Shared functional features may remain optional for an installation; the project's full MVP/domain acceptance is not waived by hiding a feature.
+
+## Progress measurement and review boundary
+
+[The feature review](FEATURE_REVIEW.md) preserves this MVP contract and all later scope. Accept the bounded everyday MVP through its own actual gates; full completion of every later expansion of a broad feature is not an extra implicit blocker. Equally, partial engineering, a synthetic adapter or a green component suite does not close an end-to-end MVP gate. Candidate additions and reordered delivery proposals remain owner decisions outside current acceptance until explicitly approved.

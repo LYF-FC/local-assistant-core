@@ -4,6 +4,8 @@ This register preserves planned scope as well as bounded implemented subsets. It
 
 Milestones derive from historical planning and are dependency stages, not dates. Related entries overlap intentionally; do not sum them as independent features. Installation-specific requirements remain outside source control. See [scope](SCOPE.md), [MVP acceptance](MVP_ACCEPTANCE.md), [dependencies and reconciliation](SCOPE_RECONCILIATION.md), and [baseline evidence](VALIDATION.md). The register contains 149 references: the original 135 (99 named entries and 36 cross-cutting bundles), 12 configurable-installation requirements and two task/model research requirements approved on 8 November 2026. These are not 149 independent deliverables.
 
+For a quick counted projection, see the [feature overview](FEATURE_OVERVIEW.md) and [downloadable dashboard](FEATURE_DASHBOARD.html). [The critical review](FEATURE_REVIEW.md) covers each reference and shared implementation boundaries; recommendations do not change this register or approve candidate additions. Refresh its counters and version mapping after verified feature merges or approved scope changes; do not count an open PR as merged or a partial foundation as a complete feature.
+
 ## Status and acceptance policy
 
 Partial = an implemented bounded subset with remaining work. Planned = full acceptance not evidenced; inspect before claiming absent or complete. Every row stays open until its complete specification, negative permission tests, provenance/export/recovery behavior, required exact-head CI and relevant real-host/provider gates are satisfied. No row here is certified production complete.

@@ -1,5 +1,6 @@
 """Policy and actual Git rename/comparison coverage; no network or application data."""
 
+import copy
 import os
 import subprocess
 import tempfile
@@ -7,6 +8,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+import build_feature_overview as overview
 import ci_gate
 import ci_scope
 import yaml
@@ -23,6 +25,82 @@ class ScopeTests(unittest.TestCase):
             ),
             [],
         )
+
+    @staticmethod
+    def overview_fixture():
+        register = (
+            "| CORE-01 | Identity: explicit scoped identities | MVP | partial; spec001 | Full contract open |\n"
+            "| CORE-02 | Memory: sourced confirmed facts | MVP | planned | Acceptance not evidenced |\n"
+            "| MVP-01 | Daily loop: complete everyday acceptance | MVP | planned | Acceptance not evidenced |"
+        )
+        critique = "Retain this outcome while specifying current authority, provenance, review, correction and the independent acceptance boundary before activation."
+        review = "\n".join(f"| {identifier} | Keep | {critique} |" for identifier in ("CORE-01", "CORE-02", "MVP-01"))
+        manifest = {
+            "schema_version": 1,
+            "snapshot": {"date": "2026-11-09", "main_sha": "a" * 40, "merged_through_pr": 1, "register_rows_sha256": overview.fingerprint(register)},
+            "stages": {"MVP": "MVP"},
+            "first_stage": {identifier: "MVP" for identifier in ("CORE-01", "CORE-02", "MVP-01")},
+            "named_ids": ["CORE-01", "CORE-02"],
+            "capabilities": [{"title": "Synthetic baseline", "description": "Synthetic engineering", "path": "docs/VALIDATION.md", "baseline": True}],
+            "open_batches": [],
+        }
+        return register, review, manifest
+
+    def test_only_verified_static_dashboard_paths_are_documentation(self):
+        self.assert_jobs(ci_scope.classify([*ci_scope.GENERATED_DOCS, "docs/FEATURE_REVIEW.md"]), [])
+        for path in ("docs/other.html", "docs/FEATURE_PROGRESS_other.json", "scripts/build_feature_overview.py", "scripts/feature_dashboard_template.html", "scripts/check_repository.py"):
+            with self.subTest(path=path):
+                self.assert_jobs(ci_scope.classify([path]), ci_scope.JOBS)
+
+    def test_every_scope_reference_needs_exactly_one_critical_review(self):
+        register, review, manifest = self.overview_fixture()
+        for invalid in ("\n".join(review.splitlines()[:-1]), review + "\n" + review.splitlines()[0]):
+            with self.subTest(review=invalid), self.assertRaises(ValueError):
+                overview.build_data(register, invalid, manifest)
+
+    def test_unsupported_completion_claim_and_stale_snapshot_fail_closed(self):
+        register, review, manifest = self.overview_fixture()
+        unsupported = register.replace("partial; spec001", "complete; spec001")
+        changed = copy.deepcopy(manifest)
+        changed["snapshot"]["register_rows_sha256"] = overview.fingerprint(unsupported)
+        with self.assertRaisesRegex(ValueError, "Unrecognized status"):
+            overview.build_data(unsupported, review, changed)
+        changed["snapshot"]["register_rows_sha256"] = "0" * 64
+        with self.assertRaisesRegex(ValueError, "fingerprint mismatch"):
+            overview.build_data(register, review, changed)
+
+    def test_stage_and_original_feature_cohort_cannot_silently_omit_ids(self):
+        register, review, manifest = self.overview_fixture()
+        missing_stage = copy.deepcopy(manifest)
+        del missing_stage["first_stage"]["MVP-01"]
+        duplicate_named = copy.deepcopy(manifest)
+        duplicate_named["named_ids"] = ["CORE-01", "CORE-01"]
+        for invalid in (missing_stage, duplicate_named):
+            with self.subTest(metadata=invalid), self.assertRaises(ValueError):
+                overview.build_data(register, review, invalid)
+
+    def test_source_text_is_escaped_data_not_dashboard_script(self):
+        data = overview.build_data(*self.overview_fixture())
+        self.assertEqual(overview.counters([f for f in data["features"] if f["named"]]), {"total": 2, "partial": 1, "planned": 1, "complete": 0})
+        payload = "</script><script>untrusted-source-is-not-authority</script>"
+        data["features"][0]["requirement"] = payload
+        rendered = overview.render_html(data, '<script type="application/json">__DATA__</script>')
+        self.assertNotIn(payload, rendered)
+        self.assertIn("\\u003c/script\\u003e", rendered)
+
+    def test_generated_dashboard_tampering_is_rejected_without_execution(self):
+        _, outputs = overview.expected_outputs()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for name, text in outputs.items():
+                (root / name).parent.mkdir(parents=True, exist_ok=True)
+                (root / name).write_text(text)
+            self.assertEqual(overview.compare_outputs(root, outputs), [])
+            target = root / "docs/FEATURE_DASHBOARD.html"
+            target.write_text(target.read_text() + "<script>unreviewed-rendering-code</script>")
+            failures = overview.compare_outputs(root, outputs)
+            self.assertEqual(len(failures), 1)
+            self.assertIn("tampered", failures[0])
 
     def test_interface_keeps_build_client_and_full_browser_container_coverage(self):
         for path in [

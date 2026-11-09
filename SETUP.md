@@ -53,3 +53,7 @@ No migration beyond 0028, new dependency, configured root, provider, secret or w
 ## Offline email intake — spec 058
 
 Existing migration/runtime-role setup now includes 0029. No package, mailbox account, secret, provider endpoint, background poller, model or filing root is added. Use synthetic `.eml` files through Documents; the constrained MIME format is explicit in the [intake guide](docs/OFFLINE_EMAIL_INTAKE.md). Preserve the fixture-owner matrix: default Compose owner `butler`, native PG/restore owner `postgres`, application/worker `butler_runtime`. Private installation/adoption remains separately authorized.
+
+## Feature overview and scope review — spec 059
+
+The overview needs no application, account, model, provider or deployment setup. Read docs/FEATURE_OVERVIEW.md on GitHub; download docs/FEATURE_DASHBOARD.html and open it locally for filters. Public metadata only, no network requests/storage/external dependencies. The per-feature review and new gap candidates are planning artifacts; they authorize no feature, private conversion or real source access. [Critical review](docs/FEATURE_REVIEW.md).

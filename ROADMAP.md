@@ -2,6 +2,8 @@
 
 The [scope](docs/SCOPE.md), [149-entry register](docs/FEATURE_REGISTER.md), [dependencies](docs/FEATURE_DEPENDENCIES.md) and [MVP acceptance contract](docs/MVP_ACCEPTANCE.md) define the retained product scope. This page orders delivery; brevity here does not remove requirements. Historical versions are dependency stages, not dates, PR quotas or evidence of a released MVP. Version fields of 0.1.0 in package manifests do not establish release acceptance.
 
+For a quick counted inventory, see the [feature overview](docs/FEATURE_OVERVIEW.md), [downloadable interactive dashboard](docs/FEATURE_DASHBOARD.html) and [critical feature review](docs/FEATURE_REVIEW.md). Keep it synchronized with this roadmap and the register after verified feature merges or approved scope changes; open PRs remain separate from merged progress.
+
 ## Delivery Kanban
 
 | State | Capability / next evidence |
@@ -14,7 +16,8 @@ The [scope](docs/SCOPE.md), [149-entry register](docs/FEATURE_REGISTER.md), [dep
 | Merged foundation | Spec 055 finite recurring routines ([PR #9](https://github.com/LYF-FC/local-assistant-core/pull/9)), current-authority task/private-reminder generation and completion/lifecycle history. |
 | Merged foundation | Spec 056 invoice field review, scoped duplicate hints and derived-copy lifecycle ([PR #11](https://github.com/LYF-FC/local-assistant-core/pull/11)). |
 | Merged foundation | Spec 057 reviewed logical filing plans ([PR #12](https://github.com/LYF-FC/local-assistant-core/pull/12)): suggestions, corrections, non-executable approval/withdrawal and history. |
-| In progress | Spec 058 bounded offline email originals/single-attachment intake, exact replay, creator-only provenance and aggregate forgetting. |
+| Merged foundation | Spec 058 bounded offline email originals/single-attachment intake ([PR #13](https://github.com/LYF-FC/local-assistant-core/pull/13)), exact replay, creator-only provenance and aggregate forgetting. |
+| In progress | Spec 059 counted overview/dashboard and critical review of all 149 references; recommendations and gap candidates are pending owner decisions, not runtime delivery. |
 | Next | Authorized local-model quality/activation and fuller conversation/synthesis, alongside early installation configuration design. Live restricted mailbox/job recovery and separately authorized exactly-once filing remain dependencies after offline intake/proposal review. |
 | Next by dependency | Live calendar adapter/full briefing; recurrence/one notification path; forwarded invoice intake/filing; operations and independent recovery. |
 | Later, retained | Household/food, care/coaching, connected life, NOMAD/education, professional/creative/financial modules and governed platform evolution below. |
@@ -67,3 +70,7 @@ See [reconciliation](docs/SCOPE_RECONCILIATION.md) for duplicates, superseded pl
 ## Model research alongside local-answer design
 
 RND-04/05 investigate task-specialized models and dense/MoE trade-offs under the [research contract](docs/LLM_RESEARCH.md). Start with hardware/task/quality budgets and a general-model baseline; evaluate a small current licensed shortlist only through bounded approved experiments. Report useful quality/resource gains, swapping/concurrency costs, isolation/refusal and deterministic availability. Adopt/defer/reject remains open; do not add a multi-model platform or MoE dependency from a paper or advertised active-parameter count alone. Coordinate with CORE-06/07/10, per-service R&D, product Discovery and INSTALL-02/03/10 without delaying the MVP for unproven specialization.
+
+## Critical review recommendations — pending owner decisions
+
+[The individual and whole-product review](docs/FEATURE_REVIEW.md) recommends shared implementation contracts rather than a subsystem per requirement, installation-local identity/configuration/readiness early, then a coherent UI-01 attention inbox and complete everyday journeys. Retained time-sensitive care/asset slices may warrant earlier opt-in increments, but this is a recommendation rather than an approved MVP/version change. Full scope and the current dependency gates remain. Candidate refinements/additions are outside the 149 count until explicitly approved; no v1.2 allocation is made.
