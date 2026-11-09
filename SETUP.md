@@ -57,3 +57,8 @@ Existing migration/runtime-role setup now includes 0029. No package, mailbox acc
 ## Feature overview and scope review — spec 059
 
 The overview needs no application, account, model, provider or deployment setup. Read docs/FEATURE_OVERVIEW.md on GitHub; download docs/FEATURE_DASHBOARD.html and open it locally for filters. Public metadata only, no network requests/storage/external dependencies. The per-feature review and new gap candidates are planning artifacts; they authorize no feature, private conversion or real source access. [Critical review](docs/FEATURE_REVIEW.md).
+
+
+### Administrator setup defaults (spec060 branch)
+
+After existing trusted account provisioning and an explicit technical_admin grant, use **Installation setup** to review/initialize bounded defaults. See [installation setup](docs/INSTALLATION_SETUP.md) for language/timezone schema, preview/apply, template import/export, history bound and readiness limitations. Empty migration stays uninitialized. No first-owner bootstrap, feature toggles or automatic changes to existing record preferences are introduced.

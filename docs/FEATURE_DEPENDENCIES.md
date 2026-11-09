@@ -175,3 +175,6 @@ Spec 057 extends spec 056 with reviewed logical naming/destination proposals and
 ## Offline email intake — spec 058
 
 Spec 058 extends document originals/extraction and specs 056/057 with offline exact raw-email/single-attachment provenance and per-owner/scope exact replay. DOC-01 advances without a live mailbox; restricted source/sender rules, cursors/jobs/recovery and broader MIME remain dependencies. DOC-03 actual authorized contained apply/rollback and retry/crash reconciliation still gate MVP-03. Duplicate hints and plan approvals keep their original bounded/non-executable contracts; DOC-04 and all 149 IDs/INSTALL/RND remain.
+
+
+Spec060 branch: [setup foundation](INSTALLATION_SETUP.md) depends on existing identity/admin grants, durable audit, schema migration and logical recovery. Informational capability dependencies do not implement activation/disable enforcement. Dynamic membership, credentials, rollout/health/recovery and full independent-domain portability remain prerequisites to later installation acceptance; no retained reference is superseded or deleted.

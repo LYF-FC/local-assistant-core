@@ -127,6 +127,7 @@ def configure(connection, password: str) -> None:
             "calendar_sources",
             "routines",
             "invoice_reviews",
+            "installation_config",
             "document_records",
             "task_reminders",
             "reminder_preferences",
@@ -170,6 +171,11 @@ def configure(connection, password: str) -> None:
             sql.SQL(
                 "GRANT UPDATE (state, original_message, attachment_filename, attachment_sha256, forgotten_at) ON public.email_envelopes TO {}"
             ).format(sql.Identifier(ROLE))
+        )
+        cursor.execute(
+            sql.SQL("GRANT SELECT, INSERT ON public.installation_revisions TO {}").format(
+                sql.Identifier(ROLE)
+            )
         )
         cursor.execute(
             sql.SQL("GRANT SELECT, INSERT ON public.invoice_revisions TO {}").format(
@@ -234,6 +240,7 @@ def configure(connection, password: str) -> None:
         for function in (
             "butler_lock_discovery_scope(uuid,text)",
             "butler_lock_task_scope(uuid,text)",
+            "butler_lock_installation_scope(uuid,text)",
             "butler_discovery_review_deadline(uuid,uuid,uuid,text,text,integer)",
         ):
             cursor.execute(

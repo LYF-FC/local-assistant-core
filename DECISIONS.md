@@ -57,3 +57,8 @@ Preserve original email before live mailbox integration using a strict offline s
 ## Feature overview and scope review — spec 059
 
 Publish individually reviewed requirements without deleting/merging canonical IDs or approving candidate additions. Distinguish engineering slices, accepted MVP user journeys and full retained feature contracts. A shared primitive can satisfy multiple requirements while permissions and acceptance remain separate. Existing milestone labels stay; v1.2 remains unallocated. This decision records review/measurement discipline, not acceptance of every recommendation or new runtime architecture. [Method and recommendations](docs/FEATURE_REVIEW.md).
+
+
+### Spec060 branch: explicit installation initialization and reviewed templates
+
+[Contract](docs/INSTALLATION_SETUP.md): migration/read do not mint installation identity; first confirmed initialization does. Defaults are bounded setup state, not global rewrites of existing timezone/language records. Shareable allowlisted templates carry only languages/timezone; independent initialization creates fresh identity, private recovery preserves identity. Readiness is an informational dependency catalogue with no activation controls or health claims. Existing trusted provisioning remains required; onboarding, dynamic grants, lifecycle compaction and feature controls remain open.

@@ -169,3 +169,6 @@ Before implementing a row, add measurable acceptance to its feature spec and pre
 ## Evidence reading rule
 
 Spec numbers identify bounded contracts, not completed whole modules. The [spec directory](../specs) and [validation record](VALIDATION.md) provide the public evidence boundary. Rows with no public feature spec require a new measurable contract before implementation. Partial evidence does not satisfy future domain/provider acceptance. Referenced ranges summarize related contracts rather than granting all their capabilities to a row.
+
+
+Spec060 branch engineering: [installation identity/defaults/templates/readiness foundation](INSTALLATION_SETUP.md) targets portions of INSTALL-01/02/03/06/08. Register maturity rows and generated counters remain pinned to the verified merged feature snapshot until merge/evidence reconciliation. No whole contract is accepted and no candidate addition is approved.

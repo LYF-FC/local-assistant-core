@@ -33,3 +33,6 @@ Before a reusable-installation release or private-data adoption, satisfy [INSTAL
 ## Progress measurement and review boundary
 
 [The feature review](FEATURE_REVIEW.md) preserves this MVP contract and all later scope. Accept the bounded everyday MVP through its own actual gates; full completion of every later expansion of a broad feature is not an extra implicit blocker. Equally, partial engineering, a synthetic adapter or a green component suite does not close an end-to-end MVP gate. Candidate additions and reordered delivery proposals remain owner decisions outside current acceptance until explicitly approved.
+
+
+Spec060 [installation setup foundation](INSTALLATION_SETUP.md) is branch engineering supporting consistent later installation acceptance. It does not accept an MVP journey or replace live provider/host/recovery gates. Existing runtime defaults and permissions remain explicit; no source milestone or original acceptance contract is reduced.

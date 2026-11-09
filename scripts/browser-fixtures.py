@@ -4,7 +4,7 @@ import sys
 from datetime import timedelta
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from app.config import settings
 from app.db import SessionLocal
@@ -18,6 +18,9 @@ if settings.env != "test" or settings.postgres_db != "butler_test_container":
 action = sys.argv[1] if len(sys.argv) == 2 else ""
 with SessionLocal.begin() as db:
     if action == "seed":
+        if not db.scalar(text("SELECT pg_get_userbyid(relowner)=current_user FROM pg_class WHERE oid='public.users'::regclass")):
+            raise RuntimeError("Browser provisioning requires the actual table owner")
+        provision(db, "browser-installation-admin", "Synthetic setup administrator", "synthetic-browser-password-only-0123456789", {"technical_admin", "household_shared"})
         for slug in ("browser-flow", "browser-policy", "browser-revoked"):
             provision(db, slug, "Synthetic browser user", "synthetic-browser-password-only-0123456789", {"household_shared"})
         memory_users = {}

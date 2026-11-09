@@ -47,3 +47,6 @@ After publishing, report the expected CI jobs and stop. Verify completed results
 ## Feature overview and review checks
 
 `make policy` verifies reproducible generated overview/dashboard output and all-reference review coverage, plus CI scope/gate tests. Run `python3 scripts/build_feature_overview.py --check` for a direct offline/no-write check. Generator/template/policy changes need negative cases for missing/duplicate references, unsupported acceptance claims, stale snapshot/cohort/stage metadata, tampered output and embedded-script source text. Validate the standalone HTML filters, mobile layout and absence of network requests; it is not served by the application and does not alter app/DB/browser acceptance claims.
+
+
+Spec060 adds installation unit/client tests, actual runtime PostgreSQL concurrency/authority/guard tests, two independent synthetic configuration datasets, a full restore fixture preserving installation identity/history and trusted HTTPS mobile/import/export/conflict/late-response checks. `installation.spec.ts` runs in the fresh answers/calendar/routines/invoice/email phase with `BUTLER_INSTALLATION_BROWSER_TESTS=1`. Browser provisioning now checks users-table ownership before mutation and proves runtime refusal before the privileged seed. The native restore fixture deliberately retains the fixed postgres owner guard.

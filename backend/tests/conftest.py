@@ -16,7 +16,7 @@ from sqlalchemy.pool import StaticPool
 from app.auth_routes import get_db
 from app.config import settings
 from app.db import Base
-from app.identity import SCOPES
+from app.identity import SCOPES, now_utc
 from app.main import app
 from app.manage import provision
 from app.models import Scope
@@ -36,6 +36,15 @@ def auth_engine():
         connection.execute("PRAGMA foreign_keys=ON")
 
     Base.metadata.create_all(engine)
+    from app.models import InstallationConfig
+
+    now = now_utc()
+    with engine.begin() as connection:
+        connection.execute(
+            InstallationConfig.__table__.insert().values(
+                id=1, revision=0, created_at=now, updated_at=now
+            )
+        )
     yield engine
     engine.dispose()
 

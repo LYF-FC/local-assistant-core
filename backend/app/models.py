@@ -763,3 +763,38 @@ class EmailEnvelope(Base):
     original_message: Mapped[bytes | None] = mapped_column(LargeBinary)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     forgotten_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class InstallationConfig(Base):
+    __tablename__ = "installation_config"
+    __table_args__ = (
+        CheckConstraint("id=1 AND revision BETWEEN 0 AND 100", name="ck_installation_singleton"),
+        CheckConstraint(
+            "(revision=0 AND installation_id IS NULL AND configuration IS NULL AND updated_by IS NULL) OR (revision>=1 AND installation_id IS NOT NULL AND configuration IS NOT NULL AND updated_by IS NOT NULL)",
+            name="ck_installation_state",
+        ),
+    )
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    installation_id: Mapped[uuid.UUID | None] = mapped_column(Uuid(as_uuid=True), unique=True)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    configuration: Mapped[dict | None] = mapped_column(MEMORY_JSON)
+    updated_by: Mapped[uuid.UUID | None] = mapped_column(Uuid(as_uuid=True), ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class InstallationRevision(Base):
+    __tablename__ = "installation_revisions"
+    __table_args__ = (
+        CheckConstraint("revision BETWEEN 1 AND 100", name="ck_installation_history_revision"),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    singleton_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("installation_config.id"), nullable=False
+    )
+    revision: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
+    actor_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    snapshot: Mapped[dict] = mapped_column(MEMORY_JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
