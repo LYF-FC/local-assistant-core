@@ -21,3 +21,7 @@ Use `make check`, the complete disposable PostgreSQL integration suite, `scripts
 ## Optional archive transition — spec 050
 
 The separately provisioned [private local archive](DOCUMENT_ARCHIVE.md) now provides explicit owner-controlled copies/verification of all retained bounded original versions. DB originals remain authoritative; text intake limits and this feature's review/provenance remain unchanged. Managed forgetting requires cleanup of the correct bound archive before DB scrub commits. Migration 0023 adds immutable cleanup obligations without changing original/content seals. Synology/PDF/OCR/model and production/older-backup gates remain open.
+
+## Invoice field review — spec 056
+
+[Spec 056](INVOICE_REVIEW.md) extends the earlier library boundary with invoice-field candidates, explicit human decisions and scoped duplicate hints. The original source/review/export/forget contracts remain authoritative; document forgetting now also scrubs derived invoice history/keys atomically. Earlier no-invoice statements describe the prior library increment. Mail intake, email provenance, filing and full invoice acceptance remain open.

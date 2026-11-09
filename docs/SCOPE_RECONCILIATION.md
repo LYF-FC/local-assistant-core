@@ -70,3 +70,7 @@ Spec 054 extends spec 046's manual agenda with a normalized calendar read bounda
 ## Recurring routines — spec 055
 
 ORG-03 general recurring intent/completion is distinct from ORG-01/spec 054 imported recurrence identity. Spec 055 reuses manual tasks (046) and private in-app scheduling/delivery policies (047), rather than creating duplicate authoritative tasks, completion or notification stores. New routine/local-date receipts preserve generation lineage. Its finite daily/weekly rules do not supersede monthly/exception/calendar/delegated extensions, external notification/CORE-13 or INSTALL feature-disable lifecycle. Full 149-entry scope remains; private adoption, actual providers and independent clean-host recovery retain separate acceptance.
+
+## Invoice field review — spec 056
+
+Spec 056 extends existing document review/extraction instead of introducing a second original store or parser. Invoice candidates remain proposals until explicitly human reviewed, including unknowns. Exact-byte and reviewed-key duplicate hints overlap DOC-02 intake checking; they do not supersede DOC-04 inventory, naming/location audit, change previews or rollback manifests. DOC-03 filing proposals and DOC-01 email provenance remain retained dependencies of full MVP-03. Derived forgetting reuses aggregate document authority while invoice-only forgetting retains the original. All 149 IDs, INSTALL-01–12 and RND-04/05 remain intact.

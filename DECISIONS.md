@@ -41,3 +41,7 @@ Implement the normalized complete-window boundary and deterministic briefing bef
 ## Recurring routines — spec 055
 
 Begin recurrence with explicit finite plans, earlier-fold/skip-gap rules and latest-only bounded downtime catch-up. Correct/resume affects future creation; stable routine/local-date identities cannot replay a materialized date. Pause/correction cancels linked active reminders; aggregate forgetting scrubs generated task copies/history. Use existing in-app reminder policies and keep external send/activation separate. No monthly/exception/calendar or production claim follows.
+
+## Invoice field review — spec 056
+
+Extend source review with deterministic bounded candidates and explicitly attested confirmed/unknown fields before mailbox/filing work. Human review is not model confidence or payment authority. Duplicate hints preserve conflicting originals and never approve deletion/filing; DOC-04 cleanup remains distinct. Derived-only forgetting is terminal and retains the original; aggregate document forgetting scrubs derived copies in the same transaction. See [contract](docs/INVOICE_REVIEW.md).

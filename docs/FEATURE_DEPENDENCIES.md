@@ -163,3 +163,7 @@ Spec 053 reuses reviewed sources/provenance from specs 048/051/052. It adds lexi
 Spec 054 implements the complete normalized calendar window/read boundary and a deterministic day briefing over current tasks/confirmed memory references. ORG-01/02, CORE-08/09, UI-01 and MVP-02 remain partial; live Apple/iCloud/CalDAV account feasibility, recurrence expansion/pagination, full needs briefing and later writes/mirroring still require separate evidence. INSTALL-01–12 and all 149 IDs remain unchanged in scope.
 
 Spec 055 extends specs 046/047 with bounded daily/weekly routine plans, task/private-reminder generation and completion/lifecycle history. ORG-03 recurrence is distinct from spec 054 imported occurrence identity. Monthly/exception/delegated/calendar recurrence, CORE-13 external channels, INSTALL lifecycle and independent recovery/adoption remain open. All 149 IDs and original parent mappings remain.
+
+## Invoice field review — spec 056
+
+Spec 056 extends specs 048/051/052 reviewed originals and extraction with bounded invoice candidates, human confirmed/unknown decisions, exact provenance, current-source invalidation and scoped duplicate hints. DOC-02 advances; DOC-01 mail/email provenance and DOC-03 destination/name proposals and exactly-once filing still gate MVP-03. DOC-04 inventory/cleanup remains distinct. No original parent mapping or any of the 149 IDs is superseded.

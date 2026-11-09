@@ -38,3 +38,7 @@ Calendar sources retain last good bounded windows while offline/failed, expose c
 ## Recurring routines — spec 055
 
 Routine and reminder consumers remain independently opt-in; the base stack does not start either. Generation uses at most 100 routines/pass with one task each, current grants, atomic cursor/receipt/audit and no model. Counts-only failure output preserves private text. Stop consumers for migration/restore and review restored intent before restart; old backups can replay later-cancelled intent. New logical recovery sentinels verify paused plans, task/reminder lineage and forgotten scrubbing. [Limits/rollback](docs/RECURRING_ROUTINES.md).
+
+## Invoice field review — spec 056
+
+Invoice values, quotes and keys remain out of logs/audit; current source drift withholds fields. History/export is creator-only, five revisions/page; downloaded copies/old backups are outside recall. Invoice-only forget retains the source; document forget scrubs both atomically. Migration 0028 and full logical restore cover current/forgotten reviews. Downgrade removes derived tables/history and needs reviewed protected backup/rollback. No service/provider activation follows. See [limits](docs/INVOICE_REVIEW.md).
