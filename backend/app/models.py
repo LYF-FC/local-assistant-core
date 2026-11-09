@@ -609,3 +609,74 @@ class CalendarRevision(Base):
     )
     snapshot: Mapped[dict | None] = mapped_column(MEMORY_JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class Routine(Base):
+    __tablename__ = "routines"
+    __table_args__ = (
+        CheckConstraint(
+            "revision BETWEEN 1 AND 1000 AND changes BETWEEN 0 AND 102 AND position BETWEEN 0 AND 366",
+            name="ck_routine_versions",
+        ),
+        CheckConstraint(
+            "scope_key IN ('household_shared','member_a_private','member_b_private')",
+            name="ck_routine_scope",
+        ),
+        CheckConstraint(
+            "(state='active' AND data IS NOT NULL AND next_at IS NOT NULL) OR (state IN ('paused','finished','blocked') AND data IS NOT NULL AND next_at IS NULL) OR (state='forgotten' AND data IS NULL AND next_at IS NULL)",
+            name="ck_routine_content",
+        ),
+        Index("ix_routine_due", "state", "next_at", "id"),
+        Index("ix_routine_scope_owner", "scope_key", "owner_id", "id"),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    scope_key: Mapped[str] = mapped_column(String(96), nullable=False)
+    state: Mapped[str] = mapped_column(String(16), nullable=False)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    changes: Mapped[int] = mapped_column(Integer, nullable=False)
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    next_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    data: Mapped[dict | None] = mapped_column(MEMORY_JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class RoutineRevision(Base):
+    __tablename__ = "routine_revisions"
+    __table_args__ = (UniqueConstraint("routine_id", "revision", name="uq_routine_revision"),)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    routine_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("routines.id"), nullable=False
+    )
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    actor_id: Mapped[uuid.UUID | None] = mapped_column(Uuid(as_uuid=True), ForeignKey("users.id"))
+    snapshot: Mapped[dict | None] = mapped_column(MEMORY_JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class RoutineOccurrence(Base):
+    __tablename__ = "routine_occurrences"
+    __table_args__ = (
+        UniqueConstraint("routine_id", "local_date", name="uq_routine_local_date"),
+        UniqueConstraint("task_id", name="uq_routine_task"),
+        CheckConstraint("routine_revision>=1", name="ck_routine_occurrence_revision"),
+        CheckConstraint(
+            "(outcome='created' AND task_id IS NOT NULL AND due_at IS NOT NULL) OR (outcome='missed' AND task_id IS NULL AND due_at IS NOT NULL) OR (outcome='dst_gap' AND task_id IS NULL AND due_at IS NULL)",
+            name="ck_routine_outcome",
+        ),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    routine_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("routines.id"), nullable=False
+    )
+    routine_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    local_date: Mapped[str] = mapped_column(String(10), nullable=False)
+    due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    task_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("manual_tasks.id")
+    )
+    outcome: Mapped[str] = mapped_column(String(16), nullable=False)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

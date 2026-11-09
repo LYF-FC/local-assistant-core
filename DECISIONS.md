@@ -37,3 +37,7 @@ Begin local document answering with exact source quotations rather than unvalida
 ## Calendar and briefing — spec 054
 
 Implement the normalized complete-window boundary and deterministic briefing before activating calendar accounts. Full snapshots are bounded and all-or-nothing; omissions only imply removal in overlapping coverage. Preserve recurrence identity and original zone, reject contradictory sequence/cursor/fetch data and retain last good content on offline/failure. Do not infer cross-calendar duplicates or choose between overlaps. Live provider semantics, writes/mirroring and installation onboarding remain separate.
+
+## Recurring routines — spec 055
+
+Begin recurrence with explicit finite plans, earlier-fold/skip-gap rules and latest-only bounded downtime catch-up. Correct/resume affects future creation; stable routine/local-date identities cannot replay a materialized date. Pause/correction cancels linked active reminders; aggregate forgetting scrubs generated task copies/history. Use existing in-app reminder policies and keep external send/activation separate. No monthly/exception/calendar or production claim follows.

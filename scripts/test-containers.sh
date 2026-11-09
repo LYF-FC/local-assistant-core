@@ -113,8 +113,18 @@ PYPDFPARENT
   answers_compose up --build -d --wait --wait-timeout 180
   answers_compose run --rm -T migrate python - seed < scripts/browser-fixtures.py
   answers_compose cp caddy:/data/caddy/pki/authorities/local/root.crt "$BUTLER_CI_CA_FILE"
+  # Explicit one-shot recurrence processes; default stack still starts neither worker.
+  [[ -z "$(answers_compose ps --status running --services | sed -n '/^routine_worker$/p')" ]]
+  if answers_compose run --rm -T --no-deps api python - seed < scripts/routine-browser-fixtures.py >/dev/null 2>&1; then
+    echo 'Runtime account unexpectedly accepted the privileged routine fixture' >&2; exit 1
+  fi
+  answers_compose run --rm -T migrate python - seed < scripts/routine-browser-fixtures.py
+  answers_compose --profile routines build routine_worker
+  answers_compose --profile routines run --rm -T --no-deps routine_worker python -m app.routine_worker --once
+  answers_compose --profile routines run --rm -T --no-deps routine_worker python -m app.routine_worker --once
+  answers_compose run --rm -T migrate python - check < scripts/routine-browser-fixtures.py
   # Calendar cases share this existing fresh phase, preserving real login rate limits.
-  BUTLER_ANSWERS_BROWSER_TESTS=1 BUTLER_CALENDAR_BROWSER_TESTS=1 bash scripts/test-ci-browser.sh answers.spec.ts calendars.spec.ts
+  BUTLER_ANSWERS_BROWSER_TESTS=1 BUTLER_CALENDAR_BROWSER_TESTS=1 BUTLER_ROUTINES_BROWSER_TESTS=1 bash scripts/test-ci-browser.sh answers.spec.ts calendars.spec.ts routines.spec.ts
   answers_compose down --volumes --remove-orphans
   # Independent disposable acceptance phases must not consume one shared source's
   # 30-login budget as the suite grows. Preserve the real limiter; create a fresh

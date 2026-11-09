@@ -33,3 +33,7 @@ A bounded reviewed-document evidence query and optional replaceable local passag
 ## Calendar and briefing — spec 054
 
 Two local tables retain bounded full calendar windows and sealed revisions. Optimistic source revision, stable UID/recurrence identity, cursor/fetch/sequence checks and metadata audit commit together. A current-authority day read locks calendar/task/memory sources and discloses staleness, coverage, overlaps and truncation. No network adapter, recurrence expander or model is introduced.
+
+## Recurring routines — spec 055
+
+Finite daily/weekly IANA plans, sealed routine history and unique local-date receipts extend existing tasks/private reminders. The optional local worker holds current owner/grant/routine authority while committing task/history/reminder/cursor/receipt and metadata system audit atomically. No provider effect, new executor platform or independent completion store. The data-network-only worker profile remains opt-in. [Contract](docs/RECURRING_ROUTINES.md).
