@@ -8,7 +8,7 @@ The retained product scope includes an everyday MVP and later household, care, c
 
 See [architecture](ARCHITECTURE.md), [decisions](DECISIONS.md), [operations](OPERATIONS.md), [setup](SETUP.md) and [publication boundary](PUBLICATION.md).
 
-Specs 050/051/052 merged through [PR #2](https://github.com/LYF-FC/local-assistant-core/pull/2), [PR #3](https://github.com/LYF-FC/local-assistant-core/pull/3) and [PR #4](https://github.com/LYF-FC/local-assistant-core/pull/4). PR #4 main `232dbc693a3f9aafcc477f638b99508ef560e8e4` passed all six jobs in run 42521890786. Current [spec 053](docs/DOCUMENT_ANSWERS.md) adds scoped source-backed questions, exact quotation answers and a default-disabled local selector. Real-model activation/quality, free-form conversation, structured invoice fields, live adapters and operational acceptance remain open.
+Specs 050/051/052 merged through [PR #2](https://github.com/LYF-FC/local-assistant-core/pull/2), [PR #3](https://github.com/LYF-FC/local-assistant-core/pull/3) and [PR #4](https://github.com/LYF-FC/local-assistant-core/pull/4). PR #4 main `232dbc693a3f9aafcc477f638b99508ef560e8e4` passed all six jobs in run 42521890786. Merged [PR #7](https://github.com/LYF-FC/local-assistant-core/pull/7) delivers [spec 053](docs/DOCUMENT_ANSWERS.md); main `6d11ba8dee0bbbea04c6d435effddc9ce06f4acf` passed all six jobs in run 42529896072. It adds scoped source-backed questions, exact quotation answers and a default-disabled local selector. Real-model activation/quality, free-form conversation, structured invoice fields, live adapters and operational acceptance remain open.
 
 ## Configurable installations — scope extension
 
@@ -17,3 +17,5 @@ The shared core is intended for independent households, each owning its configur
 ## Model research scope
 
 RND-04/05 investigate task-specific local models and dense-versus-MoE trade-offs against measured single-model baselines. Different conversation/coding/document tasks can be evaluated independently; selection preserves current permissions and local-first isolation. See [contract](docs/LLM_RESEARCH.md). Research is approved; no runtime model or routing feature is delivered.
+
+Spec 054 develops [bounded calendar snapshots and daily briefing](docs/CALENDARS.md) using synthetic complete windows, explicit recurrence identity, timezone/coverage/conflict reconciliation and current task/memory references. Live calendar, full dashboard/needs briefing and installation configuration remain open.

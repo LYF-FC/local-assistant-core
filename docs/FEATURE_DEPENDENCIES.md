@@ -159,3 +159,5 @@ Spec 051 builds on merged spec 050 and extends spec 048; it delivers only bounde
 Spec 052 extends the spec 051 parser with explicit bounded OCR, preserving all storage/source/review boundaries. Structured field candidates with uncertainty, duplicate detection, mail intake and live filing remain dependencies of DOC-01–03; OCR alone does not complete them.
 
 Spec 053 reuses reviewed sources/provenance from specs 048/051/052. It adds lexical evidence and validated quotation selection, not a parallel index/store or free-form dialogue. Real model/license/quality/context/egress acceptance, RND-04/05 evaluation and installation configuration remain separate dependencies; model controls never grant document permissions.
+
+Spec 054 implements the complete normalized calendar window/read boundary and a deterministic day briefing over current tasks/confirmed memory references. ORG-01/02, CORE-08/09, UI-01 and MVP-02 remain partial; live Apple/iCloud/CalDAV account feasibility, recurrence expansion/pagination, full needs briefing and later writes/mirroring still require separate evidence. INSTALL-01–12 and all 149 IDs remain unchanged in scope.

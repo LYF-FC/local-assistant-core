@@ -565,3 +565,47 @@ class DocumentArchiveBinding(Base):
     )
     root_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class CalendarSource(Base):
+    __tablename__ = "calendar_sources"
+    __table_args__ = (
+        CheckConstraint("revision BETWEEN 1 AND 101", name="ck_calendar_revision"),
+        CheckConstraint(
+            "scope_key IN ('household_shared','member_a_private','member_b_private')",
+            name="ck_calendar_scope",
+        ),
+        CheckConstraint(
+            "(state='active' AND data IS NOT NULL) OR (state='forgotten' AND data IS NULL)",
+            name="ck_calendar_content",
+        ),
+        Index("ix_calendar_scope_owner", "scope_key", "owner_id", "id"),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    scope_key: Mapped[str] = mapped_column(String(96), nullable=False)
+    state: Mapped[str] = mapped_column(String(16), nullable=False)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    data: Mapped[dict | None] = mapped_column(MEMORY_JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class CalendarRevision(Base):
+    __tablename__ = "calendar_revisions"
+    __table_args__ = (
+        UniqueConstraint("source_id", "revision", name="uq_calendar_revision"),
+        CheckConstraint("revision BETWEEN 1 AND 101", name="ck_calendar_history_revision"),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    source_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("calendar_sources.id"), nullable=False
+    )
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    actor_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    snapshot: Mapped[dict | None] = mapped_column(MEMORY_JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

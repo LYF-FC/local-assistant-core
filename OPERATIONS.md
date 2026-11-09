@@ -30,3 +30,7 @@ RND-04/05 require explicit task/hardware/budget manifests, runtime/weight/quanti
 ## Scoped source answers — spec 053
 
 Document questions and source bundles are ephemeral: no question/prompt/answer content or query hash enters the audit, database history, browser storage or cache. Metadata-only preparation records may represent interrupted/unknown selection; no automatic retries occur. Model failure retains authorized source inspection. Existing document export/forget/backup/recovery remains authoritative, without a duplicate context store. Real runtime retention, offline egress, model/template/context/resource limits and timeout/cancellation behavior require separately authorized acceptance before activation. See [bounds](docs/DOCUMENT_ANSWERS.md).
+
+## Calendar and briefing — spec 054
+
+Calendar sources retain last good bounded windows while offline/failed, expose capture age/coverage and refuse conflicting updates atomically. Source/history quotas pause new changes without blocking explicit forget. Normal logical backups include current/revision payloads; restore fixtures verify recurrence/zone provenance and forgotten scrubbing. Downgrade removes these tables and requires reviewed protected backup/rollback. Event text/UIDs/cursors and briefing content stay out of audit/logs. See [operator limits](docs/CALENDARS.md).

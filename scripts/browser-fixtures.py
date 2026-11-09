@@ -24,6 +24,7 @@ with SessionLocal.begin() as db:
         for slug, scopes in (
             ("browser-memory-owner", {"household_shared", "member_a_private"}),
             ("browser-capture-flow", {"household_shared", "member_a_private"}),
+            ("browser-calendar-flow", {"household_shared", "member_a_private"}),
             ("browser-documents-owner", {"household_shared", "member_a_private"}),
             ("browser-documents-viewer", {"household_shared", "member_a_private"}),
             ("browser-tasks-flow", {"household_shared", "member_a_private"}),

@@ -1,0 +1,200 @@
+"""Bounded normalized adapter boundary; no ICS parser or network capabilities."""
+
+import json
+from datetime import UTC, date, datetime, time, timedelta
+from typing import Annotated, Literal
+from uuid import UUID
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from app.manual_tasks import Expected, Scoped
+
+
+def zone(value):
+    try:
+        ZoneInfo(value)
+    except (ZoneInfoNotFoundError, ValueError):
+        raise ValueError("Unsupported timezone") from None
+    return value
+
+
+def midnight(value, timezone):
+    return datetime.combine(value, time.min, ZoneInfo(timezone)).astimezone(UTC)
+
+
+def date_only(value):
+    if (
+        not isinstance(value, (str, date))
+        or isinstance(value, datetime)
+        or (isinstance(value, str) and len(value) != 10)
+    ):
+        raise ValueError("Date required")
+    return value
+
+
+class Event(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    uid: str = Field(min_length=1, max_length=128)
+    recurrence_id: str = Field(default="", max_length=128)
+    sequence: int = Field(strict=True, ge=0, le=2147483647)
+    title: str = Field(min_length=1, max_length=160)
+    description: str = Field(default="", max_length=512)
+    status: Literal["confirmed", "tentative", "cancelled"] = "confirmed"
+    timezone: str = Field(max_length=64)
+
+    @field_validator("timezone")
+    @classmethod
+    def valid_zone(cls, value):
+        return zone(value)
+
+    @field_validator("uid", "title")
+    @classmethod
+    def nonblank(cls, value):
+        if not value.strip():
+            raise ValueError("Nonblank value required")
+        return value
+
+
+class Timed(Event):
+    kind: Literal["timed"]
+    start: AwareDatetime
+    end: AwareDatetime
+
+    @model_validator(mode="after")
+    def times(self):
+        if self.end <= self.start or self.end - self.start > timedelta(days=31):
+            raise ValueError("Invalid event interval")
+        for instant in (self.start, self.end):
+            if (
+                instant.utcoffset() != timedelta(0)
+                and instant.utcoffset() != instant.astimezone(ZoneInfo(self.timezone)).utcoffset()
+            ):
+                raise ValueError("Source offset differs from timezone")
+        return self
+
+
+class AllDay(Event):
+    kind: Literal["all_day"]
+    start_date: date
+    end_date: date
+
+    _dates = field_validator("start_date", "end_date", mode="before")(date_only)
+
+    @model_validator(mode="after")
+    def dates(self):
+        if not 1 <= (self.end_date - self.start_date).days <= 31:
+            raise ValueError("Invalid all-day interval")
+        return self
+
+
+Occurrence = Annotated[Timed | AllDay, Field(discriminator="kind")]
+
+
+def interval(event):
+    if event["kind"] == "timed":
+        return datetime.fromisoformat(event["start"]), datetime.fromisoformat(event["end"])
+    return midnight(date.fromisoformat(event["start_date"]), event["timezone"]), midnight(
+        date.fromisoformat(event["end_date"]), event["timezone"]
+    )
+
+
+def key(event):
+    return event["uid"], event["recurrence_id"]
+
+
+class Window(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    complete: Literal[True]
+    cursor: str = Field(min_length=1, max_length=128)
+    fetched_at: AwareDatetime
+    timezone: str = Field(max_length=64)
+    start_date: date
+    end_date: date
+    events: list[Occurrence] = Field(max_length=100)
+
+    _zone = field_validator("timezone")(zone)
+    _dates = field_validator("start_date", "end_date", mode="before")(date_only)
+
+    @field_validator("complete", mode="before")
+    @classmethod
+    def complete_only(cls, value):
+        if value is not True:
+            raise ValueError("Complete snapshot required")
+        return value
+
+    @model_validator(mode="after")
+    def bounded(self):
+        if not 1 <= (self.end_date - self.start_date).days <= 31:
+            raise ValueError("Invalid coverage")
+        start, end = (
+            midnight(self.start_date, self.timezone),
+            midnight(self.end_date, self.timezone),
+        )
+        if end <= start:
+            raise ValueError("Coverage has no instants")
+        keys = set()
+        for event in self.events:
+            raw = event.model_dump(mode="json")
+            a, b = interval(raw)
+            if a >= end or b <= start or key(raw) in keys:
+                raise ValueError("Duplicate or outside coverage")
+            keys.add(key(raw))
+        if len(json.dumps(self.canonical(), ensure_ascii=False).encode()) > 65536:
+            raise ValueError("Snapshot byte limit")
+        return self
+
+    def canonical(self):
+        result = self.model_dump(mode="json")
+        result["fetched_at"] = self.fetched_at.astimezone(UTC).isoformat()
+        for event in result["events"]:
+            if event["kind"] == "timed":
+                for field in ("start", "end"):
+                    event[field] = datetime.fromisoformat(event[field]).astimezone(UTC).isoformat()
+        result["events"].sort(key=key)
+        return result
+
+
+class Create(Scoped):
+    label: str = Field(min_length=1, max_length=160)
+
+    @field_validator("label")
+    @classmethod
+    def label_required(cls, value):
+        if not value.strip():
+            raise ValueError("Label required")
+        return value.strip()
+
+
+class Import(Expected):
+    window: Window
+
+
+class Unavailable(Expected):
+    reason: Literal["offline", "failed"]
+
+
+class History(Scoped):
+    after: int = Field(default=0, strict=True, ge=0, le=101)
+
+
+class Export(History):
+    acknowledge_copy_limits: Literal[True]
+
+    @field_validator("acknowledge_copy_limits", mode="before")
+    @classmethod
+    def acknowledge(cls, value):
+        if value is not True:
+            raise ValueError("Explicit acknowledgement required")
+        return value
+
+
+class Query(Scoped):
+    after: UUID | None = None
+
+
+class Briefing(Scoped):
+    day: date
+    timezone: str = Field(max_length=64)
+    _zone = field_validator("timezone")(zone)
+    _day = field_validator("day", mode="before")(date_only)

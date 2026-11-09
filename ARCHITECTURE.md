@@ -29,3 +29,7 @@ Application task-to-model selection is distinct from internal MoE expert routing
 ## Scoped source answers — spec 053
 
 A bounded reviewed-document evidence query and optional replaceable local passage selector extend the existing library. Preparation audit commits first; a fresh transaction reauthorizes and locks/rebuilds exact revisions before dispatch and audited response release. Model output selects only validated source line ranges; the application constructs quotations. A trusted protocol subprocess, without inherited credentials, has a hard 12-second deadline and one active slot per API process. No conversation/index store, tool execution or remote fallback. See [answer contract](docs/DOCUMENT_ANSWERS.md).
+
+## Calendar and briefing — spec 054
+
+Two local tables retain bounded full calendar windows and sealed revisions. Optimistic source revision, stable UID/recurrence identity, cursor/fetch/sequence checks and metadata audit commit together. A current-authority day read locks calendar/task/memory sources and discloses staleness, coverage, overlaps and truncation. No network adapter, recurrence expander or model is introduced.

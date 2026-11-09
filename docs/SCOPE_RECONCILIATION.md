@@ -62,3 +62,7 @@ RND-04/05 add two retained research requirements to the prior 147 references, fo
 ## Scoped quotation answers — spec 053
 
 Spec 053 extends literal document retrieval into a complete bounded question/evidence/quotation workflow with an optional local selector. It reuses library state, current review/version/source rules and audit, and does not supersede general conversation, semantic retrieval or free-form synthesis requirements. All 149 IDs, including INSTALL-01–12 and RND-04/05, remain. The protocol choice is not model selection, research completion, weight download or real integration activation. Current-source navigation rechecks authority; questions/evidence are not a new persistent memory store.
+
+## Calendar and briefing — spec 054
+
+Spec 054 extends spec 046's manual agenda with a normalized calendar read boundary and current confirmed memory references. Historical spec 007 is a planned calendar/task/notification boundary, not evidence of an already delivered connector; its requirements remain retained. ORG-01/MVP-02 overlap in integrity acceptance, not duplicate features to remove. ORG-03 recurring delivery is distinct from recurring occurrence identity; ORG-05 optional mirror and calendar writes remain later reviewed extensions. Full needs/upcoming-action briefing and dashboard remain open. No original requirement is superseded by the bounded manual/synthetic fallback. All 149 IDs, INSTALL/RND scope and private adoption restrictions remain.
