@@ -9,3 +9,37 @@ For actual PostgreSQL evidence, explicitly opt in with `BUTLER_RUN_DB_TESTS=1`, 
 `scripts/test-containers.sh` validates fresh synthetic non-root containers, HTTPS/Origin/proxy boundaries, general browser scenarios and an independent optional Work phase plus recovery drills. `test-ci-browser.sh` imports a synthetic public CA only in a disposable Linux runner. It must never modify an owner trust store or bypass certificate validation. No private records or real services are needed.
 
 The new public repository must obtain its own exact-head selected/full CI evidence. Prior private runs and local verification do not become new hosted passes.
+
+## Database users: container tests and PostgreSQL tests differ
+
+`postgres` names the database engine and often its image; it is not the migration username for every test environment. Read the selected harness before writing or running a fixture.
+
+| Harness | Privileged migration/fixture connection | Restricted application connection | Disposable database |
+|---|---|---|---|
+| Compose/container/HTTPS CI (`scripts/test-containers.sh`) | **`butler` by default**, from `BUTLER_POSTGRES_USER` in Compose | `butler_runtime` for API and DB-backed workers | `butler_test_container` |
+| PostgreSQL integration and logical restore CI | **`postgres`**, explicitly configured by that job/harness | `butler_runtime` where runtime-role tests apply | `butler_test`; isolated restore `butler_test_restore` |
+
+The [Compose definition](../infra/core/compose.yml) and [CI workflow](../.github/workflows/ci.yml) are authoritative. `migrate` and `role_setup` use the configured migration owner. API and DB-backed worker services use the separate restricted role and runtime secret. Local overrides may choose a different migration-owner name; they do not change the configured CI default or grant runtime privileges.
+
+### Portable fixture rule
+
+A synthetic fixture that can run in Compose **must not require the username `postgres`**. Keep explicit test-environment and disposable-database guards, then verify the authority actually needed. For a privileged seed, require ownership of the relevant table before reading fixture records or writing intent, for example:
+
+```sql
+SELECT pg_get_userbyid(relowner) = current_user
+FROM pg_class
+WHERE oid = 'public.manual_tasks'::regclass;
+```
+
+Choose the actual table being seeded and refuse a false result before any mutation. `BUTLER_POSTGRES_USER` or a username allowlist alone is not proof of table ownership. Keep `butler_runtime` unable to run privileged fixtures; do not broaden its grants, remove the environment/database guards, or clear authentication counters to make a test pass. Emit only a fixed non-secret refusal message.
+
+Fixtures intentionally exclusive to the fixed PostgreSQL/restore harness may retain its explicit `postgres` guard. Do not bulk-replace those guards or run destructive restore scripts through the container/browser harness. Portability is a declared fixture contract, not a reason to weaken isolation.
+
+### Fixture preflight before pushing
+
+1. Match the fixture's environment, database, migration owner and service to the table above. Use synthetic data and a separate disposable project.
+2. Run privileged seed/check operations through `migrate`. Test rejection through the restricted API/runtime connection **before** privileged seeding, so an existing-row conflict cannot masquerade as an authorization denial.
+3. Verify the affected container/worker/browser phase using CI's default **`butler`** migration owner. A local pass obtained only by overriding it to `postgres` does not verify the CI setup. Test additional owner names when the fixture promises that portability.
+4. Keep runtime, permissions, authentication limits and required coverage unchanged. Record the exact command/harness and result in the PR; a failed final gate may simply reflect an earlier failed job rather than a second independent defect.
+
+After publishing, report the expected CI jobs and stop. Verify completed results when the owner reports readiness or requests a check; do not poll while waiting. A documentation-only check validates policy/text, not runtime behavior.
