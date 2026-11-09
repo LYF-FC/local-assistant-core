@@ -37,3 +37,7 @@ Two local tables retain bounded full calendar windows and sealed revisions. Opti
 ## Recurring routines — spec 055
 
 Finite daily/weekly IANA plans, sealed routine history and unique local-date receipts extend existing tasks/private reminders. The optional local worker holds current owner/grant/routine authority while committing task/history/reminder/cursor/receipt and metadata system audit atomically. No provider effect, new executor platform or independent completion store. The data-network-only worker profile remains opt-in. [Contract](docs/RECURRING_ROUTINES.md).
+
+## Invoice field review — spec 056
+
+Two protected invoice current/history tables derive only from existing reviewed document revisions. Fixed bounded label extraction proposes six fields; explicit human decisions and source-line/page/hash evidence remain separate from suggestions. Current-source drift withholds stale values/match keys. Scoped read-only duplicates use exact bytes or human-reviewed issuer/number; creator authority and metadata audit commit protect all release paths. Aggregate document forgetting atomically scrubs derived history/keys. No new worker, model, network adapter or original store. See [contract](docs/INVOICE_REVIEW.md).

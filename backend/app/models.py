@@ -680,3 +680,55 @@ class RoutineOccurrence(Base):
     )
     outcome: Mapped[str] = mapped_column(String(16), nullable=False)
     recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class InvoiceReview(Base):
+    __tablename__ = "invoice_reviews"
+    __table_args__ = (
+        CheckConstraint(
+            "revision BETWEEN 1 AND 101 AND source_revision>=1", name="ck_invoice_revision"
+        ),
+        CheckConstraint(
+            "scope_key IN ('household_shared','member_a_private','member_b_private')",
+            name="ck_invoice_scope",
+        ),
+        CheckConstraint(
+            "(state IN ('draft','reviewed') AND data IS NOT NULL) OR (state='forgotten' AND data IS NULL AND issuer_key IS NULL AND number_key IS NULL)",
+            name="ck_invoice_content",
+        ),
+        CheckConstraint(
+            "state='reviewed' OR (issuer_key IS NULL AND number_key IS NULL)",
+            name="ck_invoice_keys",
+        ),
+        Index("ix_invoice_match", "scope_key", "issuer_key", "number_key", "document_id"),
+    )
+    document_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("document_records.id"), primary_key=True
+    )
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    scope_key: Mapped[str] = mapped_column(String(96), nullable=False)
+    state: Mapped[str] = mapped_column(String(16), nullable=False)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    source_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    data: Mapped[dict | None] = mapped_column(MEMORY_JSON, nullable=True)
+    issuer_key: Mapped[str | None] = mapped_column(String(512))
+    number_key: Mapped[str | None] = mapped_column(String(288))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class InvoiceRevision(Base):
+    __tablename__ = "invoice_revisions"
+    __table_args__ = (UniqueConstraint("document_id", "revision", name="uq_invoice_revision"),)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    document_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("invoice_reviews.document_id"), nullable=False
+    )
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    actor_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    snapshot: Mapped[dict | None] = mapped_column(MEMORY_JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

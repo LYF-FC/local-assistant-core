@@ -41,3 +41,7 @@ Use Calendar and briefing with synthetic normalized JSON as described in [calend
 ## Recurring routines — spec 055
 
 Existing migration/runtime-role setup now includes 0027 and the optional `routines` profile. The development UI previews finite plans and requires explicit future-task/private-reminder authorization; saving never starts a service. No credentials, provider or real deployment configuration is added. Review [routine guide](docs/RECURRING_ROUTINES.md) before any separately authorized update/activation; do not alter a private installation from this development batch.
+
+## Invoice field review — spec 056
+
+Existing migration/runtime-role setup now includes `0028_invoice_review`. No package, model, credentials, service or provider configuration is added. Use synthetic reviewed documents through document-detail invoice review. Follow the [fixture-owner matrix](docs/TESTING.md): Compose owner `butler`, isolated native integration/restore owner `postgres`, API/workers `butler_runtime`. Private installation adoption remains separately authorized. See [guide](docs/INVOICE_REVIEW.md).

@@ -403,3 +403,6 @@ dialog::backdrop { background: rgba(25, 24, 20, .5); }
 
 .routines-panel article, .routines-panel li { overflow-wrap: anywhere; }
 .routines-panel textarea { display: block; width: 100%; min-height: 5rem; }
+
+.invoice-panel { margin-block: 1rem; border-block: 1px solid #8794a5; padding-block: 1rem; overflow-wrap: anywhere; }
+.invoice-panel fieldset { margin-block: .75rem; min-width: 0; }

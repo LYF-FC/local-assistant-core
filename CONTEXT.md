@@ -8,7 +8,7 @@ The retained product scope includes an everyday MVP and later household, care, c
 
 See [architecture](ARCHITECTURE.md), [decisions](DECISIONS.md), [operations](OPERATIONS.md), [setup](SETUP.md) and [publication boundary](PUBLICATION.md).
 
-Specs 050/051/052 merged through [PR #2](https://github.com/LYF-FC/local-assistant-core/pull/2), [PR #3](https://github.com/LYF-FC/local-assistant-core/pull/3) and [PR #4](https://github.com/LYF-FC/local-assistant-core/pull/4). PR #4 main `232dbc693a3f9aafcc477f638b99508ef560e8e4` passed all six jobs in run 42521890786. Merged [PR #7](https://github.com/LYF-FC/local-assistant-core/pull/7) delivers [spec 053](docs/DOCUMENT_ANSWERS.md); main `6d11ba8dee0bbbea04c6d435effddc9ce06f4acf` passed all six jobs in run 42529896072. It adds scoped source-backed questions, exact quotation answers and a default-disabled local selector. Real-model activation/quality, free-form conversation, structured invoice fields, live adapters and operational acceptance remain open.
+Specs 050/051/052 merged through [PR #2](https://github.com/LYF-FC/local-assistant-core/pull/2), [PR #3](https://github.com/LYF-FC/local-assistant-core/pull/3) and [PR #4](https://github.com/LYF-FC/local-assistant-core/pull/4). PR #4 main `232dbc693a3f9aafcc477f638b99508ef560e8e4` passed all six jobs in run 42521890786. Merged [PR #7](https://github.com/LYF-FC/local-assistant-core/pull/7) delivers [spec 053](docs/DOCUMENT_ANSWERS.md); main `6d11ba8dee0bbbea04c6d435effddc9ce06f4acf` passed all six jobs in run 42529896072. It adds scoped source-backed questions, exact quotation answers and a default-disabled local selector. Real-model activation/quality, free-form conversation, full invoice intake/filing, live adapters and operational acceptance remain open.
 
 ## Configurable installations — scope extension
 
@@ -20,6 +20,10 @@ RND-04/05 investigate task-specific local models and dense-versus-MoE trade-offs
 
 Merged [PR #8](https://github.com/LYF-FC/local-assistant-core/pull/8) delivers spec 054: [bounded calendar snapshots and daily briefing](docs/CALENDARS.md) using synthetic complete windows, explicit recurrence identity, timezone/coverage/conflict reconciliation and current task/memory references. Live calendar, full dashboard/needs briefing and installation configuration remain open.
 
-Spec 055 develops [finite recurring routines](docs/RECURRING_ROUTINES.md), atomic task/private-reminder generation and current completion/lifecycle history. External notification, calendar coupling, full recurrence and operational/installation acceptance remain open.
+Merged [PR #9](https://github.com/LYF-FC/local-assistant-core/pull/9) delivers spec 055: [finite recurring routines](docs/RECURRING_ROUTINES.md), atomic task/private-reminder generation and current completion/lifecycle history. External notification, calendar coupling, full recurrence and operational/installation acceptance remain open.
 
 PR #8 main `0324d0002e970fb097df509a0377fe53c3ffeae8` passed all six jobs in run 42593958307. This is engineering evidence, not provider/host/MVP acceptance.
+
+Spec 056 develops [invoice field review and duplicate hints](docs/INVOICE_REVIEW.md) on current reviewed sources, with explicit unknowns/provenance, derived history and aggregate forgetting. Restricted mail, email provenance, naming/destination proposals and exactly-once filing remain open. [PR #10](https://github.com/LYF-FC/local-assistant-core/pull/10) merged the fixture-owner preflight; Compose migration owner is `butler`, runtime is `butler_runtime`, and the isolated native integration/restore owner is `postgres`.
+
+PR #9 exact feature head `74e78307` passed all six jobs in run 42600538052. Its subsequent full main run 42602668575 was cancelled by the documentation merge. Documentation-scope CI cannot certify full exact-main release acceptance; provider/host/MVP gates remain separate.

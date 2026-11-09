@@ -13,6 +13,7 @@ from app.context_routes import router as context_router
 from app.db import SessionLocal
 from app.discovery_routes import router as discovery_router
 from app.document_routes import router as document_router
+from app.invoice_routes import router as invoice_router
 from app.job_routes import router as job_router
 from app.memory_routes import router as memory_router
 from app.reminder_routes import router as reminder_router
@@ -50,6 +51,7 @@ def create_app() -> FastAPI:
     application.include_router(routine_router)
     application.include_router(calendar_router)
     application.include_router(document_router)
+    application.include_router(invoice_router)
     application.include_router(answer_router)
     application.include_router(reminder_router)
     application.include_router(discovery_router)
