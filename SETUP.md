@@ -6,6 +6,8 @@ Review `.env.example` and `infra/core/compose.yml`. `bash scripts/first-run.sh` 
 
 See [HTTPS](docs/LOCAL_HTTPS.md) and [identity/provisioning](docs/IDENTITY.md). Use hidden credential prompts, a migration account for trusted administration and the restricted `butler_runtime` account for the API. Never commit `.env`, private keys or runtime records. [Development commands](docs/DEVELOPMENT.md) and [test gates](docs/TESTING.md) describe synthetic verification.
 
+**Database account convention:** Compose defaults to `butler` for migrations/privileged setup; API and DB-backed workers use `butler_runtime`. The separate disposable PostgreSQL integration/restore job uses `postgres`. Container fixtures must verify actual required ownership rather than hard-code `postgres`. Read the [fixture role matrix and preflight](docs/TESTING.md#database-users-container-tests-and-postgresql-tests-differ) before adding or running synthetic fixtures.
+
 Normal updates use explicit reviewed migrations and role setup; backup first. Do not deploy this snapshot into an existing installation just because the source is public. API/database scope IDs are generalized. Use a fresh project and database; existing private installations require a separate reviewed conversion. Role setup refuses databases missing generic scopes before changing any role. No automatic data conversion or owner-host acceptance is provided. Production remains separately gated.
 
 AI/speech installers are optional, disabled development helpers. No model is installed as a publication side effect. Preserve non-commercial restrictions for any CC BY-NC speech model and review other model licenses separately.
