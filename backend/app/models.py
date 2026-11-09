@@ -732,3 +732,34 @@ class InvoiceRevision(Base):
     )
     snapshot: Mapped[dict | None] = mapped_column(MEMORY_JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class EmailEnvelope(Base):
+    __tablename__ = "email_envelopes"
+    __table_args__ = (
+        UniqueConstraint("owner_id", "scope_key", "message_sha256", name="uq_email_message"),
+        CheckConstraint(
+            "scope_key IN ('household_shared','member_a_private','member_b_private')",
+            name="ck_email_scope",
+        ),
+        CheckConstraint("message_size BETWEEN 1 AND 262144", name="ck_email_size"),
+        CheckConstraint(
+            "(state='active' AND original_message IS NOT NULL AND length(original_message)=message_size AND attachment_filename IS NOT NULL AND attachment_sha256 IS NOT NULL AND forgotten_at IS NULL) OR (state='forgotten' AND original_message IS NULL AND attachment_filename IS NULL AND attachment_sha256 IS NULL AND forgotten_at IS NOT NULL)",
+            name="ck_email_content",
+        ),
+    )
+    document_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("document_records.id"), primary_key=True
+    )
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    scope_key: Mapped[str] = mapped_column(String(96), nullable=False)
+    state: Mapped[str] = mapped_column(String(16), nullable=False)
+    message_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    message_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    attachment_sha256: Mapped[str | None] = mapped_column(String(64))
+    attachment_filename: Mapped[str | None] = mapped_column(String(120))
+    original_message: Mapped[bytes | None] = mapped_column(LargeBinary)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    forgotten_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

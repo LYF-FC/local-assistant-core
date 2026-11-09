@@ -162,6 +162,16 @@ def configure(connection, password: str) -> None:
             )
         )
         cursor.execute(
+            sql.SQL("GRANT SELECT, INSERT ON public.email_envelopes TO {}").format(
+                sql.Identifier(ROLE)
+            )
+        )
+        cursor.execute(
+            sql.SQL(
+                "GRANT UPDATE (state, original_message, attachment_filename, attachment_sha256, forgotten_at) ON public.email_envelopes TO {}"
+            ).format(sql.Identifier(ROLE))
+        )
+        cursor.execute(
             sql.SQL("GRANT SELECT, INSERT ON public.invoice_revisions TO {}").format(
                 sql.Identifier(ROLE)
             )

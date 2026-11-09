@@ -78,3 +78,7 @@ Spec 056 extends existing document review/extraction instead of introducing a se
 ## Reviewed invoice filing plans — spec 057
 
 Spec 057 delivers only DOC-03 proposal/review dependencies on spec 056. Plan approval explicitly grants no execution; existing generic approval/job machinery is not duplicated or silently activated. Logical paths are not NAS authorization roots or a destination inventory. DOC-01 email lineage, DOC-03 limited apply/recovery and full MVP-03 remain retained; read-only duplicates/plans do not supersede DOC-04 audits, previews or rollback manifests. All 149 IDs and unchanged INSTALL/RND extension requirements remain. Retained established-rule auto-filing is later configured execution policy; this plan state does not authorize it.
+
+## Offline email intake — spec 058
+
+Spec 058 supplies an offline source/provenance boundary for DOC-01/03/MVP-03, reusing existing attachment originals and review instead of adding a second document workflow. Exact raw-message replay is not semantic forwarded-copy dedup or mailbox job exactly-once acceptance. Shared attachment access is distinct from creator-only incidental email context. The disclosed raw-message checksum tombstone is retained solely for replay denial; content/name/attachment checksum are scrubbed. Live mailbox rules/cursors/recovery, configured-rule auto-filing, actual authorized apply/rollback and distinct DOC-04 audits remain retained. All 149 IDs and INSTALL/RND requirements remain unchanged.

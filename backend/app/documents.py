@@ -521,9 +521,11 @@ def operate(db, token, csrf, identifier, body, operation):
     row.updated_at = identity.now_utc()
     db.flush()
     if operation == "forget":
+        from app.email_intake import forget_for_document as forget_email
         from app.invoice_review import forget_for_document
 
         forget_for_document(db, user, row)
+        forget_email(db, user, row)
         db.execute(
             update(Version)
             .where(Version.document_id == row.id)
