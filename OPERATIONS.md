@@ -50,3 +50,7 @@ Plans share invoice quotas, current-source invalidation, creator history/export 
 ## Offline email intake — spec 058
 
 Migration 0029 protects raw email/initial source linkage with restricted scrub-column grants. Creator raw-mail capacity is 4 MiB plus existing document quotas. Normal logical recovery tests exact envelope bytes and forgotten tombstones; restore starts no poller/consumer. Downgrade drops raw provenance and requires protected backup/export and reviewed rollback. Stop writers: older binaries lack envelope-forget semantics and must not continue writes/forgetting of linked sources. Message hashes/headers stay out of logs/audit; raw export/download and older backups remain outside recall. [Guide](docs/OFFLINE_EMAIL_INTAKE.md).
+
+## Feature overview and scope review — spec 059
+
+After a verified feature merge or approved scope change, reconcile register/roadmap and docs/FEATURE_PROGRESS.json, including its snapshot fingerprint, then run `python3 scripts/build_feature_overview.py`. Repository policy checks generated output and ID/review coverage without network or writes; `--check` can be run directly. Export local copies only through an explicit `--export-dir PATH`. Do not query CI just to refresh a static view or certify operational health from its counters. GitHub shows Markdown and downloadable HTML source; no hosting/service/telemetry is activated.

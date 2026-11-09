@@ -82,3 +82,9 @@ Spec 057 delivers only DOC-03 proposal/review dependencies on spec 056. Plan app
 ## Offline email intake — spec 058
 
 Spec 058 supplies an offline source/provenance boundary for DOC-01/03/MVP-03, reusing existing attachment originals and review instead of adding a second document workflow. Exact raw-message replay is not semantic forwarded-copy dedup or mailbox job exactly-once acceptance. Shared attachment access is distinct from creator-only incidental email context. The disclosed raw-message checksum tombstone is retained solely for replay denial; content/name/attachment checksum are scrubbed. Live mailbox rules/cursors/recovery, configured-rule auto-filing, actual authorized apply/rollback and distinct DOC-04 audits remain retained. All 149 IDs and INSTALL/RND requirements remain unchanged.
+
+## Critical product review — spec 059
+
+[Every canonical reference is reviewed individually](FEATURE_REVIEW.md), with a shared-implementation map and explicit distinctions between genuine proposals, under-specified criteria and already-covered requirements. No canonical row is deleted, merged, superseded or promoted. In particular UI-01 already covers unified triage; backup/older-restore, flexible installations, obligations, model interchangeability and professional isolation are retained requirements, not newly discovered missing modules.
+
+The review recommends consolidation of machinery for identity/provenance/tasks/assets/finance/creative/collection while retaining different scopes and acceptance. Six candidate refinements/additions remain outside approved totals. Merging the analysis does not approve them, renumber versions, select providers or activate effects. Broad feature completion, accepted bounded MVP journeys and engineering slice delivery are distinct metrics; no effort percentage follows from the 99/149 counts. Private fit/history remains outside Git.

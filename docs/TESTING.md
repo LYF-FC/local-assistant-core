@@ -43,3 +43,7 @@ Fixtures intentionally exclusive to the fixed PostgreSQL/restore harness may ret
 4. Keep runtime, permissions, authentication limits and required coverage unchanged. Record the exact command/harness and result in the PR; a failed final gate may simply reflect an earlier failed job rather than a second independent defect.
 
 After publishing, report the expected CI jobs and stop. Verify completed results when the owner reports readiness or requests a check; do not poll while waiting. A documentation-only check validates policy/text, not runtime behavior.
+
+## Feature overview and review checks
+
+`make policy` verifies reproducible generated overview/dashboard output and all-reference review coverage, plus CI scope/gate tests. Run `python3 scripts/build_feature_overview.py --check` for a direct offline/no-write check. Generator/template/policy changes need negative cases for missing/duplicate references, unsupported acceptance claims, stale snapshot/cohort/stage metadata, tampered output and embedded-script source text. Validate the standalone HTML filters, mobile layout and absence of network requests; it is not served by the application and does not alter app/DB/browser acceptance claims.

@@ -19,6 +19,9 @@ ROOT_DOCS = {
     "SETUP.md",
     "SPEC_KIT.md",
 }
+# These outputs/inputs are checked against the trusted offline generator by
+# check_repository.py. Generator/template/policy changes themselves remain full.
+GENERATED_DOCS = {"docs/FEATURE_DASHBOARD.html", "docs/FEATURE_PROGRESS.json"}
 FRONTEND_FILES = {
     "frontend/index.html",
     "frontend/package.json",
@@ -75,7 +78,7 @@ def classify(paths):
         parts = path.split("/")
         if path.startswith("/") or any(p in {"", ".", ".."} for p in parts):
             return selection("full", "Unrecognized path", len(paths))
-        if path in ROOT_DOCS or (
+        if path in ROOT_DOCS or path in GENERATED_DOCS or (
             path.startswith(("docs/", "specs/")) and path.endswith(".md")
         ):
             continue

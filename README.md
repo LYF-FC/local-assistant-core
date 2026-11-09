@@ -6,6 +6,10 @@ Implemented engineering includes HTTPS identity/session controls, explicit scope
 
 ## Start here
 
+- [Feature overview and progress counts](docs/FEATURE_OVERVIEW.md), [critical review of all 149 references](docs/FEATURE_REVIEW.md), and [interactive dashboard HTML](docs/FEATURE_DASHBOARD.html).
+
+GitHub renders the Markdown overview directly. Download the HTML dashboard and open the saved file locally for interactive filters; repository HTML is shown as source on GitHub. No Pages hosting, application service or data collection is activated.
+
 - [Setup](SETUP.md), [architecture](ARCHITECTURE.md), [security](SECURITY.md).
 - [Development](docs/DEVELOPMENT.md), [tests](docs/TESTING.md), [CI](docs/CI_COMPUTE.md).
 - [Document library](docs/DOCUMENT_LIBRARY.md), [optional local archive](docs/DOCUMENT_ARCHIVE.md), [tasks](docs/MANUAL_TASKS_AGENDA.md), [reminders](docs/TASK_REMINDERS.md).

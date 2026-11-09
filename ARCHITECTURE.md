@@ -49,3 +49,7 @@ An optional versioned plan extends the invoice aggregate and sealed revision sna
 ## Offline email intake — spec 058
 
 One immutable envelope table links exact raw-message bytes to initial document revision 1/attachment checksum. Bounded standard-library MIME decoding accepts one attachment and delegates original validation/PDF extraction to existing document creation. Owner serialization and one DB transaction protect per-owner/scope exact replay, quotas and audit. Shared attachments never expose raw email; metadata/exports remain creator-only. Aggregate source forgetting scrubs the envelope and derived invoice/plan history, retaining only a private exact-message replay tombstone. No mail network/job/model adapter. [Contract](docs/OFFLINE_EMAIL_INTAKE.md).
+
+## Feature overview and scope review — spec 059
+
+The feature dashboard is an offline generated documentation artifact, outside the application/runtime. The canonical register, reviewed stage/snapshot metadata and separately labelled per-reference critique generate Markdown/HTML deterministically. Only the exact validated artifact/data paths may take documentation CI; generator/template/policy changes remain full. Shared-implementation suggestions preserve domain stores/authority, not a global JSON database, memory/index or agent per feature. No deployed service or integration changes. [Review](docs/FEATURE_REVIEW.md).

@@ -58,6 +58,14 @@ def check(root: Path = ROOT) -> list[str]:
         text = path.read_text(errors="replace")
         if any(re.search(pattern, text) for pattern in secret_patterns):
             errors.append(f"{name}: possible private credential")
+    # A known static dashboard is documentation only while its output is exactly
+    # reproducible from reviewed data and the trusted generator/template.
+    from build_feature_overview import compare_outputs, expected_outputs
+    try:
+        _, outputs = expected_outputs(root)
+        errors.extend(compare_outputs(root, outputs))
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        errors.append(f"Feature overview: {exc}")
     return errors
 
 

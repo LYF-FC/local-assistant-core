@@ -1,0 +1,7 @@
+# Plan / tasks / convergence boundary
+
+Carry the unpublished overview commit into a new branch based on verified PR13 merge; preserve its original local branch. Review every register requirement and relevant preserved contracts, then publish recommendations without modifying canonical scope. Add the reviewed Markdown/HTML and reproducible public generator/template/metadata. Link from README, roadmap and register; record overlap ownership and decision candidates in reconciliation.
+
+Use strict count/source/review checks in existing repository policy. Narrowly allow only generated documentation/data paths; any change to the generator/template/selector/checks remains full CI. Test count integrity, missing/duplicate review rows, unknown completion claims, snapshot mismatch, tampered HTML and script-data escaping. Run makecheck, required static/privacy checks and isolated browser acceptance. App/schema/permissions unchanged; no new disposable PG/migration run is needed locally, while full selected hosted CI remains required for the critical tooling/policy batch.
+
+PR13 merge 33a3b91 verified; its exact feature head run 42643567341 passed all six jobs. Main run 42647752937 was in progress initially; no exact-main pass is inferred or polled. One coherent commit/PR, stop after publication. Implementation of review proposals requires its own bounded specification/authorization; this documentation review is not approval of candidate additions.

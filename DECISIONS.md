@@ -53,3 +53,7 @@ Deliver reviewed logical naming/destination proposals before an apply adapter. R
 ## Offline email intake — spec 058
 
 Preserve original email before live mailbox integration using a strict offline single-attachment boundary. Raw email can contain incidental private context, so shared document access does not grant envelope access. Exact raw-message replay is distinct from semantic forwarded-copy/business dedup. Terminal forgetting retains only a disclosed private message-checksum tombstone; scrub raw content, initial filename and attachment checksum. Do not treat sender headers or plan approval as authority. [Rationale/limits](docs/OFFLINE_EMAIL_INTAKE.md).
+
+## Feature overview and scope review — spec 059
+
+Publish individually reviewed requirements without deleting/merging canonical IDs or approving candidate additions. Distinguish engineering slices, accepted MVP user journeys and full retained feature contracts. A shared primitive can satisfy multiple requirements while permissions and acceptance remain separate. Existing milestone labels stay; v1.2 remains unallocated. This decision records review/measurement discipline, not acceptance of every recommendation or new runtime architecture. [Method and recommendations](docs/FEATURE_REVIEW.md).
