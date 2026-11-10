@@ -431,3 +431,8 @@ dialog::backdrop { background: rgba(25, 24, 20, .5); }
 
 .operations-panel { overflow-wrap: anywhere; }
 .operations-panel li { margin-block: .45rem; }
+
+.record-search-panel { overflow-wrap: anywhere; }
+.record-search-panel label { display: block; margin-block: .5rem; }
+.record-search-panel input { max-width: 100%; box-sizing: border-box; }
+.record-search-panel li { margin-block: .75rem; }

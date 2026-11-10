@@ -58,3 +58,6 @@ Spec065 [financial UI branch evidence](FINANCIAL_UI.md) exercises manual capture
 ## Current path to MVP completion — after merged financial UI
 
 PR20 closes the financial UI implementation batch, not whole-MVP acceptance. Spec066 supplies [bounded operations foundations](OPERATIONS_OVERVIEW.md); no milestone is waived. Continue coherent batches through unified approvals/search, scoped operational telemetry/reporting, authorized-adapter implementation and recovery reconciliation, then whole-MVP outage/restart/permission journeys. Real-model multilingual quality, real service activation and private HTTPS/independent-host/key/archive recovery require their existing separate approval and measured evidence. Synthetic engineering can proceed without activating those integrations. The 21 first-stage named features and all supporting acceptance gates remain intact.
+
+
+Spec067 [scoped search](SCOPED_RECORD_SEARCH.md) supplies one explicit task/document entry, bounded pages/current-source navigation and privacy/failure evidence over existing APIs. It does not close the complete approvals/inbox/all-library/semantic search, model/live-provider/monitoring/outage/independent recovery gates. PR21 supplies merged operations foundations, not full operational acceptance.

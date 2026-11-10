@@ -1,4 +1,4 @@
-# Operations overview — spec066 branch
+# Operations overview — merged PR21
 
 An explicitly granted technical administrator can open **Operations overview** and choose **Reload operations observations**. This reports bounded local engineering observations. There is no background polling, privileged shell, outbound probe, model call or action control. Technical administration does not expose another member's financial, household or Work records.
 
@@ -24,6 +24,8 @@ The client strictly validates schema, actor/scope, fixed catalogue IDs, source/s
 
 ## Evidence and remaining MVP work
 
-[Spec066](../specs/066-operations-overview/spec.md) and its convergence distinguish branch checks from merge/release evidence. [PR20](https://github.com/LYF-FC/local-assistant-core/pull/20) already merged financial capture UI; the [dashboard](FEATURE_DASHBOARD.html) records that evidence without promoting full FIN-06 acceptance. Current operations engineering is not yet counted as merged.
+[Spec066](../specs/066-operations-overview/spec.md) and its convergence distinguish branch checks from merge/release evidence. [PR20](https://github.com/LYF-FC/local-assistant-core/pull/20) already merged financial capture UI; the [dashboard](FEATURE_DASHBOARD.html) records that evidence without promoting full FIN-06 acceptance. PR21 is merged engineering, not full monitoring or MVP acceptance.
 
 This batch advances existing OPS-09/RND-01 foundations. Complete monitoring, scheduled audit/scouting, unified approvals/search, real-model multilingual quality, live calendar/channel/intake/filing adapters, outage/restart acceptance, independent clean-host/key/archive recovery and separately authorized private adoption remain. All original155 scope references, original99 comparison and later/deferred ordering are preserved. The MVP is not declared finished by a green component suite.
+
+PR21 merged at `4001230471d19f83fe9c9a8ef3d6d38622381dfc`; exact head `2c5cdb27d6dd9a24ba54b17d925dc5f70fa4d507` run42880083517 passed all six jobs. Initial main push run42882633058 was in progress when checked; no full-main/host certificate is inferred.

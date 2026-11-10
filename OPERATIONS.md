@@ -89,3 +89,8 @@ Follow [the storage/API contract](docs/FINANCIAL_REGISTER_API.md). Migration0031
 ### Spec066 branch — inspect local observations explicitly
 
 A current technical administrator can reload [Operations overview](docs/OPERATIONS_OVERVIEW.md). This is a 60-second bounded snapshot, not an independent alert, worker heartbeat, backup certificate or periodic audit. Unknown capacity/backup/certificate/host/model/service checks remain operator acceptance work. No Docker socket, filesystem/network probes, auto-repair, activation or private-deployment change is introduced.
+
+
+### Spec067 branch — search privacy
+
+[Search tasks/documents](docs/SCOPED_RECORD_SEARCH.md) requires explicit submission and current grants. Queries/results/previews clear on hidden tab, context change, denial or the original60second deadline; paging cannot renew unchanged sections. Source references remain inert. No deployment, backend, provider or model activation; existing recovery/activation gates remain.
