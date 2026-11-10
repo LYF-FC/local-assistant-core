@@ -2,11 +2,11 @@
   "schema_version": 1,
   "snapshot": {
     "date": "2026-11-09",
-    "main_sha": "33a3b91679066b788e23cc5df2f61ae6c34ab1db",
-    "merged_through_pr": 13,
-    "register_rows_sha256": "e12b88dbc230e52701f06420a4d719d191ae583368edfd47d5083145c3ebdc46",
+    "main_sha": "1f0b1ba98e8b027919e48d03335180b3a6d70c80",
+    "merged_through_pr": 15,
+    "register_rows_sha256": "fb931d10c318ff126c6d35a115cdb6895479fe67545aaeec4830e3ffdfd21117",
     "main_ci": {
-      "run_id": 42647752937,
+      "run_id": 42668687282,
       "state_at_check": "in_progress"
     }
   },
@@ -24,7 +24,8 @@
     "v1.2": "v1.2 · Unassigned",
     "Cross-cutting": "Cross-cutting · No fixed release",
     "Installation gate": "Installation/adoption gate",
-    "Release gate": "Release/readiness gate · MVP through v1.0"
+    "Release gate": "Release/readiness gate · MVP through v1.0",
+    "Deferred review": "After existing scope · All review improvements/refactoring + six supporting bundles"
   },
   "first_stage": {
     "CORE-01": "MVP",
@@ -175,7 +176,13 @@
     "INSTALL-09": "Installation gate",
     "INSTALL-10": "Installation gate",
     "INSTALL-11": "Installation gate",
-    "INSTALL-12": "Installation gate"
+    "INSTALL-12": "Installation gate",
+    "REV-01": "Deferred review",
+    "REV-02": "Deferred review",
+    "REV-03": "Deferred review",
+    "REV-04": "Deferred review",
+    "REV-05": "Deferred review",
+    "REV-06": "Deferred review"
   },
   "named_ids": [
     "CORE-01",
@@ -337,6 +344,12 @@
       "title": "PR #13 · Offline email intake",
       "description": "Exact original email/single attachment, private provenance, replay and aggregate forgetting; no live mailbox.",
       "path": "pull/13",
+      "baseline": false
+    },
+    {
+      "title": "PR #15 · Installation setup",
+      "description": "Explicit installation UUID, versioned bounded defaults, reviewed sanitized templates and informational readiness; no activation controls or dynamic membership.",
+      "path": "pull/15",
       "baseline": false
     }
   ],

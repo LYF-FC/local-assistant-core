@@ -1,6 +1,6 @@
 # Configurable household installations — approved scope
 
-Owner-approved extension, 8 November 2026. INSTALL-01–12 add requirements to the [register](FEATURE_REGISTER.md), with [dependencies](FEATURE_DEPENDENCIES.md). This document retains the full approved contracts. The [spec060 branch foundation](INSTALLATION_SETUP.md) implements only identity, bounded language/timezone defaults, reviewed setup templates and informational readiness; feature switches, flexible-member schema, production support and private migration remain open.
+Owner-approved extension, 8 November 2026. INSTALL-01–12 add requirements to the [register](FEATURE_REGISTER.md), with [dependencies](FEATURE_DEPENDENCIES.md). This document retains the full approved contracts. The [spec060 foundation merged in PR15](INSTALLATION_SETUP.md) implements only identity, bounded language/timezone defaults, reviewed setup templates and informational readiness; feature switches, flexible-member schema, production support and private migration remain open.
 
 ## Specify
 

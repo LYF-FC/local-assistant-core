@@ -1,0 +1,7 @@
+# Plan / analyze
+
+One documentation/data and dashboard-presentation batch: add the approved deferred-programme contract and six mapped supporting references, refresh existing review/roadmap/current evidence, then update progress metadata and regenerate HTML/Markdown using the existing trusted generator. Existing stage/cohort/fingerprint/coverage checks already support new non-named references, so no generator/policy/runtime changes are needed. Visual review exposed a misleading generic no-scope fallback for supporting-only stages; update only that template display and approval notice. No schema/export-format change: only the existing static snapshot data evolves; there are no new app exports, grants or audit effects.
+
+The short documentation flow is appropriate: specify/clarify/checklist, plan/analyze, tasks, implement and converge. Use required checks once and focused documentation verification; no new local disposable-PG/restore evidence is needed because application/schema/grants are unchanged. Offline browser checks cover all/named/supporting/deferred counts and navigation. Prepare one commit/PR/push; report expected full hosted coverage because template edits conservatively select all jobs; no policy exception is introduced. Stop without polling/merge.
+
+Verified PR15 merge main 1f0b1ba98e8b027919e48d03335180b3a6d70c80 and green exact-head run42663955214. Main run42668687282 was initially in progress; no exact-main pass is inferred or polled.

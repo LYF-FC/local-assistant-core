@@ -1,6 +1,6 @@
 # Feature overview
 
-Snapshot: **9 November 2026**, verified merged main [`33a3b91`](https://github.com/LYF-FC/local-assistant-core/commit/33a3b91679066b788e23cc5df2f61ae6c34ab1db) through PR #13. This view does not query CI or certify exact-main/host/provider acceptance.
+Snapshot: **9 November 2026**, verified merged main [`1f0b1ba`](https://github.com/LYF-FC/local-assistant-core/commit/1f0b1ba98e8b027919e48d03335180b3a6d70c80) through PR #15. This view does not query CI or certify exact-main/host/provider acceptance.
 
 [Critical review of every feature](FEATURE_REVIEW.md) · [Interactive dashboard — download HTML](FEATURE_DASHBOARD.html) · [Source metadata](FEATURE_PROGRESS.json)
 
@@ -12,12 +12,12 @@ GitHub renders this Markdown summary. It displays HTML as source: download the d
 |---|---:|---:|---:|---:|
 | Original named product features | **0** | **17** | **82** | **99** |
 | Of those, first-stage MVP | **0** | **16** | **5** | **21** |
-| Additional supporting references | **0** | **16** | **34** | **50** |
-| Complete retained register | **0** | **33** | **116** | **149** |
+| Additional supporting references | **0** | **21** | **35** | **56** |
+| Complete retained register | **0** | **38** | **117** | **155** |
 
 **17 of 99 have working foundations; 0 full retained feature contracts are accepted.** This is not a percentage of effort or production readiness. A bounded MVP can be accepted before all later expansions of a broad feature finish; its own user-journey gates must actually pass. Planned/not evidenced does not prove no code exists. The additional supporting references overlap product outcomes, not extra independent deliverables.
 
-Across all 149 references: 33 partial and 116 planned/not evidenced. Review verdicts describe recommendations and never change delivery status or approved scope.
+Across all 155 references: 38 partial and 117 planned/not evidenced. Review verdicts describe recommendations and never change delivery status or approved scope.
 
 ## Existing version plan
 
@@ -39,7 +39,7 @@ A feature is counted once at its first stage; later expansions remain retained. 
 
 ## Delivered building blocks
 
-9 public feature batches have merged after the imported engineering foundation. Documentation PRs are not feature deliveries; building blocks are not added to the original-feature denominator.
+10 public feature batches have merged after the imported engineering foundation. Documentation PRs are not feature deliveries; building blocks are not added to the original-feature denominator.
 
 | Evidence | Working engineering subset |
 |---|---|
@@ -53,6 +53,7 @@ A feature is counted once at its first stage; later expansions remain retained. 
 | [PR #11 · Invoice review](https://github.com/LYF-FC/local-assistant-core/pull/11) | Bounded candidates, explicit confirmed/unknown decisions, duplicate hints and forgetting. |
 | [PR #12 · Filing plans](https://github.com/LYF-FC/local-assistant-core/pull/12) | Logical names/destinations, manual correction and non-executable approval/withdrawal. |
 | [PR #13 · Offline email intake](https://github.com/LYF-FC/local-assistant-core/pull/13) | Exact original email/single attachment, private provenance, replay and aggregate forgetting; no live mailbox. |
+| [PR #15 · Installation setup](https://github.com/LYF-FC/local-assistant-core/pull/15) | Explicit installation UUID, versioned bounded defaults, reviewed sanitized templates and informational readiness; no activation controls or dynamic membership. |
 
 ## All original named features
 
@@ -202,7 +203,7 @@ Statuses come from the [register](FEATURE_REGISTER.md). Review recommendations l
 These overlap product features and remain fully retained, including INSTALL and RND extensions.
 
 <details>
-<summary>Show all 50 supporting requirements (16 partial, 34 planned)</summary>
+<summary>Show all 56 supporting requirements (21 partial, 35 planned)</summary>
 
 | ID | Requirement | First stage / gate | Merged status | Review |
 |---|---|---|---|---|
@@ -244,18 +245,24 @@ These overlap product features and remain fully retained, including INSTALL and 
 | REM-01 | Existing task/reminder baseline and remaining delivery | MVP · v0.1–v0.2 — MVP partial | partial | [Consolidate](FEATURE_REVIEW.md#rem) |
 | DOC-X01 | Document staging versus durable ingestion | MVP · v0.1–v0.2 — MVP partial | partial | [Consolidate](FEATURE_REVIEW.md#doc) |
 | DOC-X02 | Deletion and old-backup resurrection | MVP · v0.1–v0.2 — MVP/recovery gate | partial | [Keep](FEATURE_REVIEW.md#doc) |
-| INSTALL-01 | Independent household installations | Installation/adoption gate — Before private adoption and reusable-installation release | planned | [Keep](FEATURE_REVIEW.md#install) |
-| INSTALL-02 | Versioned private configuration | Installation/adoption gate — Before private adoption and reusable-installation release | planned | [Generalize](FEATURE_REVIEW.md#install) |
-| INSTALL-03 | Explicit feature activation | Installation/adoption gate — Before private adoption and reusable-installation release | planned | [Keep](FEATURE_REVIEW.md#install) |
+| INSTALL-01 | Independent household installations | Installation/adoption gate — Before private adoption and reusable-installation release | partial | [Keep](FEATURE_REVIEW.md#install) |
+| INSTALL-02 | Versioned private configuration | Installation/adoption gate — Before private adoption and reusable-installation release | partial | [Generalize](FEATURE_REVIEW.md#install) |
+| INSTALL-03 | Explicit feature activation | Installation/adoption gate — Before private adoption and reusable-installation release | partial | [Keep](FEATURE_REVIEW.md#install) |
 | INSTALL-04 | Dependency and safe-disable lifecycle | Installation/adoption gate — Before private adoption and reusable-installation release | planned | [Keep](FEATURE_REVIEW.md#install) |
 | INSTALL-05 | Configurable household onboarding | Installation/adoption gate — Before private adoption and reusable-installation release | planned | [Generalize](FEATURE_REVIEW.md#install) |
-| INSTALL-06 | Stable software keys and local identities | Installation/adoption gate — Before private adoption and reusable-installation release | planned | [Keep](FEATURE_REVIEW.md#install) |
+| INSTALL-06 | Stable software keys and local identities | Installation/adoption gate — Before private adoption and reusable-installation release | partial | [Keep](FEATURE_REVIEW.md#install) |
 | INSTALL-07 | Private credential provisioning | Installation/adoption gate — Before private adoption and reusable-installation release | planned | [Keep](FEATURE_REVIEW.md#install) |
-| INSTALL-08 | Safe reusable configuration templates | Installation/adoption gate — Before private adoption and reusable-installation release | planned | [Keep](FEATURE_REVIEW.md#install) |
+| INSTALL-08 | Safe reusable configuration templates | Installation/adoption gate — Before private adoption and reusable-installation release | partial | [Keep](FEATURE_REVIEW.md#install) |
 | INSTALL-09 | Cross-installation isolation acceptance | Installation/adoption gate — Before private adoption and reusable-installation release | planned | [Keep](FEATURE_REVIEW.md#install) |
 | INSTALL-10 | Versioned updates and configuration continuity | Installation/adoption gate — Before private adoption and reusable-installation release | planned | [Consolidate](FEATURE_REVIEW.md#install) |
 | INSTALL-11 | Explicit existing-installation conversion | Installation/adoption gate — Before private adoption and reusable-installation release | planned | [Keep](FEATURE_REVIEW.md#install) |
 | INSTALL-12 | Usable optional-feature acceptance | Installation/adoption gate — Before private adoption and reusable-installation release | planned | [Keep](FEATURE_REVIEW.md#install) |
+| REV-01 | Scoped contacts and service relationships | After existing scope · All review improvements/refactoring + six supporting bundles — After existing agreed scope, including later stages | planned | [Keep](FEATURE_REVIEW.md#rev) |
+| REV-02 | Departure, temporary delegation and access expiry | After existing scope · All review improvements/refactoring + six supporting bundles — After existing agreed scope, including later stages | planned | [Keep](FEATURE_REVIEW.md#rev) |
+| REV-03 | Accessibility and interruption recovery | After existing scope · All review improvements/refactoring + six supporting bundles — After existing agreed scope, including later stages | planned | [Keep](FEATURE_REVIEW.md#rev) |
+| REV-04 | Standing automation rule lifecycle | After existing scope · All review improvements/refactoring + six supporting bundles — After existing agreed scope, including later stages | planned | [Keep](FEATURE_REVIEW.md#rev) |
+| REV-05 | Consented emergency/custodian continuity | After existing scope · All review improvements/refactoring + six supporting bundles — After existing agreed scope, including later stages | planned | [Keep](FEATURE_REVIEW.md#rev) |
+| REV-06 | Cross-feature attention/resource budgets | After existing scope · All review improvements/refactoring + six supporting bundles — After existing agreed scope, including later stages | planned | [Keep](FEATURE_REVIEW.md#rev) |
 
 </details>
 

@@ -4,7 +4,7 @@ Local Assistant Core is a local-first assistant for private/shared household and
 
 ## Reading and authority
 
-- [Complete feature register](FEATURE_REGISTER.md): all 149 retained references, bounded evidence and remaining acceptance.
+- [Complete feature register](FEATURE_REGISTER.md): all 155 current references (the 149-reference baseline plus six approved deferred supporting bundles), bounded evidence and remaining acceptance.
 - [Dependencies](FEATURE_DEPENDENCIES.md): prerequisites for every register ID.
 - [MVP acceptance](MVP_ACCEPTANCE.md): measurable everyday outcomes and release gates.
 - [Reconciliation](SCOPE_RECONCILIATION.md): overlaps, supersessions, alternatives and unresolved decisions.
@@ -52,3 +52,8 @@ Autonomous transfers/trading, medical decisions, legal commitments and unapprove
 ## Task-specific LLM and dense/MoE investigation
 
 RND-04/05 add [model research](LLM_RESEARCH.md) within service R&D and product innovation. Investigate whether conversation, coding, cited answers and extraction benefit from different local models, comparing against a single general-model/deterministic baseline. Separately compare dense and sparse MoE architectures on actual supported hardware, measuring quality, memory, context, speed, concurrency, switching and operational cost. Application task routing and a model's internal experts are different mechanisms. No specialist model, MoE runtime, download, remote fallback or deployment is selected by this scope. Use synthetic bounded experiments and existing feature/configuration/permission boundaries; multiple models are not an unconditional MVP requirement.
+
+
+## Approved deferred review and refactoring
+
+[The programme contract](DEFERRED_REVIEW_PROGRAMME.md) retains all 149 original review assessments plus shared/whole-product improvements and REV-01–06 (former A–F). It follows implementation of the existing scope and later stages. Original 99 product-feature counts remain separate; no existing outcome or permission boundary is lost through consolidation. This approval changes planning, not current runtime/data access or live/production/private-migration authority.

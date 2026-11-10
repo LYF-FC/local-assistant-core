@@ -36,3 +36,8 @@ Before a reusable-installation release or private-data adoption, satisfy [INSTAL
 
 
 Spec060 [installation setup foundation](INSTALLATION_SETUP.md) is branch engineering supporting consistent later installation acceptance. It does not accept an MVP journey or replace live provider/host/recovery gates. Existing runtime defaults and permissions remain explicit; no source milestone or original acceptance contract is reduced.
+
+
+## Deferred review approval does not expand MVP
+
+All review improvements and REV-01–06 are approved after existing scope/later stages under [the programme contract](DEFERRED_REVIEW_PROGRAMME.md). Keep all original MVP acceptance outcomes, existing security/accessibility/recovery duties and separate activation/source gates; do not add six new MVP features or require distant full-scope completion before an earlier bounded MVP. Spec060 is merged PR15 engineering only; no full MVP journey is certified by setup foundations.
