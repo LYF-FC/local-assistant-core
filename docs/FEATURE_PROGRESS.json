@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "snapshot": {
-    "date": "2026-11-09",
-    "main_sha": "1f0b1ba98e8b027919e48d03335180b3a6d70c80",
-    "merged_through_pr": 15,
-    "register_rows_sha256": "fb931d10c318ff126c6d35a115cdb6895479fe67545aaeec4830e3ffdfd21117",
+    "date": "2026-11-10",
+    "main_sha": "3b41003b1361e740041d737712ff7eaada274861",
+    "merged_through_pr": 17,
+    "register_rows_sha256": "d1eac04e2052d7373600d9a8f99623adfb91732b35fbd4504ec0f6e848e48991",
     "main_ci": {
-      "run_id": 42668687282,
+      "run_id": 42816301574,
       "state_at_check": "in_progress"
     }
   },
@@ -350,6 +350,12 @@
       "title": "PR #15 · Installation setup",
       "description": "Explicit installation UUID, versioned bounded defaults, reviewed sanitized templates and informational readiness; no activation controls or dynamic membership.",
       "path": "pull/15",
+      "baseline": false
+    },
+    {
+      "title": "PR #17 · Scoped daily overview",
+      "description": "Explicit bounded agenda/tasks, private reminders and document attention with freshness clearing and current-source navigation; full dashboard/live/operations acceptance remains open.",
+      "path": "pull/17",
       "baseline": false
     }
   ],

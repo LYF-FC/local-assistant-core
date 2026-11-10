@@ -68,3 +68,8 @@ The feature dashboard is an offline generated documentation artifact, outside th
 ### Spec062 branch: ephemeral scoped overview
 
 [Daily overview](docs/DAILY_OVERVIEW.md) composes existing strict client briefing/reminder/document reads with one abort/generation/deadline boundary. Authority denials clear the batch; ordinary section failures remain explicit. At most60seconds from request start, hidden-tab/selection/session/view clearing, no persistence or background refresh. No new server store, grant, queue, mutation or external adapter. Source navigation preserves scope and rereads current server authority; task/reminder/calendar/document panels remain authoritative.
+
+
+### Spec063 design: restricted financial records
+
+[Financial capture](docs/FINANCIAL_CAPTURE.md) will use dedicated server-validated records/revisions while reusing existing identity, finance_private grants, audit and transport. Do not implement it solely as a client-side JSON convention in generic Memory or inherit automatic context eligibility. Explicit unknown/forecast and record-only plan review have distinct semantics. No new table, route, schema or inference path is implemented by this design batch.

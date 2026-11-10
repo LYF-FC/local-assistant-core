@@ -72,3 +72,8 @@ Owner approved all individual/whole-product review recommendations, generalizati
 ### Spec062 branch — compose baseline attention without another queue
 
 Use [an explicit daily overview](docs/DAILY_OVERVIEW.md) over existing scoped APIs, retaining separate owner/domain authority and honest first-page/freshness limits. Keep sign-in landing behavior and require manual refresh; do not add ambient all-scope queries, a global approval claim or a new mutation surface. Destination context is in memory and server-reread, never an authority token. Full review/refactoring directions remain deferred; existing MVP usability/privacy obligations continue now.
+
+
+### Spec063 design — financial input is not a forecast or action authority
+
+[The capture contract](docs/FINANCIAL_CAPTURE.md) separates owner-recorded confirmed inputs, assumptions, forecasts and unknowns; accepted plans require payload-bound record-only acknowledgement and reset on material correction. Store typed financial records with server validation, not arbitrary Memory profiles labelled as finance. Existing finance scope remains owner-private with explicit current grants. This is a future implementation boundary, not permission to calculate, connect providers, transfer funds or adopt private data.

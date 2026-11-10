@@ -69,3 +69,8 @@ The [approved later programme](docs/DEFERRED_REVIEW_PROGRAMME.md) introduces no 
 ### Spec062 branch: overview operation
 
 [Daily overview](docs/DAILY_OVERVIEW.md) needs no new service, migration, fixture privilege or consumer activation. An unavailable section is not an empty list or a healthy subsystem. After expiry/hidden tab/context changes, refresh explicitly; external notification and live source status remain separate. No app/worker/secret/deployment configuration or private installation is changed. Existing audit, recovery and source-panel operations remain authoritative.
+
+
+### Spec063 financial capture design
+
+[The contract](docs/FINANCIAL_CAPTURE.md) requires full synthetic PostgreSQL/migration/restore and runtime-grant evidence before delivery. No operator provisioning, database migration or finance export is performed now. Future forgetting must disclose old backup/download limits; future downgrade needs a reviewed protected backup and loss disclosure. Existing private repository/deployment and all activation/migration authorizations stay unchanged.

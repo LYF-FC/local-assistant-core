@@ -93,3 +93,8 @@ Spec059 review merged in PR14; spec060 setup foundations merged in PR15. Only IN
 ## Current branch — scoped daily overview
 
 [Spec062](docs/DAILY_OVERVIEW.md) groups bounded agenda/tasks, owner-private in-app reminders, document text/extraction attention, failure/freshness limits and current-context source navigation. It implements baseline CORE-08/09, UI-01 and ORG-02 foundations without activating live services, new permissions or a separate queue. Global approvals/search/operations and complete MVP journeys remain open. This is independent of the approved later REV/refactoring programme, whose ordering remains after existing scope. PR16 merged its public scope reconciliation; all155 references remain retained.
+
+
+## Next FIN-06 dependency — reviewed capture contract
+
+[Spec063 financial capture](docs/FINANCIAL_CAPTURE.md) defines owner-private goals, dated assumptions, recorded existing plans and source references before implementation. Server-validated types, unknown/forecast distinctions, record-only plan acknowledgement/reset and export/forget/recovery must be demonstrated together. This design batch changes no runtime status or milestone. PR17 daily overview is now merged; basic finance remains open, alongside the other live/provider/operations/host acceptance gates. No deferred REV feature is brought forward.

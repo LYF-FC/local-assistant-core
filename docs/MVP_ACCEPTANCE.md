@@ -44,3 +44,6 @@ All review improvements and REV-01–06 are approved after existing scope/later 
 
 
 Spec062 branch [daily overview](DAILY_OVERVIEW.md) supplies bounded scoped agenda/reminder/document-attention and current-source navigation evidence for the existing dashboard journey. It does not close complete approvals/search/operations, external notification/live calendar, financial capture or whole-MVP/host acceptance. At most60second/first-page/partial-failure limits remain explicit; no new MVP gate or deferred REV scope is introduced.
+
+
+Spec063 [financial capture contract](FINANCIAL_CAPTURE.md) makes the basic manual FIN-06 gate measurable before implementation: goals/dated assumptions/recorded plans/sources in owner-private finance space, correction/export/forget, current authority and actual recovery evidence. This planning batch does not satisfy that gate, expand into portfolio/scenario calculations or authorize financial actions. Existing MVP/later-stage acceptance is unchanged.
