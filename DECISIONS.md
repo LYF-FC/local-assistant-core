@@ -59,7 +59,7 @@ Preserve original email before live mailbox integration using a strict offline s
 Publish individually reviewed requirements without deleting/merging canonical IDs or approving candidate additions. Distinguish engineering slices, accepted MVP user journeys and full retained feature contracts. A shared primitive can satisfy multiple requirements while permissions and acceptance remain separate. Existing milestone labels stay; v1.2 remains unallocated. This decision records review/measurement discipline, not acceptance of every recommendation or new runtime architecture. [Method and recommendations](docs/FEATURE_REVIEW.md).
 
 
-### Spec060 branch: explicit installation initialization and reviewed templates
+### Spec060 (merged PR #15): explicit installation initialization and reviewed templates
 
 [Contract](docs/INSTALLATION_SETUP.md): migration/read do not mint installation identity; first confirmed initialization does. Defaults are bounded setup state, not global rewrites of existing timezone/language records. Shareable allowlisted templates carry only languages/timezone; independent initialization creates fresh identity, private recovery preserves identity. Readiness is an informational dependency catalogue with no activation controls or health claims. Existing trusted provisioning remains required; onboarding, dynamic grants, lifecycle compaction and feature controls remain open.
 
@@ -69,7 +69,7 @@ Publish individually reviewed requirements without deleting/merging canonical ID
 Owner approved all individual/whole-product review recommendations, generalization/consolidation/validation/challenge work, the shared implementation map and former candidates A–F. [Contract](docs/DEFERRED_REVIEW_PROGRAMME.md). Schedule after the entire pre-review 149-reference implementation scope and later stages; this supersedes earlier pending-approval labels and proposed priority shifts, without delaying existing safety duties or earlier MVP acceptance. Preserve all baseline outcomes/IDs and original 99 counts; add REV-01–06 as planned supporting bundles with parent mapping, not six independent product features. Existing behavior can satisfy an improvement without needless rewriting. No production/provider/private-data authorization is conferred. Spec060 merged PR15 provides partial installation foundations, not complete installation acceptance.
 
 
-### Spec062 branch — compose baseline attention without another queue
+### Spec062 (merged PR #17) — compose baseline attention without another queue
 
 Use [an explicit daily overview](docs/DAILY_OVERVIEW.md) over existing scoped APIs, retaining separate owner/domain authority and honest first-page/freshness limits. Keep sign-in landing behavior and require manual refresh; do not add ambient all-scope queries, a global approval claim or a new mutation surface. Destination context is in memory and server-reread, never an authority token. Full review/refactoring directions remain deferred; existing MVP usability/privacy obligations continue now.
 
@@ -79,21 +79,26 @@ Use [an explicit daily overview](docs/DAILY_OVERVIEW.md) over existing scoped AP
 [The capture contract](docs/FINANCIAL_CAPTURE.md) separates owner-recorded confirmed inputs, assumptions, forecasts and unknowns; accepted plans require payload-bound record-only acknowledgement and reset on material correction. Store typed financial records with server validation, not arbitrary Memory profiles labelled as finance. Existing finance scope remains owner-private with explicit current grants. This is a future implementation boundary, not permission to calculate, connect providers, transfer funds or adopt private data.
 
 
-### Spec064 branch — deliver the finance server boundary independently
+### Spec064 (merged PR #19) — deliver the finance server boundary independently
 
 Implement [typed storage/API](docs/FINANCIAL_REGISTER_API.md) and its PostgreSQL/recovery evidence before the financial UI. Unknown versus zero/forecast, current owner/grant and record-only plan acknowledgement are server-enforced. Corrections reset acceptance; generic approvals/Memory do not confer financial authority. This is a bounded foundation, not reduced FIN-06 scope. UI/freshness/whole-MVP and later finance remain required.
 
 
-### Spec065 branch — finish the financial owner workflow
+### Spec065 (merged PR #20) — finish the financial owner workflow
 
 Use [explicit typed forms and separate acknowledgements](docs/FINANCIAL_UI.md) for plan-record acceptance, private-copy export and managed forgetting. Unknown amounts stay null; zero and forecasts keep explicit labels. Kind/owner/scope cannot change through correction, and accepted plans grant no execution authority. Reuse reviewed APIs; no backend/schema changes or new finance calculation. Dashboard promotes only verified merged PR19 server evidence, preserving the original 99 cohort and later/deferred scope.
 
 
-### Spec066 branch — observations must retain uncertainty
+### Spec066 (merged PR #21) — observations must retain uncertainty
 
 Use [explicit observed/configured/disabled/unknown states](docs/OPERATIONS_OVERVIEW.md), not a global green health badge. Installed versions do not establish approval/support/license/advisory status. Preserve INSERT-only runtime audit access: audit review stays unavailable until a narrow separately reviewed projection exists; OPS-10 is retained. Sample only current actor technical-admin jobs, without payloads/global counts/overdue inference.
 
 
-### Spec067 branch — bounded search before complete unified inbox
+### Spec067 (merged PR #22) — bounded search before complete unified inbox
 
 Use [one explicit scope and two existing libraries](docs/SCOPED_RECORD_SEARCH.md), with honest page/unavailable/review labels. Do not call first pages complete global search or generate rankings/advice. Keep pending approvals, Memory/finance/Work and semantic search requirements open. Current-source rereads and minimal navigation targets prevent old matches becoming edit authority.
+
+
+### 10 November 2026 — synthetic MVP first, real connectors by spike, real data last
+
+Complete the everyday MVP against synthetic data/adapters before real services. Validate high-risk adapters (calendar and notification first, then mail intake and local model) through short time-boxed spikes using throwaway accounts and synthetic content, ideally before further features depend on their sealed schemas. Use real private data only last, under separate authorization. Rationale: keeps private data out of development and keeps activation gated while reducing late surprises from provider behaviour. A spike confers no production authority and each account/data flow needs explicit approval. See the [roadmap strategy](ROADMAP.md#delivery-strategy--synthetic-mvp-first-then-connector-spikes-agreed-10-november-2026).

@@ -19,6 +19,7 @@ For a quick counted inventory, see the [feature overview](docs/FEATURE_OVERVIEW.
 | Merged foundation | Spec 058 bounded offline email originals/single-attachment intake ([PR #13](https://github.com/LYF-FC/local-assistant-core/pull/13)), exact replay, creator-only provenance and aggregate forgetting. |
 | Merged documentation | Spec 059 counted overview/dashboard and critical review of all 149 references; the complete review programme and six additions are now approved for after existing scope; approval is not runtime delivery. |
 | Merged foundation | Spec060 installation UUID, bounded defaults, reviewed templates and informational readiness ([PR15](https://github.com/LYF-FC/local-assistant-core/pull/15)); dynamic members and feature activation remain open. |
+| Merged foundation | Specs 062–067 ([PR17](https://github.com/LYF-FC/local-assistant-core/pull/17)–[PR22](https://github.com/LYF-FC/local-assistant-core/pull/22)): scoped daily overview, restricted financial capture (design, server, UI), bounded operations overview and scoped task/document search; no live service, model or status promotion beyond the dashboard counts. |
 | Next | Authorized local-model quality/activation and fuller conversation/synthesis, alongside early installation configuration design. Live restricted mailbox/job recovery and separately authorized exactly-once filing remain dependencies after offline intake/proposal review. |
 | Next by dependency | Live calendar adapter/full briefing; recurrence/one notification path; forwarded invoice intake/filing; operations and independent recovery. |
 | Later, retained | Household/food, care/coaching, connected life, NOMAD/education, professional/creative/financial modules and governed platform evolution below. |
@@ -115,6 +116,22 @@ Spec059 review merged in PR14; spec060 setup foundations merged in PR15. Only IN
 PR20 merged the financial capture UI. [Spec066 operations overview](docs/OPERATIONS_OVERVIEW.md) now groups explicit service/configuration observations, runtime version inventory, current-actor technical job statuses and private failure/freshness handling for existing OPS-09/RND-01. PR21 is merged engineering, not full operations acceptance. OPS-10 audit/reporting remains open without broadening audit access. The next retained MVP gaps include unified approvals/search, measured service/worker/backup/capacity monitoring, bounded live-adapter engineering, real local-model quality, outage/restart and independent host/key/archive recovery acceptance. Integrations, private adoption and production activation still require separate authorization; original later/deferred scope is unchanged.
 
 
-## Current branch — scoped task and document search
+## Merged PR22 — scoped task and document search
 
-PR21 merged bounded operations foundations; full monitoring/audit/host gates remain. [Spec067](docs/SCOPED_RECORD_SEARCH.md) groups keyword search over existing task/document APIs, separate paging/partial failures, current-source validation and source-view navigation with ephemeral privacy. This advances existing CORE-08/UI-01 without new scope, provider or model. Pending approvals, broader/semantic search, measured monitoring/audit, adapter engineering and whole-MVP/outage/independent recovery remain retained next dependencies; real activation/private adoption remain separately authorized.
+[Spec067](docs/SCOPED_RECORD_SEARCH.md), merged in [PR #22](https://github.com/LYF-FC/local-assistant-core/pull/22) after PR21 bounded operations foundations (full monitoring/audit/host gates remain), groups keyword search over existing task/document APIs, separate paging/partial failures, current-source validation and source-view navigation with ephemeral privacy. This advances existing CORE-08/UI-01 without new scope, provider or model. Pending approvals, broader/semantic search, measured monitoring/audit, adapter engineering and whole-MVP/outage/independent recovery remain retained next dependencies; real activation/private adoption remain separately authorized.
+
+
+## Delivery strategy — synthetic MVP first, then connector spikes (agreed 10 November 2026)
+
+Finish the everyday MVP with synthetic data and synthetic adapters first. Then, before any real data is used, run short time-boxed connector spikes: a real connector or local model exercised with a throwaway/sandbox account and invented content, to compare actual provider behaviour with the adapter contracts. Real private data comes last, behind separate authorization. A spike is not production activation: each needs its own approval for any account it uses, a stated data flow and no private records. Calendar and notification spikes start first, as early as their feature batches allow, because their schemas are sealed and costly to change; mail intake and local-model spikes follow. Retained later scope, owner approvals and activation boundaries are unchanged.
+
+| Proposed order of remaining synthetic MVP work | Notes |
+|---|---|
+| 1 · One notification path with a synthetic channel | Delivery states (pending/delivered/failed/unknown), recipient mapping, quiet hours, day budgets, deduplication and bounded retry. |
+| 2 · Invoice filing and job recovery | Synthetic destination and restricted inbox; exactly-once filing under crashes and restarts. Reuses item 1 delivery/retry semantics. |
+| 3 · Calendar recurrence and full briefing | Recurrence/time zone expansion and a provider-shaped synthetic source. |
+| 4 · Unified attention inbox | Pending approvals and remaining search gaps. |
+| 5 · Operations and recovery | Worker/backup/capacity observation, clean-host restore including originals. |
+| 6 · Whole-MVP acceptance tests | Cross-user leakage, offline/model-failure and restart journeys. |
+
+This order is a proposal derived from the batch table above and dependency analysis; it can change when code inspection warrants and does not replace the exit gates in that table.

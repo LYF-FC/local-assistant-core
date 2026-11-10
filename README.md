@@ -2,7 +2,7 @@
 
 Local-first assistant software built with FastAPI, PostgreSQL and React/TypeScript. This is a **development/test source snapshot**, not a supported production release. It ships no personal profile, private records, live credentials, models or external-provider activation.
 
-Implemented engineering includes HTTPS identity/session controls, explicit scoped Memory and Discovery, selected local context, manual tasks/agenda, private in-app reminders, bounded text/Markdown document originals/version history/review/search/citations, and an optional synthetic Work review/recovery pilot. Staging/production API startup remains refused. No public application service is deployed by publishing this source.
+Implemented engineering includes HTTPS identity/session controls, explicit scoped Memory and Discovery, selected local context, manual tasks/agenda, private in-app reminders and finite recurring routines, bounded text/Markdown/PDF/OCR document originals with version history, review, search and cited answers, bounded calendar reconciliation and daily briefing, invoice field review, filing plans and offline email intake, restricted financial capture, installation setup defaults, an operations overview, scoped task/document search, and an optional synthetic Work review/recovery pilot. These are synthetic engineering foundations; the full MVP is not accepted. Staging/production API startup remains refused. No public application service is deployed by publishing this source.
 
 ## Start here
 

@@ -39,3 +39,6 @@ PR20 financial UI is verified merged; 13 public engineering batches now follow t
 
 
 PR21 operations foundations are verified merged:OPS-09 advances only to partial and RND-01 records runtime version observations. Named19/all40 partial,14 merged public batches. Spec067 [scoped search](SCOPED_RECORD_SEARCH.md) is current branch engineering, not complete unified inbox/search or MVP acceptance.
+
+
+PR22 scoped search is verified merged. Counts are unchanged: named 19 partial, all 155 references 40 partial, 15 merged public engineering batches and no full retained feature contract accepted. The earlier statement that spec067 is current branch engineering is superseded. Remaining MVP gaps and their proposed order are in the [roadmap](../ROADMAP.md#delivery-strategy--synthetic-mvp-first-then-connector-spikes-agreed-10-november-2026).

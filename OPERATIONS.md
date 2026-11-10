@@ -56,7 +56,7 @@ Migration 0029 protects raw email/initial source linkage with restricted scrub-c
 After a verified feature merge or approved scope change, reconcile register/roadmap and docs/FEATURE_PROGRESS.json, including its snapshot fingerprint, then run `python3 scripts/build_feature_overview.py`. Repository policy checks generated output and ID/review coverage without network or writes; `--check` can be run directly. Export local copies only through an explicit `--export-dir PATH`. Do not query CI just to refresh a static view or certify operational health from its counters. GitHub shows Markdown and downloadable HTML source; no hosting/service/telemetry is activated.
 
 
-### Installation setup foundation (spec060 branch)
+### Installation setup foundation (spec060, merged PR #15)
 
 Follow [the setup/template/identity and rollback contract](docs/INSTALLATION_SETUP.md). Current technical administrators explicitly preview/apply defaults; no provider/worker is activated. Review preference/timezone disclosure before exporting an unmanaged template. At100 revisions changed writes stop, while reads/export remain available. Backups preserve identity/history; templates cannot restore them. Migration0030 downgrade destroys these records and needs a reviewed protected-backup rollback. No private upgrade or deployment authorization is implied.
 
@@ -66,7 +66,7 @@ Follow [the setup/template/identity and rollback contract](docs/INSTALLATION_SET
 The [approved later programme](docs/DEFERRED_REVIEW_PROGRAMME.md) introduces no running service, deployment, background collection, permission, continuity-pack export or resource policy now. Its six planned REV bundles and all 149 baseline improvements follow existing scope. Future refactors require compatibility/recovery and audit review; existing private systems and separately authorized integration/activation/migration gates stay unchanged. Spec060 references above now describe merged PR15 engineering; no private installation upgrade follows.
 
 
-### Spec062 branch: overview operation
+### Spec062 (merged PR #17): overview operation
 
 [Daily overview](docs/DAILY_OVERVIEW.md) needs no new service, migration, fixture privilege or consumer activation. An unavailable section is not an empty list or a healthy subsystem. After expiry/hidden tab/context changes, refresh explicitly; external notification and live source status remain separate. No app/worker/secret/deployment configuration or private installation is changed. Existing audit, recovery and source-panel operations remain authoritative.
 
@@ -76,21 +76,21 @@ The [approved later programme](docs/DEFERRED_REVIEW_PROGRAMME.md) introduces no 
 [The contract](docs/FINANCIAL_CAPTURE.md) requires full synthetic PostgreSQL/migration/restore and runtime-grant evidence before delivery. No operator provisioning, database migration or finance export is performed now. Future forgetting must disclose old backup/download limits; future downgrade needs a reviewed protected backup and loss disclosure. Existing private repository/deployment and all activation/migration authorizations stay unchanged.
 
 
-### Spec064 branch — financial migration and recovery
+### Spec064 (merged PR #19) — financial migration and recovery
 
 Follow [the storage/API contract](docs/FINANCIAL_REGISTER_API.md). Migration0031 downgrade destroys financial records/history and requires reviewed protected-backup rollback; no private upgrade is authorized. Synthetic full restore must preserve basis/zero/unknown/source/acceptance history and scrubbed tombstones without enabling consumers. Downloads and old WAL/dumps remain outside managed forgetting; no external financial action is introduced.
 
 
-### Spec065 branch — financial UI privacy
+### Spec065 (merged PR #20) — financial UI privacy
 
 [Financial register](docs/FINANCIAL_UI.md) requires the existing current finance grant and ownership; no setup/migration/worker or private deployment change. Drafts/data clear on hidden tab, expiry or context change; explicit current reload is required after conflicts/ambiguous errors. Downloads are unmanaged bounded copies; forgetting does not erase old dumps/WAL/screenshots/downloads. Existing server recovery and separate activation/private-adoption gates remain authoritative.
 
 
-### Spec066 branch — inspect local observations explicitly
+### Spec066 (merged PR #21) — inspect local observations explicitly
 
 A current technical administrator can reload [Operations overview](docs/OPERATIONS_OVERVIEW.md). This is a 60-second bounded snapshot, not an independent alert, worker heartbeat, backup certificate or periodic audit. Unknown capacity/backup/certificate/host/model/service checks remain operator acceptance work. No Docker socket, filesystem/network probes, auto-repair, activation or private-deployment change is introduced.
 
 
-### Spec067 branch — search privacy
+### Spec067 (merged PR #22) — search privacy
 
 [Search tasks/documents](docs/SCOPED_RECORD_SEARCH.md) requires explicit submission and current grants. Queries/results/previews clear on hidden tab, context change, denial or the original60second deadline; paging cannot renew unchanged sections. Source references remain inert. No deployment, backend, provider or model activation; existing recovery/activation gates remain.

@@ -2,12 +2,12 @@
   "schema_version": 1,
   "snapshot": {
     "date": "2026-11-10",
-    "main_sha": "4001230471d19f83fe9c9a8ef3d6d38622381dfc",
-    "merged_through_pr": 21,
+    "main_sha": "267020dd1eebcd7b4700dcbe362995d009ffef6e",
+    "merged_through_pr": 22,
     "register_rows_sha256": "cd56d493c4f85ae4891e1329c40c7ef3a4f105fa13dc91adc1a1f0116ff0ae0f",
     "main_ci": {
-      "run_id": 42882633058,
-      "state_at_check": "in_progress"
+      "run_id": 42889642790,
+      "state_at_check": "completed"
     }
   },
   "stages": {
@@ -374,6 +374,12 @@
       "title": "PR #21 · Operations observations",
       "description": "Protected API/database transaction observations, runtime software metadata and bounded own technical job statuses; configured flags remain unverified, audit review and full monitoring/host acceptance stay open.",
       "path": "pull/21",
+      "baseline": false
+    },
+    {
+      "title": "PR #22 · Scoped task/document search",
+      "description": "Bounded keyword search over existing task and document APIs with independent paging, current-source validation and source-view navigation; no status counts change and pending approvals, broader search and whole-MVP acceptance remain open.",
+      "path": "pull/22",
       "baseline": false
     }
   ],
