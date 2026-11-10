@@ -1,6 +1,6 @@
 # Feature overview
 
-Snapshot: **9 November 2026**, verified merged main [`1f0b1ba`](https://github.com/LYF-FC/local-assistant-core/commit/1f0b1ba98e8b027919e48d03335180b3a6d70c80) through PR #15. This view does not query CI or certify exact-main/host/provider acceptance.
+Snapshot: **10 November 2026**, verified merged main [`3b41003`](https://github.com/LYF-FC/local-assistant-core/commit/3b41003b1361e740041d737712ff7eaada274861) through PR #17. This view does not query CI or certify exact-main/host/provider acceptance.
 
 [Critical review of every feature](FEATURE_REVIEW.md) · [Interactive dashboard — download HTML](FEATURE_DASHBOARD.html) · [Source metadata](FEATURE_PROGRESS.json)
 
@@ -39,7 +39,7 @@ A feature is counted once at its first stage; later expansions remain retained. 
 
 ## Delivered building blocks
 
-10 public feature batches have merged after the imported engineering foundation. Documentation PRs are not feature deliveries; building blocks are not added to the original-feature denominator.
+11 public feature batches have merged after the imported engineering foundation. Documentation PRs are not feature deliveries; building blocks are not added to the original-feature denominator.
 
 | Evidence | Working engineering subset |
 |---|---|
@@ -54,6 +54,7 @@ A feature is counted once at its first stage; later expansions remain retained. 
 | [PR #12 · Filing plans](https://github.com/LYF-FC/local-assistant-core/pull/12) | Logical names/destinations, manual correction and non-executable approval/withdrawal. |
 | [PR #13 · Offline email intake](https://github.com/LYF-FC/local-assistant-core/pull/13) | Exact original email/single attachment, private provenance, replay and aggregate forgetting; no live mailbox. |
 | [PR #15 · Installation setup](https://github.com/LYF-FC/local-assistant-core/pull/15) | Explicit installation UUID, versioned bounded defaults, reviewed sanitized templates and informational readiness; no activation controls or dynamic membership. |
+| [PR #17 · Scoped daily overview](https://github.com/LYF-FC/local-assistant-core/pull/17) | Explicit bounded agenda/tasks, private reminders and document attention with freshness clearing and current-source navigation; full dashboard/live/operations acceptance remains open. |
 
 ## All original named features
 
@@ -70,13 +71,13 @@ Statuses come from the [register](FEATURE_REGISTER.md). Review recommendations l
 | CORE-05 | Action and decision audit | Working foundation · partial | [Consolidate](FEATURE_REVIEW.md#core) | Transactional audit foundation exists; future recommendations/connectors/model activity need implementation. |
 | CORE-06 | Local conversation | Working foundation · partial | [Validate](FEATURE_REVIEW.md#core) | Scoped lexical evidence and a default-disabled exact-passage selector exist. Real-model quality/activation, multi-turn conversation and free-form synthesis remain open. |
 | CORE-07 | Coordinator and specialists | Planned / not evidenced | [Challenge](FEATURE_REVIEW.md#core) | No claim of full delivery; verify exact code and acceptance before promotion. |
-| CORE-08 | Home dashboard | Working foundation · partial | [Consolidate](FEATURE_REVIEW.md#core) | Scoped calendar/task/memory day briefing added; complete dashboard/infrastructure/approval integration remains. |
-| CORE-09 | iPhone access | Working foundation · partial | [Generalize](FEATURE_REVIEW.md#core) | Responsive HTTPS engineering exists; private remote/mobile owner acceptance is not certified. |
+| CORE-08 | Home dashboard | Working foundation · partial | [Consolidate](FEATURE_REVIEW.md#core) | Scoped calendar/task/memory day briefing added; complete dashboard/infrastructure/approval integration remains. PR17 adds bounded scoped daily overview, partial/freshness handling and current-source navigation; full retained contract stays open. |
+| CORE-09 | iPhone access | Working foundation · partial | [Generalize](FEATURE_REVIEW.md#core) | Responsive HTTPS engineering exists; private remote/mobile owner acceptance is not certified. PR17 adds bounded scoped daily overview, partial/freshness handling and current-source navigation; full retained contract stays open. |
 | CORE-10 | Trusted document answers | Working foundation · partial | [Keep](FEATURE_REVIEW.md#core) | Literal excerpts and optional archive copies exist; spec 051 adds reviewed PDF page citations. Spec 052 adds explicit uncertain OCR. Spec 053 adds scoped exact-quotation answers with a default-disabled local selector. Real-model quality/activation, free-form synthesis/conversation, NAS and full archive acceptance remain open. |
 | CORE-11 | Proactive notification control | Working foundation · partial | [Consolidate](FEATURE_REVIEW.md#core) | Private in-app quiet/day-budget control and finite routine generation exist; external delivery/proactive summaries remain separately gated. |
 | CORE-13 | Messaging adapters | Planned / not evidenced | [Generalize](FEATURE_REVIEW.md#core) | No claim of full delivery; verify exact code and acceptance before promotion. |
 | ORG-01 | Shared calendar | Working foundation · partial | [Validate](FEATURE_REVIEW.md#org) | Bounded complete-window synthetic imports/reconciliation; live Apple/iCloud read, recurrence expansion/provider semantics and controlled writes remain. |
-| ORG-02 | Daily briefing | Working foundation · partial | [Consolidate](FEATURE_REVIEW.md#org) | Deterministic scoped calendar/task/memory-reference day view; inferred needs, upcoming multi-day planning and live-provider acceptance remain. |
+| ORG-02 | Daily briefing | Working foundation · partial | [Consolidate](FEATURE_REVIEW.md#org) | Deterministic scoped calendar/task/memory-reference day view; inferred needs, upcoming multi-day planning and live-provider acceptance remain. PR17 adds bounded scoped daily overview, partial/freshness handling and current-source navigation; full retained contract stays open. |
 | ORG-03 | Recurring routines | Working foundation · partial | [Generalize](FEATURE_REVIEW.md#org) | Finite daily/weekly plans, atomic generated tasks/private reminders and current completion/lifecycle history; monthly/exception/delegation/calendar and external delivery remain. |
 | DOC-01 | Dedicated forwarded inbox | Working foundation · partial | [Validate](FEATURE_REVIEW.md#doc) | Bounded offline original email/single attachment, creator-only provenance and exact-message replay. Live mailbox/source rules, jobs/cursors/recovery and broader intake remain open. |
 | DOC-02 | Attachment extraction | Working foundation · partial | [Generalize](FEATURE_REVIEW.md#doc) | Bounded PDF/OCR and invoice candidates, explicit human confirmed/unknown decisions, provenance and scoped duplicate hints advance extraction. Live mailbox lineage and full intake/filing acceptance remain open. |

@@ -42,3 +42,6 @@ Current approved scope: [deferred review/refactoring programme](docs/DEFERRED_RE
 
 
 Spec062 branch adds [an explicit scoped daily overview](docs/DAILY_OVERVIEW.md) using existing briefing/private-reminder/document reads and current-source navigation. It advances the baseline dashboard/attention journey, not deferred REV scope; full approvals/search/operations/live-provider acceptance remains open. PR16 merged main `95bc0a284e25a4790c2d3e7123079827504fb5f6`; exact head `f00e5315d3ec29bd307ddcf6c7ca9291bd3cfbe4` passed all six jobs in run42792145575. Initial main run42807571272 was in progress and not polled/certified. PR16 was planning/presentation: no new merged-runtime counter refresh is made from it.
+
+
+Spec063 specifies [restricted manual financial capture](docs/FINANCIAL_CAPTURE.md), the remaining basic FIN-06 MVP slice. This batch is a design contract, not implemented storage/UI: owner-private dated goals/assumptions/plans/sources, unknown/forecast distinctions and typed lifecycle/acceptance. Generic Memory is not reclassified as a financial register. PR17 merged main3b41003b1361e740041d737712ff7eaada274861; exact feature head4cac3a1b46f93732ee12306b903594349185c394 passed selected scope/frontend/containers/ci in run42811931914, backend/postgres skipped. Initial main run42816301574 was in progress, not polled/certified.

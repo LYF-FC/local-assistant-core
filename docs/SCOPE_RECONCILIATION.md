@@ -101,3 +101,6 @@ PR15 is verified merged; INSTALL-01/02/03/06/08 now show partial setup foundatio
 
 
 Spec062 maps a shared read-only UI entry to existing CORE-08/09, UI-01 and ORG-02, rather than adding another inbox database or feature reference. Existing task/reminder/calendar/document authority, first-page bounds and source acceptance remain distinct. This is baseline implementation, not the deferred consolidation/expansion programme: no original outcome is deleted, no REVIEW/REV stage is advanced and no new count is introduced. Current-source navigation does not carry write approval.
+
+
+Spec063 maps the basic manual finance capture contract to existing FIN-06, CORE-03/04/05 and MVP acceptance without adding an independent feature or duplicating financial modelling. Goals/intents, confirmed inputs, assumptions, forecasts and owner-recorded plans remain distinct. Dedicated typed storage will reuse shared authority/audit patterns; no refactor or new financial store is delivered now. Preserve all155 references, original99 outcomes, later finance stages and deferred review ordering.

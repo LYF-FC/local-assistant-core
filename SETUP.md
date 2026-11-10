@@ -72,3 +72,8 @@ After existing trusted account provisioning and an explicit technical_admin gran
 ### Spec062 branch: daily overview
 
 Existing granted household/member-private scopes can open [Daily overview](docs/DAILY_OVERVIEW.md), choose day/timezone and explicitly refresh. No extra credentials, migrations or role provisioning. Technical administration alone grants no overview content. The source panels retain current permission and action checks, with the chosen scope/day retained during overview navigation.
+
+
+### Spec063 finance planning
+
+[Restricted financial capture](docs/FINANCIAL_CAPTURE.md) is not yet available as a dedicated feature. This batch requires no setup, new account, credentials or migration. Future access requires an explicit finance_private grant and current owner authority; household or technical-admin access alone will not suffice. Use synthetic fixtures for implementation/acceptance.

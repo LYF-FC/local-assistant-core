@@ -22,3 +22,6 @@ Spec060 merged in [PR15](https://github.com/LYF-FC/local-assistant-core/pull/15)
 
 
 PR16 scope/presentation reconciliation is merged. Spec062 branch [daily overview](DAILY_OVERVIEW.md) focuses existing baseline CORE-08/09/UI-01/ORG-02 with current records, failure/freshness and source navigation. No source counters are advanced before merge. Remaining real/provider/operations/finance/whole-MVP gates and all approved later review work stay open.
+
+
+PR17 daily overview is merged. Spec063 publishes [the bounded FIN-06 capture contract](FINANCIAL_CAPTURE.md); dedicated financial storage/UI remains unimplemented and FIN-06 stays planned. No implementation counter is advanced. Existing live integrations, operations/recovery, later financial modelling and deferred review scope remain open.
