@@ -39,4 +39,4 @@ Migration0031 creates financial_records/financial_revisions and sealed identity/
 [Spec064 convergence](../specs/064-financial-register/convergence.md) distinguishes full local checks, actual PostgreSQL/migration/restore and trusted HTTPS API evidence from future UI/host acceptance. The earlier spec063 remains the full capture contract; this API delivery does not reduce it or advance deferred REV/refactoring scope. No status is promoted before merge.
 
 
-The [financial UI](FINANCIAL_UI.md) is now implemented on the spec065 branch, pending review/merge; the original UI/whole-feature acceptance remains distinct from merged server evidence.
+The [financial UI](FINANCIAL_UI.md) was merged in [PR #20](https://github.com/LYF-FC/local-assistant-core/pull/20); the original UI/whole-feature acceptance remains distinct from merged server evidence.

@@ -194,13 +194,13 @@ The original149 references remain. REV-01–06 add six supporting references; al
 | REV-06 | Existing149-reference implementation/later-stage decisions first; PLATFORM-02, RND and AI budget contracts; measured limits and competing-load/refusal/failure evidence without surprise spending or remote fallback. Detailed bounded acceptance and migration/recovery review before implementation. |
 
 
-Spec062 branch [daily overview](DAILY_OVERVIEW.md) depends on the existing scoped day briefing, private owner-reminder inbox, document query/current-source read and strict UI/session transport. It adds no new authority, queue or live adapter. Baseline UI-01/CORE-08/ORG-02 are refined without moving REV additions/refactoring ahead of their approved later stage.
+Spec062 (merged PR #17) [daily overview](DAILY_OVERVIEW.md) depends on the existing scoped day briefing, private owner-reminder inbox, document query/current-source read and strict UI/session transport. It adds no new authority, queue or live adapter. Baseline UI-01/CORE-08/ORG-02 are refined without moving REV additions/refactoring ahead of their approved later stage.
 
 
 Spec063 [financial capture](FINANCIAL_CAPTURE.md) specifies FIN-06 prerequisites: typed server validation, current finance grant plus record ownership, provenance/basis/plan acknowledgement, concurrency/audit, bounded export/forget and migration/recovery evidence. Generic Memory JSON alone is not acceptance of this domain. No existing dependency row is removed or changed.
 
 
-Spec064 branch [financial storage/API](FINANCIAL_REGISTER_API.md) supplies FIN-06 typed owner/grant authority, lifecycle/audit/concurrency and recovery foundations; financial UI remains the next dependency. No source row or later calculation/import/provider gate is removed.
+Spec064 (merged PR #19) [financial storage/API](FINANCIAL_REGISTER_API.md) supplies FIN-06 typed owner/grant authority, lifecycle/audit/concurrency and recovery foundations; the financial UI followed in merged PR #20. No source row or later calculation/import/provider gate is removed.
 
 
 Spec065 [financial UI](FINANCIAL_UI.md) consumes merged spec064 server authority/types/lifecycle/export/recovery; no new feature reference, permission or fixture dependency. Full FIN-06 modelling/imports and later financial/MVP/host acceptance remain. Strict client checks complement rather than replace server authority; deferred REV work is unchanged.

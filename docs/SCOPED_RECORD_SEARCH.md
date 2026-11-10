@@ -1,4 +1,4 @@
-# Scoped task and document search — spec067 branch
+# Scoped task and document search — spec067, merged PR #22
 
 Choose **Search records**, select one granted household/member-private scope and enter keywords. Search starts only when submitted. It checks manual task title/details across all statuses and document title/extracted text, including unreviewed text. Sources may be uncertain: results label task state, document review and non-ready extraction. Keyword matching is literal and case-insensitive under the existing server contracts; it is not semantic retrieval or generated advice.
 
@@ -20,4 +20,4 @@ Query, result and current-source state stay in memory. Queries use protected POS
 
 The view reuses existing HTTPS/Host/Origin/session/CSRF and task/document owner/grant enforcement and commit-before-release audit. The strict client adds owner/edit attribution, selected filters, freshness/cursor and current-source binding checks. Backend/schema/grants/dependencies/fixtures/harnesses remain unchanged; existing PostgreSQL/recovery evidence is not relabelled as a new run.
 
-[Spec067](../specs/067-scoped-record-search/spec.md) and its convergence describe branch verification. The [dashboard](FEATURE_DASHBOARD.html) now records merged PR21 operations foundations:19/99 named features partial (MVP18/21),40/155 total partial,14 public engineering batches. No full retained feature is accepted. Current search work remains branch engineering. Whole-MVP approvals, broader search, live adapters/model quality, monitoring/outage and independent host/key/archive recovery gates remain open; real activation/private adoption need separate authorization. All155 requirements, original99 cohort/milestones and deferred order are preserved.
+[Spec067](../specs/067-scoped-record-search/spec.md) was merged in [PR #22](https://github.com/LYF-FC/local-assistant-core/pull/22). The [dashboard](FEATURE_DASHBOARD.html) records it as the 15th merged public engineering batch without changing status counts (19/99 named and 40/155 total partial; no full retained feature accepted). Whole-MVP approvals, broader search, live adapters/model quality, monitoring/outage and independent host/key/archive recovery gates remain open; real activation/private adoption need separate authorization. All 155 requirements, the original 99 cohort/milestones and deferred order are preserved.

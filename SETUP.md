@@ -59,7 +59,7 @@ Existing migration/runtime-role setup now includes 0029. No package, mailbox acc
 The overview needs no application, account, model, provider or deployment setup. Read docs/FEATURE_OVERVIEW.md on GitHub; download docs/FEATURE_DASHBOARD.html and open it locally for filters. Public metadata only, no network requests/storage/external dependencies. The per-feature review and new gap candidates are planning artifacts; they authorize no feature, private conversion or real source access. [Critical review](docs/FEATURE_REVIEW.md).
 
 
-### Administrator setup defaults (spec060 branch)
+### Administrator setup defaults (spec060, merged PR #15)
 
 After existing trusted account provisioning and an explicit technical_admin grant, use **Installation setup** to review/initialize bounded defaults. See [installation setup](docs/INSTALLATION_SETUP.md) for language/timezone schema, preview/apply, template import/export, history bound and readiness limitations. Empty migration stays uninitialized. No first-owner bootstrap, feature toggles or automatic changes to existing record preferences are introduced.
 
@@ -69,7 +69,7 @@ After existing trusted account provisioning and an explicit technical_admin gran
 [The later review/refactoring programme](docs/DEFERRED_REVIEW_PROGRAMME.md) is scope planning, with no additional setup steps, default credentials, delegation or emergency access. Current setup foundations are merged via PR15; full onboarding/activation contracts remain open. REV-01–06 and all baseline review improvements are scheduled after existing scope/later stages, with detailed setup/migration acceptance before implementation.
 
 
-### Spec062 branch: daily overview
+### Spec062 (merged PR #17): daily overview
 
 Existing granted household/member-private scopes can open [Daily overview](docs/DAILY_OVERVIEW.md), choose day/timezone and explicitly refresh. No extra credentials, migrations or role provisioning. Technical administration alone grants no overview content. The source panels retain current permission and action checks, with the chosen scope/day retained during overview navigation.
 
@@ -79,21 +79,21 @@ Existing granted household/member-private scopes can open [Daily overview](docs/
 [Restricted financial capture](docs/FINANCIAL_CAPTURE.md) is not yet available as a dedicated feature. This batch requires no setup, new account, credentials or migration. Future access requires an explicit finance_private grant and current owner authority; household or technical-admin access alone will not suffice. Use synthetic fixtures for implementation/acceptance.
 
 
-### Spec064 branch — restricted financial API
+### Spec064 (merged PR #19) — restricted financial API
 
 [The financial storage API](docs/FINANCIAL_REGISTER_API.md) requires explicit finance_private membership and current owner/session authority. It supplies no public bootstrap or default credentials; the financial UI is supplied by spec065 below. Technical administration and household membership are insufficient. Migration/grant/restore/HTTPS evidence uses disposable synthetic targets; do not apply to the private deployment without separate authorization.
 
 
-### Spec065 branch — use financial capture
+### Spec065 (merged PR #20) — use financial capture
 
 An explicitly finance-granted member can choose **Financial register** and use [the financial UI](docs/FINANCIAL_UI.md) for manual goals/assumptions/plans/sources. Technical administration alone shows no financial navigation. No additional account, secret, provider, migration or model setup; existing current server grants still govern every request. UI remains branch delivery until review/merge.
 
 
-### Spec066 branch — operations view
+### Spec066 (merged PR #21) — operations view
 
 Existing technical-admin members can choose **Operations overview**, then **Reload operations observations**. No new secret, service, migration or grant setup. See [observations and limits](docs/OPERATIONS_OVERVIEW.md); unknown means unchecked, and current package versions are not approved upgrade targets. Existing server authority and private-adoption gates remain.
 
 
-### Spec067 branch — use record search
+### Spec067 (merged PR #22) — use record search
 
 Existing household/member-private members can choose **Search records** and select one granted scope. No new account, index, model, permission or service setup. [Limits](docs/SCOPED_RECORD_SEARCH.md) distinguish separate25-row pages, unavailable libraries and current-source navigation. Technical administration/finance membership alone grants none of these search scopes.

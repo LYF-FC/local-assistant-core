@@ -1,4 +1,4 @@
-# Daily overview — spec062 branch foundation
+# Daily overview — spec062 foundation (merged PR #17)
 
 Open **Daily overview** from Local records, choose one granted scope, a day and an IANA timezone, then **Refresh overview**. This joins existing baseline CORE-08/09, UI-01 and ORG-02 foundations into one bounded review entry. The current session landing stays unchanged; no background request is started by signing in. Only synthetic/local records are used for acceptance. No new live source, external message, model request, permission, worker or private deployment is activated.
 

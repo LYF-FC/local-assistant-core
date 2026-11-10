@@ -55,7 +55,7 @@ One immutable envelope table links exact raw-message bytes to initial document r
 The feature dashboard is an offline generated documentation artifact, outside the application/runtime. The canonical register, reviewed stage/snapshot metadata and separately labelled per-reference critique generate Markdown/HTML deterministically. Only the exact validated artifact/data paths may take documentation CI; generator/template/policy changes remain full. Shared-implementation suggestions preserve domain stores/authority, not a global JSON database, memory/index or agent per feature. No deployed service or integration changes. [Review](docs/FEATURE_REVIEW.md).
 
 
-### Installation configuration foundation (spec060 branch)
+### Installation configuration foundation (spec060, merged PR #15)
 
 [Installation setup](docs/INSTALLATION_SETUP.md) adds a sealed singleton UUID/revision, bounded schema1 language/timezone defaults and immutable matching history. Current technical-admin authority uses a dedicated membership lock under the existing user→singleton transaction boundary; task scopes stay restricted. Session/source/payload-bound preview receipts confer no standalone authority. The static catalogue describes build/setup readiness without probing hosts or activating capabilities. Templates omit identity/records/secrets; backups preserve identity. Existing namespace and runtime controls remain authoritative.
 
@@ -65,7 +65,7 @@ The feature dashboard is an offline generated documentation artifact, outside th
 [The programme](docs/DEFERRED_REVIEW_PROGRAMME.md) is approved after existing scope/later stages. All baseline 149 assessments and sixteen shared implementation boundaries are retained. REV-01–06 trace six additional supporting refinements/outcomes; they do not introduce six subsystems or a global cross-scope store. Future refactors must preserve domain authority, scoped identity, audit/provenance/export and recovery compatibility with explicit migration/rollback acceptance. No runtime, schema, orchestrator or provider decision changes in this planning batch. Spec060 is now merged in PR15, retaining the bounded architecture described above.
 
 
-### Spec062 branch: ephemeral scoped overview
+### Spec062 (merged PR #17): ephemeral scoped overview
 
 [Daily overview](docs/DAILY_OVERVIEW.md) composes existing strict client briefing/reminder/document reads with one abort/generation/deadline boundary. Authority denials clear the batch; ordinary section failures remain explicit. At most60seconds from request start, hidden-tab/selection/session/view clearing, no persistence or background refresh. No new server store, grant, queue, mutation or external adapter. Source navigation preserves scope and rereads current server authority; task/reminder/calendar/document panels remain authoritative.
 
@@ -75,21 +75,21 @@ The feature dashboard is an offline generated documentation artifact, outside th
 [Financial capture](docs/FINANCIAL_CAPTURE.md) will use dedicated server-validated records/revisions while reusing existing identity, finance_private grants, audit and transport. Do not implement it solely as a client-side JSON convention in generic Memory or inherit automatic context eligibility. Explicit unknown/forecast and record-only plan review have distinct semantics. No new table, route, schema or inference path is implemented by this design batch.
 
 
-### Spec064 branch — financial storage/API
+### Spec064 (merged PR #19) — financial storage/API
 
 [Financial records/revisions](docs/FINANCIAL_REGISTER_API.md) implement the dedicated schema boundary specified in spec063, reusing current identity/audit/transport. Scope is always finance_private plus current owner; no Memory/context projection. A fixed finance membership lock leaves task scopes unchanged. Owner locks serialize quotas and record locks serialize expected-revision changes. DB guards seal identity/current/history and permit history scrubbing only after terminal forgetting. No queue, model, provider or financial executor is introduced.
 
 
-### Spec065 branch — strict ephemeral financial UI
+### Spec065 (merged PR #20) — strict ephemeral financial UI
 
 [The financial UI](docs/FINANCIAL_UI.md) validates owner/scope/kind/schema/revision/history/export receipts before rendering or downloading. It reuses protected finance POSTs and server authority; no Memory projection or new permission surface. One cancellation generation and a 60-second privacy deadline gate reads/mutations/downloads. Hidden/session/view/denial clearing includes drafts and acknowledgements; conflicts preserve a blocked draft until discard/reload or expiry. Source strings render as text, Markdown fences escaped validated JSON and no browser persistence/polling is added.
 
 
-### Spec066 branch — bounded operations observations
+### Spec066 (merged PR #21) — bounded operations observations
 
 [Operations overview](docs/OPERATIONS_OVERVIEW.md) reuses current technical-admin session/CSRF/installation membership locks and existing SELECT grants. Fixed runtime package metadata/configuration states and a caller-owned technical-scope job status sample feed a strict ephemeral UI. No audit SELECT, payload query, filesystem/network/service probe, new grant/schema or execution capability. Metadata-only read audit must commit before release; failures withhold all observations.
 
 
-### Spec067 branch — scoped task/document search
+### Spec067 (merged PR #22) — scoped task/document search
 
 [Search](docs/SCOPED_RECORD_SEARCH.md) composes existing protected task/document queries without a new backend/index. Metadata-only results retain separate cursors and one original-query privacy deadline. A current-source read validates immutable identity/monotonic revision; full-record navigation carries minimal coordinates and rereads at destination. Ordinary library failures remain independent; authority denial clears the whole view. No persistence, model, source-link fetch or permission widening.
