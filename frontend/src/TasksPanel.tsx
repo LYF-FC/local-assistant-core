@@ -1,3 +1,4 @@
+import { readSearchSource, SearchDenied, type SourceTarget } from "./record-search";
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import type { Session } from "./api";
@@ -26,10 +27,12 @@ function Editor({ entry, busy, conflict, onSave, onCancel }: { entry: ActiveTask
     <label>Task source or reference<input aria-label="Task source or reference" value={source} onChange={e => setSource(e.target.value)} required maxLength={512} /></label><button type="submit">{busy ? "Saving…" : "Save task"}</button></fieldset>
     {conflict && <p>Your draft is kept until you discard it.</p>}<button type="button" disabled={busy} onClick={onCancel}>{conflict ? "Discard draft and reload" : "Cancel editing"}</button></form>;
 }
-export default function TasksPanel({ session, onUnauthorized, initialScope }: { session: Session; onUnauthorized: () => void; initialScope?: TaskScope }) {
+export default function TasksPanel({ session, onUnauthorized, initialScope, initialSourceTarget }: { session: Session; onUnauthorized: () => void; initialScope?: TaskScope; initialSourceTarget?: SourceTarget }) {
   const scopes = session.user.scopes.filter((s): s is TaskScope => Object.hasOwn(taskScopes, s));
-  const initial: TaskFilters = { scope: initialScope && scopes.includes(initialScope) ? initialScope : scopes[0] ?? "household_shared", status: "open", due: "all", search: "", after: null };
+  const target = initialSourceTarget?.kind === "task" && scopes.includes(initialSourceTarget.scope) ? initialSourceTarget : undefined;
+  const initial: TaskFilters = { scope: target?.scope ?? (initialScope && scopes.includes(initialScope) ? initialScope : scopes[0] ?? "household_shared"), status: target ? "all" : "open", due: "all", search: "", after: null };
   const [filters, setFilters] = useState(initial);
+  const sourceTarget = useRef(target), firstFilters = useRef(initial);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState<TaskPage | null>(null);
   const [selected, setSelected] = useState<ActiveTask | null>(null);
@@ -59,7 +62,12 @@ export default function TasksPanel({ session, onUnauthorized, initialScope }: { 
   function refresh() { active.current?.abort(); epoch.current++; clearContent(); setFilters(v => ({ ...v, after: null })); }
   useEffect(() => {
     clearContent();
-    if (scopes.length) void run(signal => listTasks(filters, session.csrfToken, signal), setPage);
+    const target = filters === firstFilters.current ? sourceTarget.current : undefined;
+    if (filters !== firstFilters.current) sourceTarget.current = undefined;
+    if (scopes.length) void run(async signal => {
+      const [page, source] = await Promise.all([listTasks(filters, session.csrfToken, signal), target ? readSearchSource(session, target, signal).catch(error => { if (error instanceof SearchDenied) throw new TaskError(error.status); throw error; }) : Promise.resolve(null)]);
+      return { page, source };
+    }, ({ page, source }) => { sourceTarget.current = undefined; setPage(page); if (source?.kind === "task") setSelected(source.record); });
     return () => { active.current?.abort(); epoch.current++; };
     // Session changes remount the parent workspace; filters represent one current scope/page.
     // eslint-disable-next-line react-hooks/exhaustive-deps

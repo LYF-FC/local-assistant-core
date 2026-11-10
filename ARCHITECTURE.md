@@ -88,3 +88,8 @@ The feature dashboard is an offline generated documentation artifact, outside th
 ### Spec066 branch — bounded operations observations
 
 [Operations overview](docs/OPERATIONS_OVERVIEW.md) reuses current technical-admin session/CSRF/installation membership locks and existing SELECT grants. Fixed runtime package metadata/configuration states and a caller-owned technical-scope job status sample feed a strict ephemeral UI. No audit SELECT, payload query, filesystem/network/service probe, new grant/schema or execution capability. Metadata-only read audit must commit before release; failures withhold all observations.
+
+
+### Spec067 branch — scoped task/document search
+
+[Search](docs/SCOPED_RECORD_SEARCH.md) composes existing protected task/document queries without a new backend/index. Metadata-only results retain separate cursors and one original-query privacy deadline. A current-source read validates immutable identity/monotonic revision; full-record navigation carries minimal coordinates and rereads at destination. Ordinary library failures remain independent; authority denial clears the whole view. No persistence, model, source-link fetch or permission widening.

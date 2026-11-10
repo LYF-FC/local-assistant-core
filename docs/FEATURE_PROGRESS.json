@@ -2,11 +2,11 @@
   "schema_version": 1,
   "snapshot": {
     "date": "2026-11-10",
-    "main_sha": "4a3b4c0bfee033ba6619172db87158bd870d9061",
-    "merged_through_pr": 20,
-    "register_rows_sha256": "0f32342bcb5abdb39eb920c24f7a7a4840ca48df89e3bcef5fccc5765a608ec6",
+    "main_sha": "4001230471d19f83fe9c9a8ef3d6d38622381dfc",
+    "merged_through_pr": 21,
+    "register_rows_sha256": "cd56d493c4f85ae4891e1329c40c7ef3a4f105fa13dc91adc1a1f0116ff0ae0f",
     "main_ci": {
-      "run_id": 42874340043,
+      "run_id": 42882633058,
       "state_at_check": "in_progress"
     }
   },
@@ -368,6 +368,12 @@
       "title": "PR #20 · Financial capture UI",
       "description": "Typed owner forms, explicit unknown/forecast/zero, plan review/reset, bounded history/copy/forget and privacy clearing; full financial/MVP/host acceptance remains open.",
       "path": "pull/20",
+      "baseline": false
+    },
+    {
+      "title": "PR #21 · Operations observations",
+      "description": "Protected API/database transaction observations, runtime software metadata and bounded own technical job statuses; configured flags remain unverified, audit review and full monitoring/host acceptance stay open.",
+      "path": "pull/21",
       "baseline": false
     }
   ],

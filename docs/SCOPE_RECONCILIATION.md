@@ -113,3 +113,6 @@ Spec065 completes the owner-facing branch of existing FIN-06 capture without a n
 
 
 PR20 merges the owner-facing FIN-06 capture workflow; its broad status stays partial. Spec066 maps operations observations/runtime inventory to existing OPS-09/RND-01 without a new scope reference or denominator change. Its draft direct-audit query is superseded by explicit unavailability to preserve INSERT-only runtime audit access; original OPS-10 periodic audit remains required. No original feature, milestone, provider/host gate or later/deferred review ordering is removed.
+
+
+PR21 merged OPS-09 foundations (planned→partial) and RND-01 runtime inventory evidence (still partial), preserving full monitoring/scouting/host contracts. Spec067 maps bounded task/document search/current-source navigation to existing CORE-08/UI-01; no new requirement or current branch promotion. Original155 requirements/milestones/cohort/deferred ordering remain.

@@ -36,3 +36,6 @@ PR19 financial server foundation is merged, advancing FIN-06 to partial; origina
 
 
 PR20 financial UI is verified merged; 13 public engineering batches now follow the imported baseline. FIN-06 stays partial, with full finance/MVP/host gates retained. Spec066 [operations overview](OPERATIONS_OVERVIEW.md) is current branch engineering, not another financial UI delivery or a full MVP completion. Named18/all39 partial counts remain unchanged.
+
+
+PR21 operations foundations are verified merged:OPS-09 advances only to partial and RND-01 records runtime version observations. Named19/all40 partial,14 merged public batches. Spec067 [scoped search](SCOPED_RECORD_SEARCH.md) is current branch engineering, not complete unified inbox/search or MVP acceptance.

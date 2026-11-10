@@ -92,3 +92,8 @@ Use [explicit typed forms and separate acknowledgements](docs/FINANCIAL_UI.md) f
 ### Spec066 branch — observations must retain uncertainty
 
 Use [explicit observed/configured/disabled/unknown states](docs/OPERATIONS_OVERVIEW.md), not a global green health badge. Installed versions do not establish approval/support/license/advisory status. Preserve INSERT-only runtime audit access: audit review stays unavailable until a narrow separately reviewed projection exists; OPS-10 is retained. Sample only current actor technical-admin jobs, without payloads/global counts/overdue inference.
+
+
+### Spec067 branch — bounded search before complete unified inbox
+
+Use [one explicit scope and two existing libraries](docs/SCOPED_RECORD_SEARCH.md), with honest page/unavailable/review labels. Do not call first pages complete global search or generate rankings/advice. Keep pending approvals, Memory/finance/Work and semantic search requirements open. Current-source rereads and minimal navigation targets prevent old matches becoming edit authority.

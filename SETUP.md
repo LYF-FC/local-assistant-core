@@ -92,3 +92,8 @@ An explicitly finance-granted member can choose **Financial register** and use [
 ### Spec066 branch — operations view
 
 Existing technical-admin members can choose **Operations overview**, then **Reload operations observations**. No new secret, service, migration or grant setup. See [observations and limits](docs/OPERATIONS_OVERVIEW.md); unknown means unchecked, and current package versions are not approved upgrade targets. Existing server authority and private-adoption gates remain.
+
+
+### Spec067 branch — use record search
+
+Existing household/member-private members can choose **Search records** and select one granted scope. No new account, index, model, permission or service setup. [Limits](docs/SCOPED_RECORD_SEARCH.md) distinguish separate25-row pages, unavailable libraries and current-source navigation. Technical administration/finance membership alone grants none of these search scopes.
