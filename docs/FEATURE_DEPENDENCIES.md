@@ -201,3 +201,6 @@ Spec063 [financial capture](FINANCIAL_CAPTURE.md) specifies FIN-06 prerequisites
 
 
 Spec064 branch [financial storage/API](FINANCIAL_REGISTER_API.md) supplies FIN-06 typed owner/grant authority, lifecycle/audit/concurrency and recovery foundations; financial UI remains the next dependency. No source row or later calculation/import/provider gate is removed.
+
+
+Spec065 [financial UI](FINANCIAL_UI.md) consumes merged spec064 server authority/types/lifecycle/export/recovery; no new feature reference, permission or fixture dependency. Full FIN-06 modelling/imports and later financial/MVP/host acceptance remain. Strict client checks complement rather than replace server authority; deferred REV work is unchanged.

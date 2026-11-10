@@ -53,3 +53,6 @@ Spec060 adds installation unit/client tests, actual runtime PostgreSQL concurren
 
 
 Spec062 daily-overview UI cases share the existing calendar synthetic HTTPS phase (`calendars.spec.ts`, BUTLER_CALENDAR_BROWSER_TESTS=1), using existing accounts and protected APIs. No fixture/worker privilege or additional CI phase is added. Client negative cases cover bounded protected reads, source/actor/owner/scope mismatch, denials, unavailable sections, abort and lifetime limits. Browser cases prove other-owner privacy, current-source navigation/context, first-page limits, failure/late/hidden/expiry behavior and actual session revocation. Keep default Compose ownerbutler/runtime isolation and real authentication limits unchanged.
+
+
+Spec065 financial UI browser cases reuse existing finance owner/peer/admin accounts and the existing calendar HTTPS phase, with no fixture/harness/backend edit. Strict client cases cover schema/basis/date/amount/owner/scope/revision/history/export bindings and no retries. Browser workflows cover typed lifecycle/mobile/copy acknowledgement, conflict drafts, list paging, unsupported receipts, navigation/hidden/expiry/late responses and actual session revocation. Install simulated clocks before application timers; preserve default Compose ownerbutler/runtime isolation and real auth limits.
