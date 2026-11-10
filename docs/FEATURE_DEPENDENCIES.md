@@ -198,3 +198,6 @@ Spec062 branch [daily overview](DAILY_OVERVIEW.md) depends on the existing scope
 
 
 Spec063 [financial capture](FINANCIAL_CAPTURE.md) specifies FIN-06 prerequisites: typed server validation, current finance grant plus record ownership, provenance/basis/plan acknowledgement, concurrency/audit, bounded export/forget and migration/recovery evidence. Generic Memory JSON alone is not acceptance of this domain. No existing dependency row is removed or changed.
+
+
+Spec064 branch [financial storage/API](FINANCIAL_REGISTER_API.md) supplies FIN-06 typed owner/grant authority, lifecycle/audit/concurrency and recovery foundations; financial UI remains the next dependency. No source row or later calculation/import/provider gate is removed.

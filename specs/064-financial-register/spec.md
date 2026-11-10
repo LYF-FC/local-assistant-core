@@ -1,0 +1,7 @@
+# 064 — Financial capture implementation
+
+Implement the approved spec063/docs/FINANCIAL_CAPTURE.md contract in a bounded storage/API runtime batch: owner-private finance records/revisions, server-validated types, explicit plan acknowledgement/reset, bounded lifecycle/history/export/forget, real PostgreSQL/migration/recovery and HTTPS API evidence. The strict financial UI and its local freshness/draft/export presentation acceptance remain the next implementation batch; this is not full FIN-06 delivery. No calculation, provider, trading, model-context projection or private adoption. Retain all155 references and deferred ordering; only merged evidence can advance status.
+
+Clarification: creation and correction store proposed plans only. A separate current-revision acknowledgement records acceptance; material corrections reset it. Repeated no-op acknowledgement consumes no revision; stale requests conflict. Forget at revision100 may append terminal101 and scrub history. JSON/Markdown exports require explicit copy acknowledgement. All unsafe/read POSTs use current finance membership/owner authority through audit commit.
+
+Checklist: schema/unknown/decimal/date negative tests; two-finance-owner/admin denial; real lock waits/concurrent quota/correction; SQL/history/forget guards; actual migration and logical restore; HTTPS API lifecycle/denial/export; retain UI/mobile/late-hidden-expiry/draft interaction acceptance for the next UI phase; required checks/privacy/canonical convergence; one commit/push/PR then stop without polling/merge.

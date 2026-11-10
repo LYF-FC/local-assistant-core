@@ -98,3 +98,8 @@ Spec059 review merged in PR14; spec060 setup foundations merged in PR15. Only IN
 ## Next FIN-06 dependency — reviewed capture contract
 
 [Spec063 financial capture](docs/FINANCIAL_CAPTURE.md) defines owner-private goals, dated assumptions, recorded existing plans and source references before implementation. Server-validated types, unknown/forecast distinctions, record-only plan acknowledgement/reset and export/forget/recovery must be demonstrated together. This design batch changes no runtime status or milestone. PR17 daily overview is now merged; basic finance remains open, alongside the other live/provider/operations/host acceptance gates. No deferred REV feature is brought forward.
+
+
+## Current branch — financial storage and lifecycle
+
+[Spec064](docs/FINANCIAL_REGISTER_API.md) implements the approved FIN-06 capture contract's server boundary: typed owner-private records, dated basis/source, plan acknowledgement/reset, quota/concurrency/audit, JSON/Markdown/history export and forgetting/recovery. Financial UI is the next phase of this existing scope; no new design-only substitute or full FIN-06 completion is claimed. Later calculations/imports/providers and deferred review scope stay open. PR18 design contract is merged; current branch delivery is not yet counted as merged.

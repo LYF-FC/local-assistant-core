@@ -25,3 +25,6 @@ PR16 scope/presentation reconciliation is merged. Spec062 branch [daily overview
 
 
 PR17 daily overview is merged. Spec063 publishes [the bounded FIN-06 capture contract](FINANCIAL_CAPTURE.md); dedicated financial storage/UI remains unimplemented and FIN-06 stays planned. No implementation counter is advanced. Existing live integrations, operations/recovery, later financial modelling and deferred review scope remain open.
+
+
+PR18 design is merged; spec064 is an actual [financial storage/API branch](FINANCIAL_REGISTER_API.md), with financial UI still next and full FIN-06 acceptance open. No branch implementation is counted as merged; source counters remain on verified merged feature evidence.

@@ -104,3 +104,6 @@ Spec062 maps a shared read-only UI entry to existing CORE-08/09, UI-01 and ORG-0
 
 
 Spec063 maps the basic manual finance capture contract to existing FIN-06, CORE-03/04/05 and MVP acceptance without adding an independent feature or duplicating financial modelling. Goals/intents, confirmed inputs, assumptions, forecasts and owner-recorded plans remain distinct. Dedicated typed storage will reuse shared authority/audit patterns; no refactor or new financial store is delivered now. Preserve all155 references, original99 outcomes, later finance stages and deferred review ordering.
+
+
+Spec064 implements the storage/API part of the existing FIN-06/spec063 contract, not a new financial feature/reference. Dedicated financial records preserve unknown/forecast/goal/plan distinctions while sharing identity/audit software; no generic Memory inheritance or real action authority. UI/freshness and full financial/MVP/later/deferred acceptance remain retained. All155 requirement/dependency/review rows and original99 milestone/status cohort stay unchanged before feature merge.

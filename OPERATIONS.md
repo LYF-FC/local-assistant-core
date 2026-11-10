@@ -74,3 +74,8 @@ The [approved later programme](docs/DEFERRED_REVIEW_PROGRAMME.md) introduces no 
 ### Spec063 financial capture design
 
 [The contract](docs/FINANCIAL_CAPTURE.md) requires full synthetic PostgreSQL/migration/restore and runtime-grant evidence before delivery. No operator provisioning, database migration or finance export is performed now. Future forgetting must disclose old backup/download limits; future downgrade needs a reviewed protected backup and loss disclosure. Existing private repository/deployment and all activation/migration authorizations stay unchanged.
+
+
+### Spec064 branch — financial migration and recovery
+
+Follow [the storage/API contract](docs/FINANCIAL_REGISTER_API.md). Migration0031 downgrade destroys financial records/history and requires reviewed protected-backup rollback; no private upgrade is authorized. Synthetic full restore must preserve basis/zero/unknown/source/acceptance history and scrubbed tombstones without enabling consumers. Downloads and old WAL/dumps remain outside managed forgetting; no external financial action is introduced.

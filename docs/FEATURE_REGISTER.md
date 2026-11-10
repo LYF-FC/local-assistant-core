@@ -191,3 +191,6 @@ Spec062 branch engineering targets existing CORE-08/09, UI-01 and ORG-02 through
 
 
 Spec063 [manual financial capture contract](FINANCIAL_CAPTURE.md) defines the remaining basic FIN-06 implementation/acceptance boundary. Planning is not delivery: FIN-06 remains planned, all155 status/requirement/milestone rows and original99 cohort remain unchanged. Full later finance and approved deferred programme stay retained.
+
+
+Spec064 branch [financial storage/API](FINANCIAL_REGISTER_API.md) advances the existing basic FIN-06 implementation boundary without claiming full delivery. Typed server data/history/plan review/export/forget are implemented; financial UI and full retained finance/MVP acceptance stay open. No status/count/milestone or deferred ordering is promoted before merge. All155 original references remain.

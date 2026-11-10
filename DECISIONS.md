@@ -77,3 +77,8 @@ Use [an explicit daily overview](docs/DAILY_OVERVIEW.md) over existing scoped AP
 ### Spec063 design — financial input is not a forecast or action authority
 
 [The capture contract](docs/FINANCIAL_CAPTURE.md) separates owner-recorded confirmed inputs, assumptions, forecasts and unknowns; accepted plans require payload-bound record-only acknowledgement and reset on material correction. Store typed financial records with server validation, not arbitrary Memory profiles labelled as finance. Existing finance scope remains owner-private with explicit current grants. This is a future implementation boundary, not permission to calculate, connect providers, transfer funds or adopt private data.
+
+
+### Spec064 branch — deliver the finance server boundary independently
+
+Implement [typed storage/API](docs/FINANCIAL_REGISTER_API.md) and its PostgreSQL/recovery evidence before the financial UI. Unknown versus zero/forecast, current owner/grant and record-only plan acknowledgement are server-enforced. Corrections reset acceptance; generic approvals/Memory do not confer financial authority. This is a bounded foundation, not reduced FIN-06 scope. UI/freshness/whole-MVP and later finance remain required.

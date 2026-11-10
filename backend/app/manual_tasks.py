@@ -112,6 +112,7 @@ def authority(
             text(
                 {
                     "tasks": "SELECT public.butler_lock_task_scope(:actor,:scope)",
+                    "finance": "SELECT public.butler_lock_finance_scope(:actor,:scope)",
                     "installation": "SELECT public.butler_lock_installation_scope(:actor,:scope)",
                 }[scope_lock]
             ),
