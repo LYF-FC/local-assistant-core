@@ -79,3 +79,8 @@ The [approved later programme](docs/DEFERRED_REVIEW_PROGRAMME.md) introduces no 
 ### Spec064 branch — financial migration and recovery
 
 Follow [the storage/API contract](docs/FINANCIAL_REGISTER_API.md). Migration0031 downgrade destroys financial records/history and requires reviewed protected-backup rollback; no private upgrade is authorized. Synthetic full restore must preserve basis/zero/unknown/source/acceptance history and scrubbed tombstones without enabling consumers. Downloads and old WAL/dumps remain outside managed forgetting; no external financial action is introduced.
+
+
+### Spec065 branch — financial UI privacy
+
+[Financial register](docs/FINANCIAL_UI.md) requires the existing current finance grant and ownership; no setup/migration/worker or private deployment change. Drafts/data clear on hidden tab, expiry or context change; explicit current reload is required after conflicts/ambiguous errors. Downloads are unmanaged bounded copies; forgetting does not erase old dumps/WAL/screenshots/downloads. Existing server recovery and separate activation/private-adoption gates remain authoritative.

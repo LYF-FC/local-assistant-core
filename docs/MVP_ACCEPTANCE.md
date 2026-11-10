@@ -50,3 +50,6 @@ Spec063 [financial capture contract](FINANCIAL_CAPTURE.md) makes the basic manua
 
 
 Spec064 branch [financial storage/API evidence](FINANCIAL_REGISTER_API.md) supports basic FIN-06 but does not close its owner-facing UI journey or the MVP gate. Current permission, plan-recording versus execution, typed unknown/forecast, history/export/forget and recovery remain explicit; later models/imports and private/provider/host authorization are separate.
+
+
+Spec065 [financial UI branch evidence](FINANCIAL_UI.md) exercises manual capture/correction/history, unknown/forecast/zero, recorded-plan acknowledgement/reset, bounded copy export, forgetting and private context clearing over PR19. This supports the existing basic FIN-06 workflow but does not certify full financial modelling, live integrations, whole-MVP/private-host adoption or later scope. No branch feature is counted as merged acceptance.

@@ -1,0 +1,5 @@
+# Plan / analyze
+
+Add a strict finance client adapter, an ephemeral typed UI and finance-only workspace navigation. Reuse reviewed APIs/current grants and existing synthetic finance accounts/calendar HTTPS phase; no backend/schema/fixture/harness changes. Each request has one cancellation generation and60second privacy deadline; all actions revalidate fresh record context and clear acknowledgements. Display no generic Memory finance profiles. Copy exports require a fresh server request and strict envelope validation before JSON/Markdown download.
+
+Spec063/064 contracts and constitution remain authoritative. Client validation is defense in depth, never server authority. Group forms/lifecycle/export/privacy and dashboard reconciliation into one commit/PR. Focused checks first; final makecheck/client/build/audit/policy and affected trustedHTTPS once settled, repeat only actual failures. No new local PostgreSQL/migration run for unchanged server/schema/grants; hosted conservative interface coverage remains required. No private deployment or deferred REV work.

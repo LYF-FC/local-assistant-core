@@ -1,6 +1,6 @@
 # Feature overview
 
-Snapshot: **10 November 2026**, verified merged main [`3b41003`](https://github.com/LYF-FC/local-assistant-core/commit/3b41003b1361e740041d737712ff7eaada274861) through PR #17. This view does not query CI or certify exact-main/host/provider acceptance.
+Snapshot: **10 November 2026**, verified merged main [`555cf87`](https://github.com/LYF-FC/local-assistant-core/commit/555cf8757aa0c170a1c212e84370454856998c16) through PR #19. This view does not query CI or certify exact-main/host/provider acceptance.
 
 [Critical review of every feature](FEATURE_REVIEW.md) · [Interactive dashboard — download HTML](FEATURE_DASHBOARD.html) · [Source metadata](FEATURE_PROGRESS.json)
 
@@ -10,14 +10,14 @@ GitHub renders this Markdown summary. It displays HTML as source: download the d
 
 | Catalog | Full retained contract accepted | Working foundation, partial | Planned / not evidenced | Total |
 |---|---:|---:|---:|---:|
-| Original named product features | **0** | **17** | **82** | **99** |
-| Of those, first-stage MVP | **0** | **16** | **5** | **21** |
+| Original named product features | **0** | **18** | **81** | **99** |
+| Of those, first-stage MVP | **0** | **17** | **4** | **21** |
 | Additional supporting references | **0** | **21** | **35** | **56** |
-| Complete retained register | **0** | **38** | **117** | **155** |
+| Complete retained register | **0** | **39** | **116** | **155** |
 
-**17 of 99 have working foundations; 0 full retained feature contracts are accepted.** This is not a percentage of effort or production readiness. A bounded MVP can be accepted before all later expansions of a broad feature finish; its own user-journey gates must actually pass. Planned/not evidenced does not prove no code exists. The additional supporting references overlap product outcomes, not extra independent deliverables.
+**18 of 99 have working foundations; 0 full retained feature contracts are accepted.** This is not a percentage of effort or production readiness. A bounded MVP can be accepted before all later expansions of a broad feature finish; its own user-journey gates must actually pass. Planned/not evidenced does not prove no code exists. The additional supporting references overlap product outcomes, not extra independent deliverables.
 
-Across all 155 references: 38 partial and 117 planned/not evidenced. Review verdicts describe recommendations and never change delivery status or approved scope.
+Across all 155 references: 39 partial and 116 planned/not evidenced. Review verdicts describe recommendations and never change delivery status or approved scope.
 
 ## Existing version plan
 
@@ -25,7 +25,7 @@ A feature is counted once at its first stage; later expansions remain retained. 
 
 | First stage | Named features | Full retained contract accepted | Partial | Planned / not evidenced |
 |---|---:|---:|---:|---:|
-| MVP · v0.1–v0.2 | 21 | 0 | 16 | 5 |
+| MVP · v0.1–v0.2 | 21 | 0 | 17 | 4 |
 | v0.3 · Household & food | 15 | 0 | 0 | 15 |
 | v0.4 · Care & coaching | 9 | 0 | 0 | 9 |
 | v0.5 · Connected life | 13 | 0 | 0 | 13 |
@@ -39,7 +39,7 @@ A feature is counted once at its first stage; later expansions remain retained. 
 
 ## Delivered building blocks
 
-11 public feature batches have merged after the imported engineering foundation. Documentation PRs are not feature deliveries; building blocks are not added to the original-feature denominator.
+12 public feature batches have merged after the imported engineering foundation. Documentation PRs are not feature deliveries; building blocks are not added to the original-feature denominator.
 
 | Evidence | Working engineering subset |
 |---|---|
@@ -55,6 +55,7 @@ A feature is counted once at its first stage; later expansions remain retained. 
 | [PR #13 · Offline email intake](https://github.com/LYF-FC/local-assistant-core/pull/13) | Exact original email/single attachment, private provenance, replay and aggregate forgetting; no live mailbox. |
 | [PR #15 · Installation setup](https://github.com/LYF-FC/local-assistant-core/pull/15) | Explicit installation UUID, versioned bounded defaults, reviewed sanitized templates and informational readiness; no activation controls or dynamic membership. |
 | [PR #17 · Scoped daily overview](https://github.com/LYF-FC/local-assistant-core/pull/17) | Explicit bounded agenda/tasks, private reminders and document attention with freshness clearing and current-source navigation; full dashboard/live/operations acceptance remains open. |
+| [PR #19 · Financial storage/API](https://github.com/LYF-FC/local-assistant-core/pull/19) | Typed owner-private financial records, plan-record acknowledgement/reset, history/export/forget and verified recovery; financial UI/full FIN-06 acceptance remain open. |
 
 ## All original named features
 
@@ -84,7 +85,7 @@ Statuses come from the [register](FEATURE_REGISTER.md). Review recommendations l
 | DOC-03 | Synology filing | Working foundation · partial | [Validate](FEATURE_REVIEW.md#doc) | Logical folder/name proposals, manual review and non-executable approval/withdrawal reuse original-linked invoice history. Offline email lineage is added by spec 058; live-source lineage, authorized contained apply/rollback and exactly-once recovery remain open. |
 | OPS-09 | Infrastructure dashboard | Planned / not evidenced | [Consolidate](FEATURE_REVIEW.md#ops) | No claim of full delivery; verify exact code and acceptance before promotion. |
 | OPS-10 | Periodic operational audit | Planned / not evidenced | [Consolidate](FEATURE_REVIEW.md#ops) | No claim of full delivery; verify exact code and acceptance before promotion. |
-| FIN-06 | Goal and assumption register | Planned / not evidenced | [Keep](FEATURE_REVIEW.md#fin) | No claim of full delivery; verify exact code and acceptance before promotion. |
+| FIN-06 | Goal and assumption register | Working foundation · partial | [Keep](FEATURE_REVIEW.md#fin) | Typed owner-private dated goals/assumptions/plans/sources, acknowledgement/reset, history/export/forget and recovery exist. Financial UI spec065 remains an open branch; full goal/progress modelling, reconciled imports and later financial/MVP/host acceptance remain open. [Server boundary](FINANCIAL_REGISTER_API.md). |
 
 ### v0.3 · Household & food
 

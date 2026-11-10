@@ -28,3 +28,6 @@ PR17 daily overview is merged. Spec063 publishes [the bounded FIN-06 capture con
 
 
 PR18 design is merged; spec064 is an actual [financial storage/API branch](FINANCIAL_REGISTER_API.md), with financial UI still next and full FIN-06 acceptance open. No branch implementation is counted as merged; source counters remain on verified merged feature evidence.
+
+
+PR19 financial server foundation is merged, advancing FIN-06 to partial; original 99 now has 18 partial and 81 planned and current 155 has 39 partial and 116 planned. Twelve public engineering batches follow the imported baseline. Spec065 [financial UI](FINANCIAL_UI.md) is the current branch, not another design-only delivery or a full FIN-06 completion. Later finance/MVP/host/provider and deferred review scope stay open.

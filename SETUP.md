@@ -81,4 +81,9 @@ Existing granted household/member-private scopes can open [Daily overview](docs/
 
 ### Spec064 branch — restricted financial API
 
-[The financial storage API](docs/FINANCIAL_REGISTER_API.md) requires explicit finance_private membership and current owner/session authority. It supplies no public bootstrap, default credentials or financial UI yet. Technical administration and household membership are insufficient. Migration/grant/restore/HTTPS evidence uses disposable synthetic targets; do not apply to the private deployment without separate authorization.
+[The financial storage API](docs/FINANCIAL_REGISTER_API.md) requires explicit finance_private membership and current owner/session authority. It supplies no public bootstrap or default credentials; the financial UI is supplied by spec065 below. Technical administration and household membership are insufficient. Migration/grant/restore/HTTPS evidence uses disposable synthetic targets; do not apply to the private deployment without separate authorization.
+
+
+### Spec065 branch — use financial capture
+
+An explicitly finance-granted member can choose **Financial register** and use [the financial UI](docs/FINANCIAL_UI.md) for manual goals/assumptions/plans/sources. Technical administration alone shows no financial navigation. No additional account, secret, provider, migration or model setup; existing current server grants still govern every request. UI remains branch delivery until review/merge.

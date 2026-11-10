@@ -82,3 +82,8 @@ Use [an explicit daily overview](docs/DAILY_OVERVIEW.md) over existing scoped AP
 ### Spec064 branch — deliver the finance server boundary independently
 
 Implement [typed storage/API](docs/FINANCIAL_REGISTER_API.md) and its PostgreSQL/recovery evidence before the financial UI. Unknown versus zero/forecast, current owner/grant and record-only plan acknowledgement are server-enforced. Corrections reset acceptance; generic approvals/Memory do not confer financial authority. This is a bounded foundation, not reduced FIN-06 scope. UI/freshness/whole-MVP and later finance remain required.
+
+
+### Spec065 branch — finish the financial owner workflow
+
+Use [explicit typed forms and separate acknowledgements](docs/FINANCIAL_UI.md) for plan-record acceptance, private-copy export and managed forgetting. Unknown amounts stay null; zero and forecasts keep explicit labels. Kind/owner/scope cannot change through correction, and accepted plans grant no execution authority. Reuse reviewed APIs; no backend/schema changes or new finance calculation. Dashboard promotes only verified merged PR19 server evidence, preserving the original 99 cohort and later/deferred scope.

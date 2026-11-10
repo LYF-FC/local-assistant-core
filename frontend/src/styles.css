@@ -422,3 +422,9 @@ dialog::backdrop { background: rgba(25, 24, 20, .5); }
 .overview-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,22rem),1fr)); gap: 1rem; }
 .daily-overview li { margin-block: .8rem; }
 .daily-overview .memory-detail { min-width: 0; margin-block: 1rem; }
+
+.finance-panel { min-width: 0; overflow-wrap: anywhere; }
+.finance-panel label { display: block; margin-block: .8rem; }
+.finance-panel input:not([type="checkbox"]), .finance-panel select { max-width: 100%; box-sizing: border-box; }
+.finance-panel dd { margin: .3rem 0 1rem; }
+.finance-panel li { margin-block: .8rem; }

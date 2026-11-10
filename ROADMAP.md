@@ -100,6 +100,11 @@ Spec059 review merged in PR14; spec060 setup foundations merged in PR15. Only IN
 [Spec063 financial capture](docs/FINANCIAL_CAPTURE.md) defines owner-private goals, dated assumptions, recorded existing plans and source references before implementation. Server-validated types, unknown/forecast distinctions, record-only plan acknowledgement/reset and export/forget/recovery must be demonstrated together. This design batch changes no runtime status or milestone. PR17 daily overview is now merged; basic finance remains open, alongside the other live/provider/operations/host acceptance gates. No deferred REV feature is brought forward.
 
 
-## Current branch — financial storage and lifecycle
+## Merged PR19 — financial storage and lifecycle
 
-[Spec064](docs/FINANCIAL_REGISTER_API.md) implements the approved FIN-06 capture contract's server boundary: typed owner-private records, dated basis/source, plan acknowledgement/reset, quota/concurrency/audit, JSON/Markdown/history export and forgetting/recovery. Financial UI is the next phase of this existing scope; no new design-only substitute or full FIN-06 completion is claimed. Later calculations/imports/providers and deferred review scope stay open. PR18 design contract is merged; current branch delivery is not yet counted as merged.
+[Spec064](docs/FINANCIAL_REGISTER_API.md) implements the approved FIN-06 capture contract's server boundary: typed owner-private records, dated basis/source, plan acknowledgement/reset, quota/concurrency/audit, JSON/Markdown/history export and forgetting/recovery. Financial UI is the following phase of this existing scope; no new design-only substitute or full FIN-06 completion is claimed. Later calculations/imports/providers and deferred review scope stay open. PR18 design and PR19 server delivery are merged; financial UI branch delivery is tracked below.
+
+
+## Current branch — financial capture UI
+
+[Spec065](docs/FINANCIAL_UI.md) groups typed owner-private capture/correction, unknown-versus-zero/forecast labels, recorded-plan acknowledgement/reset, history, bounded validated JSON/Markdown copies, forgetting and ephemeral privacy/conflict handling. It reuses merged PR19 APIs without backend/schema/grant changes. FIN-06 now has a merged partial server foundation; the dashboard keeps this UI branch separate and retains all later modelling/import/provider/host requirements. The approved deferred review programme remains after existing scope/later stages.

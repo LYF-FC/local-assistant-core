@@ -107,3 +107,6 @@ Spec063 maps the basic manual finance capture contract to existing FIN-06, CORE-
 
 
 Spec064 implements the storage/API part of the existing FIN-06/spec063 contract, not a new financial feature/reference. Dedicated financial records preserve unknown/forecast/goal/plan distinctions while sharing identity/audit software; no generic Memory inheritance or real action authority. UI/freshness and full financial/MVP/later/deferred acceptance remain retained. All155 requirement/dependency/review rows and original99 milestone/status cohort stay unchanged before feature merge.
+
+
+Spec065 completes the owner-facing branch of existing FIN-06 capture without a new reference or calculation feature. Only verified merged PR19 changes FIN-06 from planned to partial: typed storage/API exists, UI branch/full goal/progress/modelling/host outcomes remain open. Original99 counts become 18 partial and 81 planned; all 155: 39 partial, 116 planned,0full accepted. Only that evidence/status row changes; original requirements/milestones, supporting/deferred references and acceptance boundaries are preserved.

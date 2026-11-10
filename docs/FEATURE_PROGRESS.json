@@ -2,11 +2,11 @@
   "schema_version": 1,
   "snapshot": {
     "date": "2026-11-10",
-    "main_sha": "3b41003b1361e740041d737712ff7eaada274861",
-    "merged_through_pr": 17,
-    "register_rows_sha256": "d1eac04e2052d7373600d9a8f99623adfb91732b35fbd4504ec0f6e848e48991",
+    "main_sha": "555cf8757aa0c170a1c212e84370454856998c16",
+    "merged_through_pr": 19,
+    "register_rows_sha256": "302232e9b3a7dbe35eaa25ff562d3c3fe5375aba6d688b03799175dbe35dfb83",
     "main_ci": {
-      "run_id": 42816301574,
+      "run_id": 42854042731,
       "state_at_check": "in_progress"
     }
   },
@@ -356,6 +356,12 @@
       "title": "PR #17 · Scoped daily overview",
       "description": "Explicit bounded agenda/tasks, private reminders and document attention with freshness clearing and current-source navigation; full dashboard/live/operations acceptance remains open.",
       "path": "pull/17",
+      "baseline": false
+    },
+    {
+      "title": "PR #19 · Financial storage/API",
+      "description": "Typed owner-private financial records, plan-record acknowledgement/reset, history/export/forget and verified recovery; financial UI/full FIN-06 acceptance remain open.",
+      "path": "pull/19",
       "baseline": false
     }
   ],

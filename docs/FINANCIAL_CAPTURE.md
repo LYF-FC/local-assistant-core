@@ -55,3 +55,8 @@ Forgetting scrubs current values and all managed historical payloads atomically,
 ## Retained later scope
 
 Full FIN-06 goal/progress modelling and FIN-01/02/07–17 remain open: reconciled imports, actual-versus-plan comparisons, reproducible trajectory/scenario engines, investment policy/portfolio, property/opportunity research, currency/tax/jurisdiction metadata and professional review. Manual source capture does not certify those dependencies. Deferred REV/refactoring work remains after the existing scope/later stages. Implementation uses synthetic examples only; personal financial plans and private history remain outside Git.
+
+
+## Current delivery status
+
+PR19 merged [the dedicated typed server/storage boundary](FINANCIAL_REGISTER_API.md). The [spec065 financial UI](FINANCIAL_UI.md) is an open branch supplying the owner-facing forms/lifecycle/export/privacy workflow. Earlier design wording above is retained as the full contract, not a declaration that merged server behavior is absent. No full FIN-06/MVP or later modelling/provider/host acceptance is inferred.

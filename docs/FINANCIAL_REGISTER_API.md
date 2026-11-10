@@ -1,6 +1,6 @@
-# Restricted financial register API — spec064 storage foundation
+# Restricted financial register API — merged spec064 foundation
 
-This branch implements the storage/API part of [the approved capture contract](FINANCIAL_CAPTURE.md). The financial UI, its view/hidden-tab expiry controls and complete FIN-06/MVP acceptance remain open. No client-only Memory convention, calculation, provider/model, money movement, automatic source fetch or private-data migration is introduced. Use synthetic data only; the existing private deployment is unchanged.
+Merged [PR19](https://github.com/LYF-FC/local-assistant-core/pull/19) implements the storage/API part of [the approved capture contract](FINANCIAL_CAPTURE.md). The financial UI, its view/hidden-tab expiry controls and complete FIN-06/MVP acceptance remain open. No client-only Memory convention, calculation, provider/model, money movement, automatic source fetch or private-data migration is introduced. Use synthetic data only; the existing private deployment is unchanged.
 
 ## Records and authority
 
@@ -37,3 +37,6 @@ Forgetting clears current values/acceptance and all historical payloads in the s
 Migration0031 creates financial_records/financial_revisions and sealed identity/history/tombstone guards, with least-purpose runtime grants and a fixed finance membership lock. Downgrade deletes these records/history: take and verify a protected pre-upgrade backup and review rollback/data-loss limits before any separately authorized upgrade. A template cannot recover financial records. No production/private upgrade is authorized by synthetic migration/restore tests.
 
 [Spec064 convergence](../specs/064-financial-register/convergence.md) distinguishes full local checks, actual PostgreSQL/migration/restore and trusted HTTPS API evidence from future UI/host acceptance. The earlier spec063 remains the full capture contract; this API delivery does not reduce it or advance deferred REV/refactoring scope. No status is promoted before merge.
+
+
+The [financial UI](FINANCIAL_UI.md) is now implemented on the spec065 branch, pending review/merge; the original UI/whole-feature acceptance remains distinct from merged server evidence.

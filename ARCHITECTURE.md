@@ -78,3 +78,8 @@ The feature dashboard is an offline generated documentation artifact, outside th
 ### Spec064 branch — financial storage/API
 
 [Financial records/revisions](docs/FINANCIAL_REGISTER_API.md) implement the dedicated schema boundary specified in spec063, reusing current identity/audit/transport. Scope is always finance_private plus current owner; no Memory/context projection. A fixed finance membership lock leaves task scopes unchanged. Owner locks serialize quotas and record locks serialize expected-revision changes. DB guards seal identity/current/history and permit history scrubbing only after terminal forgetting. No queue, model, provider or financial executor is introduced.
+
+
+### Spec065 branch — strict ephemeral financial UI
+
+[The financial UI](docs/FINANCIAL_UI.md) validates owner/scope/kind/schema/revision/history/export receipts before rendering or downloading. It reuses protected finance POSTs and server authority; no Memory projection or new permission surface. One cancellation generation and a 60-second privacy deadline gate reads/mutations/downloads. Hidden/session/view/denial clearing includes drafts and acknowledgements; conflicts preserve a blocked draft until discard/reload or expiry. Source strings render as text, Markdown fences escaped validated JSON and no browser persistence/polling is added.
