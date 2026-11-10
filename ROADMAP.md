@@ -1,6 +1,6 @@
 # Roadmap
 
-The [scope](docs/SCOPE.md), [149-entry register](docs/FEATURE_REGISTER.md), [dependencies](docs/FEATURE_DEPENDENCIES.md) and [MVP acceptance contract](docs/MVP_ACCEPTANCE.md) define the retained product scope. This page orders delivery; brevity here does not remove requirements. Historical versions are dependency stages, not dates, PR quotas or evidence of a released MVP. Version fields of 0.1.0 in package manifests do not establish release acceptance.
+The [scope](docs/SCOPE.md), [155-reference register](docs/FEATURE_REGISTER.md), [dependencies](docs/FEATURE_DEPENDENCIES.md) and [MVP acceptance contract](docs/MVP_ACCEPTANCE.md) define the retained product scope. This page orders delivery; brevity here does not remove requirements. Historical versions are dependency stages, not dates, PR quotas or evidence of a released MVP. Version fields of 0.1.0 in package manifests do not establish release acceptance.
 
 For a quick counted inventory, see the [feature overview](docs/FEATURE_OVERVIEW.md), [downloadable interactive dashboard](docs/FEATURE_DASHBOARD.html) and [critical feature review](docs/FEATURE_REVIEW.md). Keep it synchronized with this roadmap and the register after verified feature merges or approved scope changes; open PRs remain separate from merged progress.
 
@@ -88,3 +88,8 @@ The owner approved **all** [individual and whole-product review recommendations]
 These six supporting references complement the baseline; they are not six independent product features or completed implementations. Current register 155 = original149 + six deferred bundles. Original 99 named-feature and existing milestone comparisons remain intact. All 149 baseline assessments also remain part of the later programme, without duplicating them as149 new feature rows. Detailed acceptance and compatibility/migration/refactoring plans precede implementation; no v1.2 allocation or release date is invented. Research decisions remain evidence-based and real integrations/private-data/production effects separately authorized.
 
 Spec059 review merged in PR14; spec060 setup foundations merged in PR15. Only INSTALL-01/02/03/06/08 advance to partial; full original installation contracts and runtime MVP journeys remain open. This batch publishes the approved planning/progress reconciliation, not another runtime capability.
+
+
+## Current branch — scoped daily overview
+
+[Spec062](docs/DAILY_OVERVIEW.md) groups bounded agenda/tasks, owner-private in-app reminders, document text/extraction attention, failure/freshness limits and current-context source navigation. It implements baseline CORE-08/09, UI-01 and ORG-02 foundations without activating live services, new permissions or a separate queue. Global approvals/search/operations and complete MVP journeys remain open. This is independent of the approved later REV/refactoring programme, whose ordering remains after existing scope. PR16 merged its public scope reconciliation; all155 references remain retained.

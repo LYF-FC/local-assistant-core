@@ -67,3 +67,8 @@ Publish individually reviewed requirements without deleting/merging canonical ID
 ### 9 November 2026 — approve the deferred review programme
 
 Owner approved all individual/whole-product review recommendations, generalization/consolidation/validation/challenge work, the shared implementation map and former candidates A–F. [Contract](docs/DEFERRED_REVIEW_PROGRAMME.md). Schedule after the entire pre-review 149-reference implementation scope and later stages; this supersedes earlier pending-approval labels and proposed priority shifts, without delaying existing safety duties or earlier MVP acceptance. Preserve all baseline outcomes/IDs and original 99 counts; add REV-01–06 as planned supporting bundles with parent mapping, not six independent product features. Existing behavior can satisfy an improvement without needless rewriting. No production/provider/private-data authorization is conferred. Spec060 merged PR15 provides partial installation foundations, not complete installation acceptance.
+
+
+### Spec062 branch — compose baseline attention without another queue
+
+Use [an explicit daily overview](docs/DAILY_OVERVIEW.md) over existing scoped APIs, retaining separate owner/domain authority and honest first-page/freshness limits. Keep sign-in landing behavior and require manual refresh; do not add ambient all-scope queries, a global approval claim or a new mutation surface. Destination context is in memory and server-reread, never an authority token. Full review/refactoring directions remain deferred; existing MVP usability/privacy obligations continue now.

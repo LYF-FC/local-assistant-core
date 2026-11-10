@@ -19,3 +19,6 @@ Historical PR14/PR15 planning snapshot (approval and merge status superseded by 
 ## Current reconciliation after PR15
 
 Spec060 merged in [PR15](https://github.com/LYF-FC/local-assistant-core/pull/15); INSTALL-01/02/03/06/08 advance to partial, with dynamic membership/activation/full portability still open. Ten public engineering batches now follow the imported baseline. Original 99 named features remain 17 partial/82 planned; baseline 149 now 38 partial/111 planned. Owner approved the complete [later review/refactoring programme](DEFERRED_REVIEW_PROGRAMME.md), including all 149 assessments/shared/whole-product recommendations and six supporting REV bundles after existing scope/later stages. Current 155 references: 38 partial/117 planned/0 full accepted. Earlier pending-approval statements describe the original review; the owner decision supersedes them. No next runtime feature is implemented by this planning batch.
+
+
+PR16 scope/presentation reconciliation is merged. Spec062 branch [daily overview](DAILY_OVERVIEW.md) focuses existing baseline CORE-08/09/UI-01/ORG-02 with current records, failure/freshness and source navigation. No source counters are advanced before merge. Remaining real/provider/operations/finance/whole-MVP gates and all approved later review work stay open.

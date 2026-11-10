@@ -50,3 +50,6 @@ After publishing, report the expected CI jobs and stop. Verify completed results
 
 
 Spec060 adds installation unit/client tests, actual runtime PostgreSQL concurrency/authority/guard tests, two independent synthetic configuration datasets, a full restore fixture preserving installation identity/history and trusted HTTPS mobile/import/export/conflict/late-response checks. `installation.spec.ts` runs in the fresh answers/calendar/routines/invoice/email phase with `BUTLER_INSTALLATION_BROWSER_TESTS=1`. Browser provisioning now checks users-table ownership before mutation and proves runtime refusal before the privileged seed. The native restore fixture deliberately retains the fixed postgres owner guard.
+
+
+Spec062 daily-overview UI cases share the existing calendar synthetic HTTPS phase (`calendars.spec.ts`, BUTLER_CALENDAR_BROWSER_TESTS=1), using existing accounts and protected APIs. No fixture/worker privilege or additional CI phase is added. Client negative cases cover bounded protected reads, source/actor/owner/scope mismatch, denials, unavailable sections, abort and lifetime limits. Browser cases prove other-owner privacy, current-source navigation/context, first-page limits, failure/late/hidden/expiry behavior and actual session revocation. Keep default Compose ownerbutler/runtime isolation and real authentication limits unchanged.

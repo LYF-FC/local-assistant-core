@@ -63,3 +63,8 @@ The feature dashboard is an offline generated documentation artifact, outside th
 ### Approved later review/refactoring programme
 
 [The programme](docs/DEFERRED_REVIEW_PROGRAMME.md) is approved after existing scope/later stages. All baseline 149 assessments and sixteen shared implementation boundaries are retained. REV-01–06 trace six additional supporting refinements/outcomes; they do not introduce six subsystems or a global cross-scope store. Future refactors must preserve domain authority, scoped identity, audit/provenance/export and recovery compatibility with explicit migration/rollback acceptance. No runtime, schema, orchestrator or provider decision changes in this planning batch. Spec060 is now merged in PR15, retaining the bounded architecture described above.
+
+
+### Spec062 branch: ephemeral scoped overview
+
+[Daily overview](docs/DAILY_OVERVIEW.md) composes existing strict client briefing/reminder/document reads with one abort/generation/deadline boundary. Authority denials clear the batch; ordinary section failures remain explicit. At most60seconds from request start, hidden-tab/selection/session/view clearing, no persistence or background refresh. No new server store, grant, queue, mutation or external adapter. Source navigation preserves scope and rereads current server authority; task/reminder/calendar/document panels remain authoritative.
