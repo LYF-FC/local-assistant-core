@@ -83,3 +83,8 @@ The feature dashboard is an offline generated documentation artifact, outside th
 ### Spec065 branch — strict ephemeral financial UI
 
 [The financial UI](docs/FINANCIAL_UI.md) validates owner/scope/kind/schema/revision/history/export receipts before rendering or downloading. It reuses protected finance POSTs and server authority; no Memory projection or new permission surface. One cancellation generation and a 60-second privacy deadline gate reads/mutations/downloads. Hidden/session/view/denial clearing includes drafts and acknowledgements; conflicts preserve a blocked draft until discard/reload or expiry. Source strings render as text, Markdown fences escaped validated JSON and no browser persistence/polling is added.
+
+
+### Spec066 branch — bounded operations observations
+
+[Operations overview](docs/OPERATIONS_OVERVIEW.md) reuses current technical-admin session/CSRF/installation membership locks and existing SELECT grants. Fixed runtime package metadata/configuration states and a caller-owned technical-scope job status sample feed a strict ephemeral UI. No audit SELECT, payload query, filesystem/network/service probe, new grant/schema or execution capability. Metadata-only read audit must commit before release; failures withhold all observations.

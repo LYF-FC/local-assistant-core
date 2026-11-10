@@ -1,6 +1,6 @@
 # Restricted financial register API — merged spec064 foundation
 
-Merged [PR19](https://github.com/LYF-FC/local-assistant-core/pull/19) implements the storage/API part of [the approved capture contract](FINANCIAL_CAPTURE.md). The financial UI, its view/hidden-tab expiry controls and complete FIN-06/MVP acceptance remain open. No client-only Memory convention, calculation, provider/model, money movement, automatic source fetch or private-data migration is introduced. Use synthetic data only; the existing private deployment is unchanged.
+Merged [PR19](https://github.com/LYF-FC/local-assistant-core/pull/19) implements the storage/API part of [the approved capture contract](FINANCIAL_CAPTURE.md). The financial UI and its view/hidden-tab expiry controls followed in [PR20](https://github.com/LYF-FC/local-assistant-core/pull/20); complete FIN-06/MVP acceptance remains open. No client-only Memory convention, calculation, provider/model, money movement, automatic source fetch or private-data migration is introduced. Use synthetic data only; the existing private deployment is unchanged.
 
 ## Records and authority
 

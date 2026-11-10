@@ -84,3 +84,8 @@ Follow [the storage/API contract](docs/FINANCIAL_REGISTER_API.md). Migration0031
 ### Spec065 branch — financial UI privacy
 
 [Financial register](docs/FINANCIAL_UI.md) requires the existing current finance grant and ownership; no setup/migration/worker or private deployment change. Drafts/data clear on hidden tab, expiry or context change; explicit current reload is required after conflicts/ambiguous errors. Downloads are unmanaged bounded copies; forgetting does not erase old dumps/WAL/screenshots/downloads. Existing server recovery and separate activation/private-adoption gates remain authoritative.
+
+
+### Spec066 branch — inspect local observations explicitly
+
+A current technical administrator can reload [Operations overview](docs/OPERATIONS_OVERVIEW.md). This is a 60-second bounded snapshot, not an independent alert, worker heartbeat, backup certificate or periodic audit. Unknown capacity/backup/certificate/host/model/service checks remain operator acceptance work. No Docker socket, filesystem/network probes, auto-repair, activation or private-deployment change is introduced.

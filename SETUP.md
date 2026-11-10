@@ -87,3 +87,8 @@ Existing granted household/member-private scopes can open [Daily overview](docs/
 ### Spec065 branch — use financial capture
 
 An explicitly finance-granted member can choose **Financial register** and use [the financial UI](docs/FINANCIAL_UI.md) for manual goals/assumptions/plans/sources. Technical administration alone shows no financial navigation. No additional account, secret, provider, migration or model setup; existing current server grants still govern every request. UI remains branch delivery until review/merge.
+
+
+### Spec066 branch — operations view
+
+Existing technical-admin members can choose **Operations overview**, then **Reload operations observations**. No new secret, service, migration or grant setup. See [observations and limits](docs/OPERATIONS_OVERVIEW.md); unknown means unchecked, and current package versions are not approved upgrade targets. Existing server authority and private-adoption gates remain.

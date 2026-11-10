@@ -90,7 +90,7 @@ These six supporting references complement the baseline; they are not six indepe
 Spec059 review merged in PR14; spec060 setup foundations merged in PR15. Only INSTALL-01/02/03/06/08 advance to partial; full original installation contracts and runtime MVP journeys remain open. This batch publishes the approved planning/progress reconciliation, not another runtime capability.
 
 
-## Current branch — scoped daily overview
+## Merged PR17 — scoped daily overview
 
 [Spec062](docs/DAILY_OVERVIEW.md) groups bounded agenda/tasks, owner-private in-app reminders, document text/extraction attention, failure/freshness limits and current-context source navigation. It implements baseline CORE-08/09, UI-01 and ORG-02 foundations without activating live services, new permissions or a separate queue. Global approvals/search/operations and complete MVP journeys remain open. This is independent of the approved later REV/refactoring programme, whose ordering remains after existing scope. PR16 merged its public scope reconciliation; all155 references remain retained.
 
@@ -105,6 +105,11 @@ Spec059 review merged in PR14; spec060 setup foundations merged in PR15. Only IN
 [Spec064](docs/FINANCIAL_REGISTER_API.md) implements the approved FIN-06 capture contract's server boundary: typed owner-private records, dated basis/source, plan acknowledgement/reset, quota/concurrency/audit, JSON/Markdown/history export and forgetting/recovery. Financial UI is the following phase of this existing scope; no new design-only substitute or full FIN-06 completion is claimed. Later calculations/imports/providers and deferred review scope stay open. PR18 design and PR19 server delivery are merged; financial UI branch delivery is tracked below.
 
 
-## Current branch — financial capture UI
+## Merged PR20 — financial capture UI
 
-[Spec065](docs/FINANCIAL_UI.md) groups typed owner-private capture/correction, unknown-versus-zero/forecast labels, recorded-plan acknowledgement/reset, history, bounded validated JSON/Markdown copies, forgetting and ephemeral privacy/conflict handling. It reuses merged PR19 APIs without backend/schema/grant changes. FIN-06 now has a merged partial server foundation; the dashboard keeps this UI branch separate and retains all later modelling/import/provider/host requirements. The approved deferred review programme remains after existing scope/later stages.
+[Spec065](docs/FINANCIAL_UI.md) groups typed owner-private capture/correction, unknown-versus-zero/forecast labels, recorded-plan acknowledgement/reset, history, bounded validated JSON/Markdown copies, forgetting and ephemeral privacy/conflict handling. It reuses merged PR19 APIs without backend/schema/grant changes. FIN-06 now has a merged partial server foundation; the dashboard records the merged UI evidence separately from full acceptance and retains all later modelling/import/provider/host requirements. The approved deferred review programme remains after existing scope/later stages.
+
+
+## Current branch — MVP operations foundations
+
+PR20 merged the financial capture UI. [Spec066 operations overview](docs/OPERATIONS_OVERVIEW.md) now groups explicit service/configuration observations, runtime version inventory, current-actor technical job statuses and private failure/freshness handling for existing OPS-09/RND-01. No current branch completion is counted before merge. OPS-10 audit/reporting remains open without broadening audit access. The next retained MVP gaps include unified approvals/search, measured service/worker/backup/capacity monitoring, bounded live-adapter engineering, real local-model quality, outage/restart and independent host/key/archive recovery acceptance. Integrations, private adoption and production activation still require separate authorization; original later/deferred scope is unchanged.

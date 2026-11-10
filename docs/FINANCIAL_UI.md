@@ -1,4 +1,4 @@
-# Financial capture UI — spec065 branch
+# Financial capture UI — merged PR20
 
 Members with an explicit finance_private grant can open **Financial register** from Local records. The server independently enforces the current grant and record ownership; a technical administrator or another member with the same scope gains no access to your data. The existing session landing remains unchanged. No source, model, bank, lender or broker is contacted and no financial action or calculation is performed.
 
@@ -28,6 +28,8 @@ The list is one owner-scoped page of at most 25 rows, including disclosed tombst
 
 ## Evidence boundary
 
-[PR19](https://github.com/LYF-FC/local-assistant-core/pull/19) merged the reviewed [server contract](FINANCIAL_REGISTER_API.md). [Spec065](../specs/065-financial-ui/spec.md) and [convergence](../specs/065-financial-ui/convergence.md) cover this open UI branch: strict client negatives and synthetic trusted HTTPS lifecycle/mobile/export/forget/conflict/late/hidden/expiry/denial evidence. No backend/schema/grant/fixture change is introduced, so no new native migration/restore claim is made.
+[PR19](https://github.com/LYF-FC/local-assistant-core/pull/19) merged the reviewed [server contract](FINANCIAL_REGISTER_API.md). [Spec065](../specs/065-financial-ui/spec.md) and [convergence](../specs/065-financial-ui/convergence.md) cover the UI merged in [PR20](https://github.com/LYF-FC/local-assistant-core/pull/20): strict client negatives and synthetic trusted HTTPS lifecycle/mobile/export/forget/conflict/late/hidden/expiry/denial evidence. No backend/schema/grant/fixture change is introduced, so no new native migration/restore claim is made.
 
-The [dashboard](FEATURE_DASHBOARD.html) and [Markdown overview](FEATURE_OVERVIEW.md) now count merged FIN-06 server foundations as partial: 18 of the original 99 named features partial, 81 planned; 39 partial/116 planned across 155 references. The open UI branch is not a merged or complete financial feature. Full goal/progress modelling, imports/scenarios/portfolio/property research, whole-MVP/host acceptance and separately authorized private adoption remain open. Deferred REV/refactoring ordering remains unchanged.
+The [dashboard](FEATURE_DASHBOARD.html) and [Markdown overview](FEATURE_OVERVIEW.md) now count merged FIN-06 server foundations as partial: 18 of the original 99 named features partial, 81 planned; 39 partial/116 planned across 155 references. PR20 is merged UI engineering, not full financial feature acceptance. Full goal/progress modelling, imports/scenarios/portfolio/property research, whole-MVP/host acceptance and separately authorized private adoption remain open. Deferred REV/refactoring ordering remains unchanged.
+
+PR20 merged at `4a3b4c0bfee033ba6619172db87158bd870d9061`. Exact head `898976ea6b769a9f4fa8326dbcd0d5fb3ae2d670` run42858957975 passed scope/frontend/containers/ci; backend/PostgreSQL deliberately skipped. Current-main push run42874340043 was in progress when checked; no full-main/host certificate is inferred.
