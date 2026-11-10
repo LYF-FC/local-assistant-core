@@ -1,6 +1,6 @@
 # Installation setup foundation — spec 060
 
-Branch engineering for [INSTALL-01/02/03/06/08](FEATURE_REGISTER.md), pending review/merge and hosted checks. This is a bounded foundation for [configurable installations](CONFIGURABLE_INSTALLATIONS.md), not acceptance of their full contracts. No new feature IDs or review candidates are approved.
+Merged [PR15](https://github.com/LYF-FC/local-assistant-core/pull/15) delivers partial foundations for [INSTALL-01/02/03/06/08](FEATURE_REGISTER.md); exact feature-head CI run42663955214 passed all six jobs. This is a bounded foundation for [configurable installations](CONFIGURABLE_INSTALLATIONS.md), not acceptance of their full contracts. This engineering feature approved no new scope; the separately approved [later review programme](DEFERRED_REVIEW_PROGRAMME.md) now adds six planned supporting references.
 
 ## Administrator flow
 

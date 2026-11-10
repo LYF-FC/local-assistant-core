@@ -177,4 +177,18 @@ Spec 057 extends spec 056 with reviewed logical naming/destination proposals and
 Spec 058 extends document originals/extraction and specs 056/057 with offline exact raw-email/single-attachment provenance and per-owner/scope exact replay. DOC-01 advances without a live mailbox; restricted source/sender rules, cursors/jobs/recovery and broader MIME remain dependencies. DOC-03 actual authorized contained apply/rollback and retry/crash reconciliation still gate MVP-03. Duplicate hints and plan approvals keep their original bounded/non-executable contracts; DOC-04 and all 149 IDs/INSTALL/RND remain.
 
 
-Spec060 branch: [setup foundation](INSTALLATION_SETUP.md) depends on existing identity/admin grants, durable audit, schema migration and logical recovery. Informational capability dependencies do not implement activation/disable enforcement. Dynamic membership, credentials, rollout/health/recovery and full independent-domain portability remain prerequisites to later installation acceptance; no retained reference is superseded or deleted.
+Merged spec060 (PR15): [setup foundation](INSTALLATION_SETUP.md) depends on existing identity/admin grants, durable audit, schema migration and logical recovery. Informational capability dependencies do not implement activation/disable enforcement. Dynamic membership, credentials, rollout/health/recovery and full independent-domain portability remain prerequisites to later installation acceptance; no retained reference is superseded or deleted.
+
+
+## Approved deferred programme — after existing scope
+
+The original149 references remain. REV-01–06 add six supporting references; all 149 baseline reviews and shared/overall improvements are retained in [the approved later programme](DEFERRED_REVIEW_PROGRAMME.md). Overlap is refinement, not permission to delete original outcomes or count duplicate implementations.
+
+| ID | Required foundation or feasibility gate |
+|---|---|
+| REV-01 | Existing149-reference implementation/later-stage decisions first; CORE-01/04, WORK-02/WCOMP-01 and scoped domain consumers; cross-context refusal and duplicate/ambiguity review. Detailed bounded acceptance and migration/recovery review before implementation. |
+| REV-02 | Existing149-reference implementation/later-stage decisions first; INSTALL-05/06, CORE-01/04 and job authority; expired/revoked tokens, stale jobs and implicit ownership-transfer refusal. Detailed bounded acceptance and migration/recovery review before implementation. |
+| REV-03 | Existing149-reference implementation/later-stage decisions first; CORE-09, UI-01, INSTALL-12; representative devices/tasks, measurable usability criteria and scoped-draft confidentiality. Detailed bounded acceptance and migration/recovery review before implementation. |
+| REV-04 | Existing149-reference implementation/later-stage decisions first; CORE-04/11, PLATFORM-01 and original established-rule intent; current exact-action authority, in-flight reconciliation and audit. Detailed bounded acceptance and migration/recovery review before implementation. |
+| REV-05 | Existing149-reference implementation/later-stage decisions first; CORE-03/04, MVP-05 and scoped recovery/exports; unconsented health/finance/work refusal, protected access and copy-limit disclosure. Detailed bounded acceptance and migration/recovery review before implementation. |
+| REV-06 | Existing149-reference implementation/later-stage decisions first; PLATFORM-02, RND and AI budget contracts; measured limits and competing-load/refusal/failure evidence without surprise spending or remote fallback. Detailed bounded acceptance and migration/recovery review before implementation. |

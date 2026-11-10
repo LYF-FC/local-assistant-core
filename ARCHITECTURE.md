@@ -58,3 +58,8 @@ The feature dashboard is an offline generated documentation artifact, outside th
 ### Installation configuration foundation (spec060 branch)
 
 [Installation setup](docs/INSTALLATION_SETUP.md) adds a sealed singleton UUID/revision, bounded schema1 language/timezone defaults and immutable matching history. Current technical-admin authority uses a dedicated membership lock under the existing user→singleton transaction boundary; task scopes stay restricted. Session/source/payload-bound preview receipts confer no standalone authority. The static catalogue describes build/setup readiness without probing hosts or activating capabilities. Templates omit identity/records/secrets; backups preserve identity. Existing namespace and runtime controls remain authoritative.
+
+
+### Approved later review/refactoring programme
+
+[The programme](docs/DEFERRED_REVIEW_PROGRAMME.md) is approved after existing scope/later stages. All baseline 149 assessments and sixteen shared implementation boundaries are retained. REV-01–06 trace six additional supporting refinements/outcomes; they do not introduce six subsystems or a global cross-scope store. Future refactors must preserve domain authority, scoped identity, audit/provenance/export and recovery compatibility with explicit migration/rollback acceptance. No runtime, schema, orchestrator or provider decision changes in this planning batch. Spec060 is now merged in PR15, retaining the bounded architecture described above.

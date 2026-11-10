@@ -59,3 +59,8 @@ After a verified feature merge or approved scope change, reconcile register/road
 ### Installation setup foundation (spec060 branch)
 
 Follow [the setup/template/identity and rollback contract](docs/INSTALLATION_SETUP.md). Current technical administrators explicitly preview/apply defaults; no provider/worker is activated. Review preference/timezone disclosure before exporting an unmanaged template. At100 revisions changed writes stop, while reads/export remain available. Backups preserve identity/history; templates cannot restore them. Migration0030 downgrade destroys these records and needs a reviewed protected-backup rollback. No private upgrade or deployment authorization is implied.
+
+
+### Deferred scope approval and operating boundaries
+
+The [approved later programme](docs/DEFERRED_REVIEW_PROGRAMME.md) introduces no running service, deployment, background collection, permission, continuity-pack export or resource policy now. Its six planned REV bundles and all 149 baseline improvements follow existing scope. Future refactors require compatibility/recovery and audit review; existing private systems and separately authorized integration/activation/migration gates stay unchanged. Spec060 references above now describe merged PR15 engineering; no private installation upgrade follows.

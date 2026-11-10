@@ -62,3 +62,8 @@ Publish individually reviewed requirements without deleting/merging canonical ID
 ### Spec060 branch: explicit installation initialization and reviewed templates
 
 [Contract](docs/INSTALLATION_SETUP.md): migration/read do not mint installation identity; first confirmed initialization does. Defaults are bounded setup state, not global rewrites of existing timezone/language records. Shareable allowlisted templates carry only languages/timezone; independent initialization creates fresh identity, private recovery preserves identity. Readiness is an informational dependency catalogue with no activation controls or health claims. Existing trusted provisioning remains required; onboarding, dynamic grants, lifecycle compaction and feature controls remain open.
+
+
+### 9 November 2026 — approve the deferred review programme
+
+Owner approved all individual/whole-product review recommendations, generalization/consolidation/validation/challenge work, the shared implementation map and former candidates A–F. [Contract](docs/DEFERRED_REVIEW_PROGRAMME.md). Schedule after the entire pre-review 149-reference implementation scope and later stages; this supersedes earlier pending-approval labels and proposed priority shifts, without delaying existing safety duties or earlier MVP acceptance. Preserve all baseline outcomes/IDs and original 99 counts; add REV-01–06 as planned supporting bundles with parent mapping, not six independent product features. Existing behavior can satisfy an improvement without needless rewriting. No production/provider/private-data authorization is conferred. Spec060 merged PR15 provides partial installation foundations, not complete installation acceptance.

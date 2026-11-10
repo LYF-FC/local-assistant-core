@@ -1,12 +1,14 @@
 # Critical feature and product review
 
+**Current decision — 9 November 2026:** all recommendations below, including former candidates A–F, are owner-approved for [a deferred improvement/refactoring programme](DEFERRED_REVIEW_PROGRAMME.md) after the existing agreed scope and its later stages. This supersedes the review's earlier pending-approval status and suggested priority changes. Current register 155 = original149 + six mapped supporting references; the original 99 cohort is unchanged. The analysis below retains its PR13 evidence date; approval is not implementation or activation.
+
 Review of all **99 original product features and 50 supporting references**, based on merged main `33a3b91679066b788e23cc5df2f61ae6c34ab1db` (PR #13). This is a product/scope/dependency review, not certification of every implementation or a new security/code audit. The [register](FEATURE_REGISTER.md), [detailed reconciliation](SCOPE_RECONCILIATION.md) and [MVP acceptance](MVP_ACCEPTANCE.md) remain authoritative. Private household values/history stay outside Git.
 
 **Bottom line of the assessment:** the vision is coherent, but the inventory is not 99 independent modules, and implementation breadth currently exceeds everyday end-to-end acceptance. Keep the agreed outcomes; reduce duplicate machinery and close useful workflows before adding optional platforms. The largest delivery risk is an expanding collection of safe synthetic foundations that never becomes a usable daily assistant.
 
 ## What the counts do and do not mean
 
-Merged main now has **17/99 partial foundations, 82 planned/not yet evidenced and 0 full retained feature contracts accepted**. Across all 149 references: 33 partial, 116 planned. There are nine merged public feature batches after the imported baseline. These are different units of progress, not interchangeable completion percentages.
+At the PR13 review snapshot, merged main had **17/99 partial foundations, 82 planned/not yet evidenced and 0 full retained feature contracts accepted**. Across all 149 references: 33 partial, 116 planned. There are nine merged public feature batches after the imported baseline. These are different units of progress, not interchangeable completion percentages.
 
 A broad feature can span MVP and later expansions. Accept a bounded MVP through its actual MVP gates; do not require every distant extension to finish first. Conversely, do not call a broad feature complete because a bounded slice or synthetic adapter passes. Future progress reporting should show: (1) delivered engineering slices, (2) accepted user journeys for the intended installation, and (3) full retained feature scope. Planned/not evidenced does not establish that no code exists. Test counts measure verification volume, not usefulness or percent complete.
 
@@ -61,9 +63,9 @@ The following are **already covered** and must not be added again merely under a
 | Per-person languages, timezones and installation settings | INSTALL-02/05, EDU-X02, ORG-01/03 | Make these consistent shared contracts; retain initial FR/ES/EN acceptance. |
 | Isolated professional records and licensed tooling | WCOMP-02/04, CREATIVE-X01, constitution | Finish isolation/rights/recovery evidence; do not infer access from expressed interest. |
 
-### Candidate gaps requiring an explicit owner decision
+### Approved deferred additions — former candidates A–F
 
-These are **proposals or under-specified cross-cutting refinements**, not newly approved feature IDs. They are excluded from the 99/149 totals. Merging this review publishes analysis; it does not approve these additions, move version commitments or authorize implementation/activation.
+These six bundles are now approved as REV-01–06 for the later programme; they remain excluded from the historical99/149 baseline and do not represent six independent product features. The table retains the original rationale and design questions, which must be resolved through detailed acceptance before implementation. The explicit owner decision—not publication of the earlier review—authorizes this scope addition. It does not authorize activation.
 
 | Candidate | Evidence/coverage distinction | Recommendation and decision needed |
 |---|---|---|
@@ -76,13 +78,15 @@ These are **proposals or under-specified cross-cutting refinements**, not newly 
 
 The private source review found explicit coverage for caregiver attribution, established incoming rules and extensive retention/recovery, but no explicit accessibility or temporary-access lifecycle acceptance. That is evidence of **under-specification**, not proof of every possible absence. Private source text and personal prioritization notes remain outside Git.
 
-## Recommended next decisions and delivery order
+## Original delivery recommendations — superseded ordering
+
+The following ordering was the original review recommendation. The newer owner decision defers the improvement programme until after existing scope, including later stages; it does not accelerate care/asset work or expand MVP. Existing baseline implementation obligations remain current.
 
 1. Keep all 149 IDs and existing milestones; accept the shared-implementation map as a proposal for future design, not a deletion/merge of requirements.
 2. Prefer the next implementation batch around installation-local identity/configuration/readiness contracts, using independent synthetic households. Then make UI-01 and the manual daily loop coherent, including the still-open basic FIN-06 capture and actionable operations state.
 3. Close one real calendar/notification/intake/filing route at a time **only after its separate activation/source authorization**. Measure review friction and outage/retry outcomes; do not add extra synthetic adapters as a substitute for that acceptance.
 4. Decide whether a time-sensitive dependent-care/asset slice should run earlier without silently expanding MVP. Keep advanced finance, creative observation, MoE/shared inference and extra channels conditional on usefulness and evidence.
-5. Review candidates A–F explicitly. Accessibility and identity-lifecycle criteria are recommended clarifications; a cross-domain contact contract and emergency pack need stronger scope decisions. No candidate is an automatic implementation task from this PR.
+5. A–F are now explicitly approved as REV-01–06 in the deferred programme. Detailed policy/acceptance questions remain, but no repeated scope approval is needed. Live/private-data effects retain separate authorization gates.
 
 ## Per-feature review
 
@@ -342,6 +346,17 @@ Verdicts are independent of delivery status. **Keep** = coherent outcome/gate; *
 | INSTALL-11 | Keep | Legacy conversion is not ordinary onboarding or a Git merge. Keep mappings/private history outside Git, rehearse on isolated copies and verify grants/provenance/tombstones. No operator action follows from generic feature delivery without the separately authorized conversion gate. |
 | INSTALL-12 | Keep | Usability acceptance must demonstrate a minimal useful setup and complete feature lifecycle on independent installations. Do not require every optional domain to be configured before first use. Measure owner-facing friction and failure recovery, not only successful provisioning commands. |
 
+## REV — approved deferred supporting bundles
+
+| ID | Verdict | Critical assessment / recommended boundary |
+|---|---|---|
+| REV-01 | Keep | Approved deferred bundle mapped to former candidate A; CORE-01/04, WORK-02/WCOMP-01 and scoped domain consumers; cross-context refusal and duplicate/ambiguity review. Preserve original parent outcomes and require explicit bounded acceptance before refactoring or adding effects. |
+| REV-02 | Keep | Approved deferred bundle mapped to former candidate B; INSTALL-05/06, CORE-01/04 and job authority; expired/revoked tokens, stale jobs and implicit ownership-transfer refusal. Preserve original parent outcomes and require explicit bounded acceptance before refactoring or adding effects. |
+| REV-03 | Keep | Approved deferred bundle mapped to former candidate C; CORE-09, UI-01, INSTALL-12; representative devices/tasks, measurable usability criteria and scoped-draft confidentiality. Preserve original parent outcomes and require explicit bounded acceptance before refactoring or adding effects. |
+| REV-04 | Keep | Approved deferred bundle mapped to former candidate D; CORE-04/11, PLATFORM-01 and original established-rule intent; current exact-action authority, in-flight reconciliation and audit. Preserve original parent outcomes and require explicit bounded acceptance before refactoring or adding effects. |
+| REV-05 | Keep | Approved deferred bundle mapped to former candidate E; CORE-03/04, MVP-05 and scoped recovery/exports; unconsented health/finance/work refusal, protected access and copy-limit disclosure. Preserve original parent outcomes and require explicit bounded acceptance before refactoring or adding effects. |
+| REV-06 | Keep | Approved deferred bundle mapped to former candidate F; PLATFORM-02, RND and AI budget contracts; measured limits and competing-load/refusal/failure evidence without surprise spending or remote fallback. Preserve original parent outcomes and require explicit bounded acceptance before refactoring or adding effects. |
+
 ## Review coverage and acceptance
 
-All 149 canonical references have one individual assessment: 41 Keep, 31 Generalize, 52 Consolidate, 16 Validate and 9 Challenge. No register/dependency row or approved scope has been removed. Review recommendations do not change implemented status, version assignments, data permissions or activation authority. Snapshot generation and coverage checks must fail on missing/duplicate IDs or unrecognized statuses; privacy and links are reviewed before publication.
+All 155 current references have one individual assessment:47 Keep,31 Generalize,52 Consolidate,16 Validate and9 Challenge. The baseline 149 retains its original 41/31/52/16/9 assessments; the six additions are Keep with explicit parent boundaries. No register/dependency row or approved scope has been removed. Review recommendations do not change implemented status, version assignments, data permissions or activation authority. Snapshot generation and coverage checks must fail on missing/duplicate IDs or unrecognized statuses; privacy and links are reviewed before publication.
