@@ -428,3 +428,6 @@ dialog::backdrop { background: rgba(25, 24, 20, .5); }
 .finance-panel input:not([type="checkbox"]), .finance-panel select { max-width: 100%; box-sizing: border-box; }
 .finance-panel dd { margin: .3rem 0 1rem; }
 .finance-panel li { margin-block: .8rem; }
+
+.operations-panel { overflow-wrap: anywhere; }
+.operations-panel li { margin-block: .45rem; }

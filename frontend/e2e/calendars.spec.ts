@@ -137,3 +137,44 @@ test.describe.serial("financial capture UI",()=>{
  });
  test('technical administrator alone has no financial navigation or queries',async({page})=>{let reads=0;page.on('request',request=>{if(new URL(request.url()).pathname.startsWith('/api/v1/finance'))reads++;});await login(page,'browser-finance-admin');await expect(page.getByRole('button',{name:'Financial register',exact:true})).toHaveCount(0);expect(reads).toBe(0);});
 });
+
+test.describe.serial('operations overview',()=>{
+ const password='synthetic-browser-password-only-0123456789';
+ let adminCookies:Awaited<ReturnType<BrowserContext['cookies']>>|null=null;
+ const panel=(page:Page)=>page.getByRole('region',{name:'Operations overview',exact:true});
+ async function enter(page:Page,slug='browser-finance-admin'){
+  let csrf:string;
+  if(adminCookies&&slug==='browser-finance-admin'){
+   await page.context().addCookies(adminCookies);const response=page.waitForResponse(r=>r.url().endsWith('/api/v1/auth/session')&&r.status()===200);await page.goto('/');csrf=(await(await response).json()).csrf_token;
+  }else{
+   await page.goto('/');await page.getByLabel('Username',{exact:true}).fill(slug);await page.getByLabel('Password',{exact:true}).fill(password);const response=page.waitForResponse(r=>r.url().endsWith('/api/v1/auth/login')&&r.status()===200);await page.getByRole('button',{name:'Sign in',exact:true}).click();csrf=(await(await response).json()).csrf_token;await expect(page.getByRole('navigation',{name:'Local records',exact:true})).toBeVisible();if(slug==='browser-finance-admin')adminCookies=await page.context().cookies();
+  }
+  if(slug==='browser-finance-admin')await page.getByRole('navigation',{name:'Local records',exact:true}).getByRole('button',{name:'Operations overview',exact:true}).click();
+  return csrf;
+ }
+ async function reload(page:Page){await panel(page).getByRole('button',{name:'Reload operations observations',exact:true}).click();await expect(panel(page).getByRole('region',{name:'Service observations',exact:true})).toBeVisible();}
+ async function post(page:Page,csrf:string,path:string,body:object){return page.evaluate(async({csrf,path,body})=>{const response=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':csrf},body:JSON.stringify(body)});return {status:response.status,body:await response.json()};},{csrf,path,body});}
+ test('operations shows bounded own jobs, runtime metadata and honest unknowns on mobile',async({page},testInfo)=>{
+  const csrf=await enter(page);await expect(panel(page).getByRole('region',{name:'Service observations',exact:true})).toHaveCount(0);
+  const created=await post(page,csrf,'/api/v1/approvals',{scope:'technical_admin',payload:{note:'Synthetic operations private payload'}});expect(created.status).toBe(201);const record=created.body,binding={payload_hash:record.payload_hash,policy_version:record.policy_version};expect((await post(page,csrf,`/api/v1/approvals/${record.id}/decide`,{...binding,decision:'approve'})).status).toBe(200);expect((await post(page,csrf,'/api/v1/jobs',{...binding,approval_id:record.id,idempotency_key:'synthetic-operations-browser-job'})).status).toBe(201);
+  const response=page.waitForResponse(r=>r.url().endsWith('/api/v1/operations/read'));await reload(page);const result=await response;expect(result.status()).toBe(200);expect(result.headers()['cache-control']).toBe('no-store');
+  await expect(panel(page)).toContainText('Database transaction: Observed for this request');await expect(panel(page)).toContainText('Backup age and independent restore: Unknown');await expect(panel(page)).toContainText('Configured; availability unverified');await expect(panel(page)).toContainText('Runtime software inventory');await expect(panel(page)).toContainText('queued: 1');await expect(panel(page)).toContainText('Audit review unavailable');await expect(panel(page)).not.toContainText('Synthetic operations private payload');await expect(panel(page)).not.toContainText(record.id);
+  await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);await page.screenshot({path:testInfo.outputPath('operations-mobile.png'),fullPage:true});expect(await page.evaluate(()=>JSON.stringify(localStorage))).not.toContain('technical_admin');
+ });
+ test('operations clears hidden, expired and late view responses without polling',async({page})=>{
+  await page.clock.install();await enter(page);await reload(page);
+  await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'));});await expect(panel(page).getByRole('status')).toContainText('hidden');await expect(panel(page).getByRole('region',{name:'Runtime software inventory',exact:true})).toHaveCount(0);await page.evaluate(()=>Object.defineProperty(document,'hidden',{configurable:true,value:false}));await reload(page);
+  let reads=0;page.on('request',r=>{if(r.url().endsWith('/api/v1/operations/read'))reads++;});await page.clock.fastForward(61000);await expect(panel(page).getByRole('status')).toContainText('expired');expect(reads).toBe(0);
+  let release!:()=>void,started!:()=>void;const held=new Promise<void>(r=>release=r),seen=new Promise<void>(r=>started=r);await page.route('**/api/v1/operations/read',async route=>{const response=await route.fetch();started();await held;try{await route.fulfill({response});}catch{/* Navigation cancelled this observation. */}});await panel(page).getByRole('button',{name:'Reload operations observations',exact:true}).click();await seen;await page.getByRole('button',{name:'Memory',exact:true}).click();release();await page.unroute('**/api/v1/operations/read');await page.getByRole('button',{name:'Operations overview',exact:true}).click();await expect(panel(page).getByRole('region',{name:'Service observations',exact:true})).toHaveCount(0);
+ });
+ test('operations rejects malformed receipts, clears denial and honors actual session revocation',async({page})=>{
+  const csrf=await enter(page);await reload(page);
+  await page.route('**/api/v1/operations/read',async route=>{const response=await route.fetch(),body=await response.json();body.actor_id='99999999-9999-4999-8999-999999999999';await route.fulfill({json:body});});await panel(page).getByRole('button',{name:'Reload operations observations',exact:true}).click();await expect(panel(page).getByRole('status')).toContainText('unavailable or invalid');await expect(panel(page).getByRole('region',{name:'Service observations',exact:true})).toHaveCount(0);await page.unroute('**/api/v1/operations/read');
+  await page.route('**/api/v1/operations/read',route=>route.fulfill({status:503,body:'Synthetic private trace'}));await panel(page).getByRole('button',{name:'Reload operations observations',exact:true}).click();await expect(panel(page).getByRole('status')).toContainText('unavailable');await expect(panel(page)).not.toContainText('Synthetic private trace');await page.unroute('**/api/v1/operations/read');
+  await page.route('**/api/v1/operations/read',route=>route.fulfill({status:403,body:'Synthetic private denial'}));await panel(page).getByRole('button',{name:'Reload operations observations',exact:true}).click();await expect(panel(page).getByRole('status')).toContainText('access is no longer available');await page.unroute('**/api/v1/operations/read');
+  expect((await post(page,csrf,'/api/v1/auth/logout',{})).status).toBe(200);await panel(page).getByRole('button',{name:'Reload operations observations',exact:true}).click();await expect(page.getByRole('button',{name:'Sign in',exact:true})).toBeVisible();await expect(panel(page)).toHaveCount(0);
+ });
+ test('finance membership alone exposes no operations view and server denies access',async({page})=>{
+  const csrf=await enter(page,'browser-finance-peer');await expect(page.getByRole('button',{name:'Operations overview',exact:true})).toHaveCount(0);expect((await post(page,csrf,'/api/v1/operations/read',{scope:'technical_admin'})).status).toBe(403);
+ });
+});

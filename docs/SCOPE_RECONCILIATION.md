@@ -110,3 +110,6 @@ Spec064 implements the storage/API part of the existing FIN-06/spec063 contract,
 
 
 Spec065 completes the owner-facing branch of existing FIN-06 capture without a new reference or calculation feature. Only verified merged PR19 changes FIN-06 from planned to partial: typed storage/API exists, UI branch/full goal/progress/modelling/host outcomes remain open. Original99 counts become 18 partial and 81 planned; all 155: 39 partial, 116 planned,0full accepted. Only that evidence/status row changes; original requirements/milestones, supporting/deferred references and acceptance boundaries are preserved.
+
+
+PR20 merges the owner-facing FIN-06 capture workflow; its broad status stays partial. Spec066 maps operations observations/runtime inventory to existing OPS-09/RND-01 without a new scope reference or denominator change. Its draft direct-audit query is superseded by explicit unavailability to preserve INSERT-only runtime audit access; original OPS-10 periodic audit remains required. No original feature, milestone, provider/host gate or later/deferred review ordering is removed.

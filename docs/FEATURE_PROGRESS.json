@@ -2,11 +2,11 @@
   "schema_version": 1,
   "snapshot": {
     "date": "2026-11-10",
-    "main_sha": "555cf8757aa0c170a1c212e84370454856998c16",
-    "merged_through_pr": 19,
-    "register_rows_sha256": "302232e9b3a7dbe35eaa25ff562d3c3fe5375aba6d688b03799175dbe35dfb83",
+    "main_sha": "4a3b4c0bfee033ba6619172db87158bd870d9061",
+    "merged_through_pr": 20,
+    "register_rows_sha256": "0f32342bcb5abdb39eb920c24f7a7a4840ca48df89e3bcef5fccc5765a608ec6",
     "main_ci": {
-      "run_id": 42854042731,
+      "run_id": 42874340043,
       "state_at_check": "in_progress"
     }
   },
@@ -360,8 +360,14 @@
     },
     {
       "title": "PR #19 · Financial storage/API",
-      "description": "Typed owner-private financial records, plan-record acknowledgement/reset, history/export/forget and verified recovery; financial UI/full FIN-06 acceptance remain open.",
+      "description": "Typed owner-private financial records, plan-record acknowledgement/reset, history/export/forget and verified recovery; UI followed in PR20 and full FIN-06 acceptance remains open.",
       "path": "pull/19",
+      "baseline": false
+    },
+    {
+      "title": "PR #20 · Financial capture UI",
+      "description": "Typed owner forms, explicit unknown/forecast/zero, plan review/reset, bounded history/copy/forget and privacy clearing; full financial/MVP/host acceptance remains open.",
+      "path": "pull/20",
       "baseline": false
     }
   ],

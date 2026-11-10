@@ -59,4 +59,4 @@ Full FIN-06 goal/progress modelling and FIN-01/02/07–17 remain open: reconcile
 
 ## Current delivery status
 
-PR19 merged [the dedicated typed server/storage boundary](FINANCIAL_REGISTER_API.md). The [spec065 financial UI](FINANCIAL_UI.md) is an open branch supplying the owner-facing forms/lifecycle/export/privacy workflow. Earlier design wording above is retained as the full contract, not a declaration that merged server behavior is absent. No full FIN-06/MVP or later modelling/provider/host acceptance is inferred.
+PR19 merged [the dedicated typed server/storage boundary](FINANCIAL_REGISTER_API.md). The [spec065 financial UI](FINANCIAL_UI.md) merged in PR20, supplying the owner-facing forms/lifecycle/export/privacy workflow. Earlier design wording above is retained as the full contract, not a declaration that merged server behavior is absent. No full FIN-06/MVP or later modelling/provider/host acceptance is inferred.

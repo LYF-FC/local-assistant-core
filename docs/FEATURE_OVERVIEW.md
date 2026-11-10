@@ -1,6 +1,6 @@
 # Feature overview
 
-Snapshot: **10 November 2026**, verified merged main [`555cf87`](https://github.com/LYF-FC/local-assistant-core/commit/555cf8757aa0c170a1c212e84370454856998c16) through PR #19. This view does not query CI or certify exact-main/host/provider acceptance.
+Snapshot: **10 November 2026**, verified merged main [`4a3b4c0`](https://github.com/LYF-FC/local-assistant-core/commit/4a3b4c0bfee033ba6619172db87158bd870d9061) through PR #20. This view does not query CI or certify exact-main/host/provider acceptance.
 
 [Critical review of every feature](FEATURE_REVIEW.md) · [Interactive dashboard — download HTML](FEATURE_DASHBOARD.html) · [Source metadata](FEATURE_PROGRESS.json)
 
@@ -39,7 +39,7 @@ A feature is counted once at its first stage; later expansions remain retained. 
 
 ## Delivered building blocks
 
-12 public feature batches have merged after the imported engineering foundation. Documentation PRs are not feature deliveries; building blocks are not added to the original-feature denominator.
+13 public feature batches have merged after the imported engineering foundation. Documentation PRs are not feature deliveries; building blocks are not added to the original-feature denominator.
 
 | Evidence | Working engineering subset |
 |---|---|
@@ -55,7 +55,8 @@ A feature is counted once at its first stage; later expansions remain retained. 
 | [PR #13 · Offline email intake](https://github.com/LYF-FC/local-assistant-core/pull/13) | Exact original email/single attachment, private provenance, replay and aggregate forgetting; no live mailbox. |
 | [PR #15 · Installation setup](https://github.com/LYF-FC/local-assistant-core/pull/15) | Explicit installation UUID, versioned bounded defaults, reviewed sanitized templates and informational readiness; no activation controls or dynamic membership. |
 | [PR #17 · Scoped daily overview](https://github.com/LYF-FC/local-assistant-core/pull/17) | Explicit bounded agenda/tasks, private reminders and document attention with freshness clearing and current-source navigation; full dashboard/live/operations acceptance remains open. |
-| [PR #19 · Financial storage/API](https://github.com/LYF-FC/local-assistant-core/pull/19) | Typed owner-private financial records, plan-record acknowledgement/reset, history/export/forget and verified recovery; financial UI/full FIN-06 acceptance remain open. |
+| [PR #19 · Financial storage/API](https://github.com/LYF-FC/local-assistant-core/pull/19) | Typed owner-private financial records, plan-record acknowledgement/reset, history/export/forget and verified recovery; UI followed in PR20 and full FIN-06 acceptance remains open. |
+| [PR #20 · Financial capture UI](https://github.com/LYF-FC/local-assistant-core/pull/20) | Typed owner forms, explicit unknown/forecast/zero, plan review/reset, bounded history/copy/forget and privacy clearing; full financial/MVP/host acceptance remains open. |
 
 ## All original named features
 
@@ -85,7 +86,7 @@ Statuses come from the [register](FEATURE_REGISTER.md). Review recommendations l
 | DOC-03 | Synology filing | Working foundation · partial | [Validate](FEATURE_REVIEW.md#doc) | Logical folder/name proposals, manual review and non-executable approval/withdrawal reuse original-linked invoice history. Offline email lineage is added by spec 058; live-source lineage, authorized contained apply/rollback and exactly-once recovery remain open. |
 | OPS-09 | Infrastructure dashboard | Planned / not evidenced | [Consolidate](FEATURE_REVIEW.md#ops) | No claim of full delivery; verify exact code and acceptance before promotion. |
 | OPS-10 | Periodic operational audit | Planned / not evidenced | [Consolidate](FEATURE_REVIEW.md#ops) | No claim of full delivery; verify exact code and acceptance before promotion. |
-| FIN-06 | Goal and assumption register | Working foundation · partial | [Keep](FEATURE_REVIEW.md#fin) | Typed owner-private dated goals/assumptions/plans/sources, acknowledgement/reset, history/export/forget and recovery exist. Financial UI spec065 remains an open branch; full goal/progress modelling, reconciled imports and later financial/MVP/host acceptance remain open. [Server boundary](FINANCIAL_REGISTER_API.md). |
+| FIN-06 | Goal and assumption register | Working foundation · partial | [Keep](FEATURE_REVIEW.md#fin) | Typed owner-private dated goals/assumptions/plans/sources, acknowledgement/reset, history/export/forget, recovery and ephemeral owner UI exist. Full goal/progress modelling, reconciled imports and later financial/MVP/host acceptance remain open. [UI boundary](FINANCIAL_UI.md). |
 
 ### v0.3 · Household & food
 

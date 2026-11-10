@@ -87,3 +87,8 @@ Implement [typed storage/API](docs/FINANCIAL_REGISTER_API.md) and its PostgreSQL
 ### Spec065 branch — finish the financial owner workflow
 
 Use [explicit typed forms and separate acknowledgements](docs/FINANCIAL_UI.md) for plan-record acceptance, private-copy export and managed forgetting. Unknown amounts stay null; zero and forecasts keep explicit labels. Kind/owner/scope cannot change through correction, and accepted plans grant no execution authority. Reuse reviewed APIs; no backend/schema changes or new finance calculation. Dashboard promotes only verified merged PR19 server evidence, preserving the original 99 cohort and later/deferred scope.
+
+
+### Spec066 branch — observations must retain uncertainty
+
+Use [explicit observed/configured/disabled/unknown states](docs/OPERATIONS_OVERVIEW.md), not a global green health badge. Installed versions do not establish approval/support/license/advisory status. Preserve INSERT-only runtime audit access: audit review stays unavailable until a narrow separately reviewed projection exists; OPS-10 is retained. Sample only current actor technical-admin jobs, without payloads/global counts/overdue inference.

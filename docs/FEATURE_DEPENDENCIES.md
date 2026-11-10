@@ -204,3 +204,6 @@ Spec064 branch [financial storage/API](FINANCIAL_REGISTER_API.md) supplies FIN-0
 
 
 Spec065 [financial UI](FINANCIAL_UI.md) consumes merged spec064 server authority/types/lifecycle/export/recovery; no new feature reference, permission or fixture dependency. Full FIN-06 modelling/imports and later financial/MVP/host acceptance remain. Strict client checks complement rather than replace server authority; deferred REV work is unchanged.
+
+
+Spec066 [operations overview](OPERATIONS_OVERVIEW.md) uses existing identity/CSRF/technical-admin membership locking, metadata audit and runtime package metadata; own technical job statuses use existing SELECT grants. OPS-10 needs a separately reviewed narrow audit projection; no general audit SELECT is introduced. Full monitoring/scouting/independent recovery remain dependencies of acceptance, not inferred from configured flags.
