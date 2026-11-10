@@ -3,9 +3,9 @@ import type {Session} from "./api";
 import * as api from "./calendars-api";
 
 const today=()=>new Date().toISOString().slice(0,10);
-export default function CalendarPanel({session,onUnauthorized}:{session:Session;onUnauthorized:()=>void}) {
+export default function CalendarPanel({session,onUnauthorized,initialScope,initialDay,initialTimezone}:{session:Session;onUnauthorized:()=>void;initialScope?:api.CalendarScope;initialDay?:string;initialTimezone?:string}) {
  const scopes=session.user.scopes.filter((s):s is api.CalendarScope=>Object.hasOwn(api.calendarScopes,s));
- const [scope,setScope]=useState<api.CalendarScope>(scopes[0]??"household_shared"),[day,setDay]=useState(today),[timezone,setTimezone]=useState("UTC");
+ const [scope,setScope]=useState<api.CalendarScope>(initialScope&&scopes.includes(initialScope)?initialScope:scopes[0]??"household_shared"),[day,setDay]=useState(initialDay??today()),[timezone,setTimezone]=useState(initialTimezone??"UTC");
  const [page,setPage]=useState<api.CalendarPage|null>(null),[source,setSource]=useState<api.Source|null>(null),[briefing,setBriefing]=useState<api.Briefing|null>(null),[history,setHistory]=useState<api.History|null>(null);
  const [label,setLabel]=useState(""),[raw,setRaw]=useState(""),[preview,setPreview]=useState<api.Window|null>(null),[ack,setAck]=useState(false),[forget,setForget]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState("");
  const active=useRef<AbortController|null>(null),epoch=useRef(0);

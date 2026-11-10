@@ -67,3 +67,8 @@ After existing trusted account provisioning and an explicit technical_admin gran
 ### Approved future refinements
 
 [The later review/refactoring programme](docs/DEFERRED_REVIEW_PROGRAMME.md) is scope planning, with no additional setup steps, default credentials, delegation or emergency access. Current setup foundations are merged via PR15; full onboarding/activation contracts remain open. REV-01–06 and all baseline review improvements are scheduled after existing scope/later stages, with detailed setup/migration acceptance before implementation.
+
+
+### Spec062 branch: daily overview
+
+Existing granted household/member-private scopes can open [Daily overview](docs/DAILY_OVERVIEW.md), choose day/timezone and explicitly refresh. No extra credentials, migrations or role provisioning. Technical administration alone grants no overview content. The source panels retain current permission and action checks, with the chosen scope/day retained during overview navigation.

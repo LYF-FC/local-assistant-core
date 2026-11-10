@@ -17,9 +17,9 @@ function Editor({row,mode,busy,conflict,onSave}:{row:api.Document|null;mode:"upl
     {mode!=="correct"?<label>Original file<input aria-label="Original file" type="file" accept=".txt,.md,.pdf" required onChange={e=>setFile(e.target.files?.[0]??null)}/></label>:<label className="reminder-toggle"><input type="checkbox" disabled={row?.extraction!==undefined&&row.extraction.status!=="ready"} checked={reviewed} onChange={e=>setReviewed(e.target.checked)}/>I reviewed this text against its source; this is not independent verification.</label>}
     <button type="submit">{busy?"Saving…":"Save document"}</button></fieldset></form>;
 }
-export default function DocumentsPanel({session,onUnauthorized,initialDocument}:{session:Session;onUnauthorized:()=>void;initialDocument?:api.Document}) {
+export default function DocumentsPanel({session,onUnauthorized,initialDocument,initialScope}:{session:Session;onUnauthorized:()=>void;initialDocument?:api.Document;initialScope?:api.Scope}) {
   const scopes=session.user.scopes.filter((s):s is api.Scope=>Object.hasOwn(api.documentScopes,s));
-  const [filters,setFilters]=useState<api.Filters>({scope:initialDocument?.scope??scopes[0]??"household_shared",reviewed_only:false,search:"",after:null});
+  const [filters,setFilters]=useState<api.Filters>({scope:initialDocument?.scope??(initialScope&&scopes.includes(initialScope)?initialScope:scopes[0]??"household_shared"),reviewed_only:false,search:"",after:null});
   const [search,setSearch]=useState(""),[page,setPage]=useState<api.Page|null>(null),[row,setRow]=useState<api.Document|null>(null),[editor,setEditor]=useState<"upload"|"correct"|"replace"|null>(null),[history,setHistory]=useState<api.History|null>(null),[excerpt,setExcerpt]=useState<api.Excerpt|null>(null);
   const [start,setStart]=useState(1),[end,setEnd]=useState(1),[ack,setAck]=useState(false),[forget,setForget]=useState(false),[busy,setBusy]=useState(false),[conflict,setConflict]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState("");
   const [emailImport,setEmailImport]=useState(false);

@@ -26,9 +26,9 @@ function Editor({ entry, busy, conflict, onSave, onCancel }: { entry: ActiveTask
     <label>Task source or reference<input aria-label="Task source or reference" value={source} onChange={e => setSource(e.target.value)} required maxLength={512} /></label><button type="submit">{busy ? "Saving…" : "Save task"}</button></fieldset>
     {conflict && <p>Your draft is kept until you discard it.</p>}<button type="button" disabled={busy} onClick={onCancel}>{conflict ? "Discard draft and reload" : "Cancel editing"}</button></form>;
 }
-export default function TasksPanel({ session, onUnauthorized }: { session: Session; onUnauthorized: () => void }) {
+export default function TasksPanel({ session, onUnauthorized, initialScope }: { session: Session; onUnauthorized: () => void; initialScope?: TaskScope }) {
   const scopes = session.user.scopes.filter((s): s is TaskScope => Object.hasOwn(taskScopes, s));
-  const initial: TaskFilters = { scope: scopes[0] ?? "household_shared", status: "open", due: "all", search: "", after: null };
+  const initial: TaskFilters = { scope: initialScope && scopes.includes(initialScope) ? initialScope : scopes[0] ?? "household_shared", status: "open", due: "all", search: "", after: null };
   const [filters, setFilters] = useState(initial);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState<TaskPage | null>(null);

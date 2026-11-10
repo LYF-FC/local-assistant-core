@@ -41,3 +41,6 @@ Spec060 [installation setup foundation](INSTALLATION_SETUP.md) is branch enginee
 ## Deferred review approval does not expand MVP
 
 All review improvements and REV-01–06 are approved after existing scope/later stages under [the programme contract](DEFERRED_REVIEW_PROGRAMME.md). Keep all original MVP acceptance outcomes, existing security/accessibility/recovery duties and separate activation/source gates; do not add six new MVP features or require distant full-scope completion before an earlier bounded MVP. Spec060 is merged PR15 engineering only; no full MVP journey is certified by setup foundations.
+
+
+Spec062 branch [daily overview](DAILY_OVERVIEW.md) supplies bounded scoped agenda/reminder/document-attention and current-source navigation evidence for the existing dashboard journey. It does not close complete approvals/search/operations, external notification/live calendar, financial capture or whole-MVP/host acceptance. At most60second/first-page/partial-failure limits remain explicit; no new MVP gate or deferred REV scope is introduced.

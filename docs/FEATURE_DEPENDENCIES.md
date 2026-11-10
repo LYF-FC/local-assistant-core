@@ -192,3 +192,6 @@ The original149 references remain. REV-01–06 add six supporting references; al
 | REV-04 | Existing149-reference implementation/later-stage decisions first; CORE-04/11, PLATFORM-01 and original established-rule intent; current exact-action authority, in-flight reconciliation and audit. Detailed bounded acceptance and migration/recovery review before implementation. |
 | REV-05 | Existing149-reference implementation/later-stage decisions first; CORE-03/04, MVP-05 and scoped recovery/exports; unconsented health/finance/work refusal, protected access and copy-limit disclosure. Detailed bounded acceptance and migration/recovery review before implementation. |
 | REV-06 | Existing149-reference implementation/later-stage decisions first; PLATFORM-02, RND and AI budget contracts; measured limits and competing-load/refusal/failure evidence without surprise spending or remote fallback. Detailed bounded acceptance and migration/recovery review before implementation. |
+
+
+Spec062 branch [daily overview](DAILY_OVERVIEW.md) depends on the existing scoped day briefing, private owner-reminder inbox, document query/current-source read and strict UI/session transport. It adds no new authority, queue or live adapter. Baseline UI-01/CORE-08/ORG-02 are refined without moving REV additions/refactoring ahead of their approved later stage.

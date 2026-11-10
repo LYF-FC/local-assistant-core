@@ -64,3 +64,8 @@ Follow [the setup/template/identity and rollback contract](docs/INSTALLATION_SET
 ### Deferred scope approval and operating boundaries
 
 The [approved later programme](docs/DEFERRED_REVIEW_PROGRAMME.md) introduces no running service, deployment, background collection, permission, continuity-pack export or resource policy now. Its six planned REV bundles and all 149 baseline improvements follow existing scope. Future refactors require compatibility/recovery and audit review; existing private systems and separately authorized integration/activation/migration gates stay unchanged. Spec060 references above now describe merged PR15 engineering; no private installation upgrade follows.
+
+
+### Spec062 branch: overview operation
+
+[Daily overview](docs/DAILY_OVERVIEW.md) needs no new service, migration, fixture privilege or consumer activation. An unavailable section is not an empty list or a healthy subsystem. After expiry/hidden tab/context changes, refresh explicitly; external notification and live source status remain separate. No app/worker/secret/deployment configuration or private installation is changed. Existing audit, recovery and source-panel operations remain authoritative.
