@@ -47,3 +47,6 @@ Spec062 branch [daily overview](DAILY_OVERVIEW.md) supplies bounded scoped agend
 
 
 Spec063 [financial capture contract](FINANCIAL_CAPTURE.md) makes the basic manual FIN-06 gate measurable before implementation: goals/dated assumptions/recorded plans/sources in owner-private finance space, correction/export/forget, current authority and actual recovery evidence. This planning batch does not satisfy that gate, expand into portfolio/scenario calculations or authorize financial actions. Existing MVP/later-stage acceptance is unchanged.
+
+
+Spec064 branch [financial storage/API evidence](FINANCIAL_REGISTER_API.md) supports basic FIN-06 but does not close its owner-facing UI journey or the MVP gate. Current permission, plan-recording versus execution, typed unknown/forecast, history/export/forget and recovery remain explicit; later models/imports and private/provider/host authorization are separate.

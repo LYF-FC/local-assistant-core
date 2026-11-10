@@ -73,3 +73,8 @@ The feature dashboard is an offline generated documentation artifact, outside th
 ### Spec063 design: restricted financial records
 
 [Financial capture](docs/FINANCIAL_CAPTURE.md) will use dedicated server-validated records/revisions while reusing existing identity, finance_private grants, audit and transport. Do not implement it solely as a client-side JSON convention in generic Memory or inherit automatic context eligibility. Explicit unknown/forecast and record-only plan review have distinct semantics. No new table, route, schema or inference path is implemented by this design batch.
+
+
+### Spec064 branch — financial storage/API
+
+[Financial records/revisions](docs/FINANCIAL_REGISTER_API.md) implement the dedicated schema boundary specified in spec063, reusing current identity/audit/transport. Scope is always finance_private plus current owner; no Memory/context projection. A fixed finance membership lock leaves task scopes unchanged. Owner locks serialize quotas and record locks serialize expected-revision changes. DB guards seal identity/current/history and permit history scrubbing only after terminal forgetting. No queue, model, provider or financial executor is introduced.

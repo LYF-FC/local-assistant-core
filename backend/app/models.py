@@ -798,3 +798,50 @@ class InstallationRevision(Base):
     )
     snapshot: Mapped[dict] = mapped_column(MEMORY_JSON, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class FinancialRecord(Base):
+    __tablename__ = "financial_records"
+    __table_args__ = (
+        CheckConstraint("revision BETWEEN 1 AND 101", name="ck_financial_revision"),
+        CheckConstraint("scope_key='finance_private'", name="ck_financial_scope"),
+        CheckConstraint("kind IN ('goal','assumption','plan','source')", name="ck_financial_kind"),
+        CheckConstraint(
+            "(state='active' AND revision<=100 AND payload IS NOT NULL) OR (state='forgotten' AND payload IS NULL AND accepted_by IS NULL AND accepted_at IS NULL)",
+            name="ck_financial_state",
+        ),
+        CheckConstraint(
+            "(accepted_by IS NULL AND accepted_at IS NULL) OR (kind='plan' AND accepted_by=owner_id AND accepted_at IS NOT NULL)",
+            name="ck_financial_acceptance",
+        ),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    scope_key: Mapped[str] = mapped_column(String(96), nullable=False)
+    kind: Mapped[str] = mapped_column(String(16), nullable=False)
+    state: Mapped[str] = mapped_column(String(16), nullable=False)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    payload: Mapped[dict | None] = mapped_column(MEMORY_JSON)
+    accepted_by: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id")
+    )
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class FinancialRevision(Base):
+    __tablename__ = "financial_revisions"
+    __table_args__ = (UniqueConstraint("record_id", "revision", name="uq_financial_revision"),)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    record_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("financial_records.id"), nullable=False
+    )
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    actor_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    snapshot: Mapped[dict | None] = mapped_column(MEMORY_JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

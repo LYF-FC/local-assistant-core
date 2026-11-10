@@ -77,3 +77,8 @@ Existing granted household/member-private scopes can open [Daily overview](docs/
 ### Spec063 finance planning
 
 [Restricted financial capture](docs/FINANCIAL_CAPTURE.md) is not yet available as a dedicated feature. This batch requires no setup, new account, credentials or migration. Future access requires an explicit finance_private grant and current owner authority; household or technical-admin access alone will not suffice. Use synthetic fixtures for implementation/acceptance.
+
+
+### Spec064 branch — restricted financial API
+
+[The financial storage API](docs/FINANCIAL_REGISTER_API.md) requires explicit finance_private membership and current owner/session authority. It supplies no public bootstrap, default credentials or financial UI yet. Technical administration and household membership are insufficient. Migration/grant/restore/HTTPS evidence uses disposable synthetic targets; do not apply to the private deployment without separate authorization.

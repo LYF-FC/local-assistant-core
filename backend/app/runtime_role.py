@@ -128,6 +128,7 @@ def configure(connection, password: str) -> None:
             "routines",
             "invoice_reviews",
             "installation_config",
+            "financial_records",
             "document_records",
             "task_reminders",
             "reminder_preferences",
@@ -235,11 +236,22 @@ def configure(connection, password: str) -> None:
                 "GRANT INSERT(workspace_id,record_id,review_preparation_id,reviewed_revision,actor_id,session_id,request_id,expires_at) ON public.work_confirmation_requests TO {}"
             ).format(sql.Identifier(ROLE))
         )
+        cursor.execute(
+            sql.SQL("GRANT SELECT, INSERT ON public.financial_revisions TO {}").format(
+                sql.Identifier(ROLE)
+            )
+        )
+        cursor.execute(
+            sql.SQL("GRANT UPDATE(snapshot) ON public.financial_revisions TO {}").format(
+                sql.Identifier(ROLE)
+            )
+        )
         # Verify only a bound digest receipt/deadline and lock the chosen private membership.
         # Runtime retains no SELECT on audit_events and no UPDATE on user_scopes.
         for function in (
             "butler_lock_discovery_scope(uuid,text)",
             "butler_lock_task_scope(uuid,text)",
+            "butler_lock_finance_scope(uuid,text)",
             "butler_lock_installation_scope(uuid,text)",
             "butler_discovery_review_deadline(uuid,uuid,uuid,text,text,integer)",
         ):

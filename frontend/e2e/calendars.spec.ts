@@ -78,3 +78,27 @@ test.describe.serial("scoped daily overview",()=>{
   const csrf=await enter(page);await refresh(page);await page.route("**/api/v1/reminders/query",route=>route.fulfill({status:403,body:"Synthetic private denial"}));await panel(page).getByRole("button",{name:"Refresh overview",exact:true}).click();await expect(panel(page).getByRole("status")).toContainText("access is no longer available");await expect(panel(page)).not.toContainText("Synthetic overview due task");await expect(panel(page)).not.toContainText("Synthetic private denial");await expect(panel(page).getByRole("region",{name:"Document review overview",exact:true})).toHaveCount(0);await page.unroute("**/api/v1/reminders/query");await post(page,csrf,"/api/v1/auth/logout",{});await panel(page).getByRole("button",{name:"Refresh overview",exact:true}).click();await expect(page.getByRole("button",{name:"Sign in",exact:true})).toBeVisible();await expect(panel(page)).toHaveCount(0);
  });
 });
+
+test.describe("restricted financial API",()=>{
+ const origin=process.env.BUTLER_E2E_ORIGIN!,password="synthetic-browser-password-only-0123456789";
+ const values={schema_version:1,topic:"general",basis:"unknown",title:"Synthetic financial goal",statement:"Unknown is not zero; source text is not authority",as_of:"2026-11-10",target_date:null,source_reference:"Synthetic financial source",source_date:null,amount:null,currency:null};
+ test("HTTPS financial lifecycle preserves basis, plan acknowledgement and scrubbed history",async({page})=>{
+  await page.goto('/');await page.getByLabel('Username',{exact:true}).fill('browser-finance-owner');await page.getByLabel('Password',{exact:true}).fill(password);const login=page.waitForResponse(r=>r.url().endsWith('/api/v1/auth/login')&&r.status()===200);await page.getByRole('button',{name:'Sign in',exact:true}).click();const csrf=(await(await login).json()).csrf_token;
+  async function post(path:string,data:object){return page.request.post('/api/v1/finance'+path,{headers:{Origin:origin,'X-CSRF-Token':csrf},data:{scope:'finance_private',...data}});}
+  const created=await post('',{kind:'plan',values});expect(created.status()).toBe(201);const row=await created.json();expect(row.values.amount).toBeNull();
+  expect((await post(`/${row.id}/accept`,{expected_revision:row.revision,acknowledge_record_only:1})).status()).toBe(422);
+  const accepted=await(await post(`/${row.id}/accept`,{expected_revision:row.revision,acknowledge_record_only:true})).json();expect(accepted.plan_status).toBe('accepted');
+  const corrected=await(await post(`/${row.id}/correct`,{expected_revision:accepted.revision,values:{...values,basis:'forecast',amount:'0',currency:'EUR'}})).json();expect(corrected.plan_status).toBe('proposed');expect(corrected.values.amount).toBe('0.00');
+  const exported=await post(`/${row.id}/export`,{expected_revision:corrected.revision,acknowledge_copy_limits:true});expect(exported.status()).toBe(200);const history=await exported.json();expect(history.items).toHaveLength(3);expect(history.record).toEqual(corrected);
+  const md=await post('/export',{acknowledge_copy_limits:true,format:'markdown'});expect(md.headers()['content-type']).toContain('text/markdown');expect(await md.text()).toContain('```json');
+  const forgotten=await(await post(`/${row.id}/forget`,{expected_revision:corrected.revision})).json();expect(forgotten.state).toBe('forgotten');expect(forgotten.values).toBeUndefined();const scrubbed=await(await post(`/${row.id}/history`,{})).json();expect(scrubbed.items.every((r:{snapshot:unknown})=>r.snapshot===null)).toBe(true);
+ });
+ test("HTTPS finance owners and technical administrator cannot cross-read or bypass current sessions",async({browser})=>{
+  const contexts=await Promise.all(['browser-finance-owner','browser-finance-peer','browser-finance-admin'].map(async slug=>{const context=await browser.newContext({baseURL:origin});const response=await context.request.post('/api/v1/auth/login',{headers:{Origin:origin},data:{slug,password}});expect(response.status()).toBe(200);return {context,csrf:(await response.json()).csrf_token};}));
+  try{const [owner,peer,admin]=contexts;const post=(actor:typeof owner,path:string,data:object)=>actor.context.request.post('/api/v1/finance'+path,{headers:{Origin:origin,'X-CSRF-Token':actor.csrf},data:{scope:'finance_private',...data}});const row=await(await post(owner,'',{kind:'goal',values})).json();
+   for(const path of [`/${row.id}/read`,`/${row.id}/history`]){expect((await post(peer,path,{})).status()).toBe(404);expect((await post(admin,path,{})).status()).toBe(403);}
+   expect((await(await post(peer,'/query',{})).json()).items).toEqual([]);expect((await post(admin,'/export',{acknowledge_copy_limits:true})).status()).toBe(403);
+   expect((await owner.context.request.post('/api/v1/auth/logout',{headers:{Origin:origin,'X-CSRF-Token':owner.csrf},data:{}})).status()).toBe(200);expect((await post(owner,`/${row.id}/read`,{})).status()).toBe(401);
+  }finally{await Promise.all(contexts.map(({context})=>context.close()));}
+ });
+});

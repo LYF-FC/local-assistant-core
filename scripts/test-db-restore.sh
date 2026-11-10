@@ -81,6 +81,7 @@ SQL
 (cd backend && uv run --locked python ../scripts/invoice-restore-fixtures.py seed)
 (cd backend && uv run --locked python ../scripts/email-intake-restore-fixtures.py seed)
 (cd backend && uv run --locked python ../scripts/installation-restore-fixtures.py seed)
+(cd backend && uv run --locked python ../scripts/finance-restore-fixtures.py seed)
 (cd backend && uv run --locked python ../scripts/reminder-restore-fixtures.py seed)
 (cd backend && uv run --locked python ../scripts/document-restore-fixtures.py seed)
 (cd backend && uv run --locked python ../scripts/document-archive-restore-fixtures.py seed)
@@ -126,7 +127,7 @@ docker exec "$CONTAINER_ID" createdb -U postgres butler_test_restore
 docker exec -i "$CONTAINER_ID" pg_restore -U postgres -d butler_test_restore --exit-on-error < "$DUMP"
 RESULT=$(docker exec "$CONTAINER_ID" psql -U postgres -d butler_test_restore -Atc "SELECT value FROM recovery_sentinel WHERE id=1")
 [[ "$RESULT" == synthetic-recovery-ok ]]
-[[ "$(docker exec "$CONTAINER_ID" psql -U postgres -d butler_test_restore -Atc "SELECT version_num FROM alembic_version")" == 0030_installation_config ]]
+[[ "$(docker exec "$CONTAINER_ID" psql -U postgres -d butler_test_restore -Atc "SELECT version_num FROM alembic_version")" == 0031_financial_capture ]]
 [[ "$(docker exec "$CONTAINER_ID" psql -U postgres -d butler_test_restore -Atc "SELECT result_status FROM audit_events WHERE event_type='recovery.sentinel'")" == success ]]
 if docker exec "$CONTAINER_ID" psql -U postgres -d butler_test_restore -v ON_ERROR_STOP=1 -c "UPDATE audit_events SET result_status='tampered' WHERE event_type='recovery.sentinel'" >/dev/null 2>&1; then
   echo "Restored audit guard did not reject mutation" >&2
@@ -148,6 +149,7 @@ done
 (cd backend && BUTLER_POSTGRES_DB=butler_test_restore uv run --locked python ../scripts/invoice-restore-fixtures.py check)
 (cd backend && BUTLER_POSTGRES_DB=butler_test_restore uv run --locked python ../scripts/email-intake-restore-fixtures.py check)
 (cd backend && BUTLER_POSTGRES_DB=butler_test_restore uv run --locked python ../scripts/installation-restore-fixtures.py check)
+(cd backend && BUTLER_POSTGRES_DB=butler_test_restore uv run --locked python ../scripts/finance-restore-fixtures.py check)
 (cd backend && BUTLER_POSTGRES_DB=butler_test_restore uv run --locked python ../scripts/reminder-restore-fixtures.py check)
 (cd backend && BUTLER_POSTGRES_DB=butler_test_restore uv run --locked python ../scripts/document-restore-fixtures.py check)
 (cd backend && BUTLER_DOCUMENT_ARCHIVE_DIRECTORY="$BUTLER_SUPPRESSION_DIR/archive-restored" BUTLER_POSTGRES_DB=butler_test_restore uv run --locked python ../scripts/document-archive-restore-fixtures.py check)

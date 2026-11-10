@@ -21,6 +21,8 @@ with SessionLocal.begin() as db:
         if not db.scalar(text("SELECT pg_get_userbyid(relowner)=current_user FROM pg_class WHERE oid='public.users'::regclass")):
             raise RuntimeError("Browser provisioning requires the actual table owner")
         provision(db, "browser-installation-admin", "Synthetic setup administrator", "synthetic-browser-password-only-0123456789", {"technical_admin", "household_shared"})
+        for slug, scopes in (("browser-finance-owner", {"finance_private"}), ("browser-finance-peer", {"finance_private"}), ("browser-finance-admin", {"technical_admin"})):
+            provision(db, slug, "Synthetic financial API user", "synthetic-browser-password-only-0123456789", scopes)
         for slug in ("browser-flow", "browser-policy", "browser-revoked"):
             provision(db, slug, "Synthetic browser user", "synthetic-browser-password-only-0123456789", {"household_shared"})
         memory_users = {}
