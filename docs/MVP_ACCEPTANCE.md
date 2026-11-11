@@ -62,4 +62,6 @@ PR20 closes the financial UI implementation batch, not whole-MVP acceptance. Spe
 
 Spec068 [synthetic notification path](NOTIFICATIONS.md) adds delivery states, retry, deduplication and unknown-outcome reconciliation against a synthetic channel only. It closes no live-provider, device, summary or whole-MVP gate.
 
+Spec069 [synthetic filing execution](FILING_EXECUTION.md) adds a single-use exact authorization, single claimant, reconcile-before-retry, no-overwrite and forgetting behaviour against a synthetic destination only. It closes no real-destination, restart, original-copy or whole-MVP gate, and its guarantee is conditional on the destination.
+
 Spec067 [scoped search](SCOPED_RECORD_SEARCH.md) supplies one explicit task/document entry, bounded pages/current-source navigation and privacy/failure evidence over existing APIs. It does not close the complete approvals/inbox/all-library/semantic search, model/live-provider/monitoring/outage/independent recovery gates. PR21 supplies merged operations foundations, not full operational acceptance.

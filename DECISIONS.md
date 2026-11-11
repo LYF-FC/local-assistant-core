@@ -98,6 +98,8 @@ Use [explicit observed/configured/disabled/unknown states](docs/OPERATIONS_OVERV
 
 Prove delivery semantics against a [synthetic channel](docs/NOTIFICATIONS.md) before any real connector: commit the attempt claim before sending, treat timeouts as unknown and reconcile by lookup instead of resending, and keep one delivery per reminder cycle. Real providers need a separate spike and authorization.
 
+Execute approved invoice plans only through a [separate, exact, single-use owner request](docs/FILING_EXECUTION.md) that is consumed atomically by the first claim and bound to one owner, scope and plan revision; plan approval stays non-executable. Define destination identity by an explicit canonical-path policy and treat its hash as a uniqueness handle, not a security boundary. Describe the guarantee as single claimant plus reconcile-before-retry, conditional on a destination that honours a key and answers lookup; never as unconditional exactly-once. Forgetting is a first-class operation that scrubs keys and history snapshots idempotently while keeping history append-only.
+
 Use [one explicit scope and two existing libraries](docs/SCOPED_RECORD_SEARCH.md), with honest page/unavailable/review labels. Do not call first pages complete global search or generate rankings/advice. Keep pending approvals, Memory/finance/Work and semantic search requirements open. Current-source rereads and minimal navigation targets prevent old matches becoming edit authority.
 
 

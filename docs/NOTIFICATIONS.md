@@ -1,4 +1,4 @@
-# Synthetic notification path — spec 068 candidate
+# Synthetic notification path — spec 068
 
 A delivered in-app reminder ([task reminders](TASK_REMINDERS.md)) can be handed to a **synthetic channel**. This is development/test engineering that proves delivery semantics before any real connector exists. Nothing is sent to a phone, an email address, a provider or the internet. A *delivered* notification here means the synthetic channel accepted it, not that a person saw it.
 
