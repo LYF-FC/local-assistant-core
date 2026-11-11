@@ -95,7 +95,16 @@ def candidates(db, limit):
                 NotificationDelivery.owner_id,
                 NotificationDelivery.scope_key,
             )
+            .outerjoin(
+                ReminderPreferences, ReminderPreferences.owner_id == NotificationDelivery.owner_id
+            )
             .where(
+                # A delivery parked as paused stays out of the due set until its owner resumes;
+                # otherwise the oldest paused rows would fill every bounded pass.
+                or_(
+                    NotificationDelivery.reason.is_distinct_from("paused"),
+                    ReminderPreferences.enabled.is_distinct_from(False),
+                ),
                 or_(
                     and_(
                         NotificationDelivery.state.in_(("pending", "unknown")),
@@ -106,7 +115,7 @@ def candidates(db, limit):
                         NotificationDelivery.state == "pending",
                         NotificationDelivery.attempt_started_at <= stale,
                     ),
-                )
+                ),
             )
             .order_by(NotificationDelivery.next_attempt_at, NotificationDelivery.id)
             .limit(limit)
@@ -164,7 +173,12 @@ def claim(db, candidate):
         return "reconcile", row
     policy = reminders.policy_document(db.get(ReminderPreferences, user.id))
     if not policy["enabled"]:
-        return "skipped", None
+        if row.reason == "paused":
+            return "skipped", None
+        # Park once, recording why; the row stays pending (not cancelled) and is selected again
+        # only after the owner resumes.
+        notes.change(db, row, "deferred", now, reason="paused", next_attempt_at=now)
+        return "deferred", None
     reason = "quiet_hours" if is_quiet(now, policy) else None
     if not reason:
         zone = ZoneInfo(policy["timezone"])
