@@ -2,6 +2,8 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy import select
+from sqlalchemy.exc import OperationalError
+from sqlalchemy.orm import Session
 from test_approvals import signin
 from test_documents import call as document_call
 from test_invoice_filing import approved, plan_call
@@ -554,3 +556,99 @@ def test_nothing_can_be_requested_or_recreated_after_forgetting(auth_client, aut
     destination = filing.SyntheticDestination()
     assert filing_worker.run_once(destination, auth_store)["checked"] == 0
     assert rows(auth_store) == [] and destination.writes == 0
+
+
+def test_source_correction_between_request_and_claim_cancels_without_any_effect(
+    auth_client, auth_store, clock
+):
+    h = signin(auth_client)
+    doc, receipt, _ = plan_ready(auth_client, h)
+    filed(auth_client, h, doc, receipt)
+    assert (
+        document_call(auth_client, h, doc, "correct", title="Synthetic revised").status_code == 200
+    )
+    destination = filing.SyntheticDestination()
+    result = filing_worker.run_once(destination, auth_store)
+    (row,) = rows(auth_store)
+    assert result["errors"] == 0 and result["cancelled"] == 1
+    assert row.state == "cancelled" and row.reason == "plan_changed"
+    assert destination.writes == 0 and row.authorization_consumed_at is None and row.attempts == 0
+
+
+def test_destination_reservation_race_is_a_conflict_not_a_server_error(
+    auth_client, auth_store, clock, monkeypatch
+):
+    h = signin(auth_client)
+    pair = []
+    for number in range(2):
+        doc = source(auth_client, h, TEXT + f"\nSynthetic copy {number}")
+        planned = plan_call(
+            auth_client,
+            h,
+            doc,
+            "plan",
+            confirm(auth_client, h, doc),
+            folder="invoices/manual",
+            filename="same.txt",
+        ).json()
+        receipt = plan_call(
+            auth_client,
+            h,
+            doc,
+            "approve_plan",
+            planned,
+            acknowledge_plan_only=True,
+            acknowledge_duplicate_limits=True,
+        ).json()
+        pair.append((doc, receipt))
+    (first, first_receipt), (second, second_receipt) = pair
+    assert request(auth_client, h, first, first_receipt).status_code == 201
+    original = Session.scalar
+    hidden = []
+
+    def blind(self, statement, *args, **kwargs):
+        text = str(statement)
+        if "destination_key =" in text and "state IN" in text:
+            hidden.append(text)
+            return None  # hide the reservation pre-check so only the unique index can refuse
+        return original(self, statement, *args, **kwargs)
+
+    monkeypatch.setattr(Session, "scalar", blind)
+    refused = request(auth_client, h, second, second_receipt)
+    assert hidden, "the application pre-check was not intercepted"
+    assert refused.status_code == 409 and len(rows(auth_store)) == 1
+
+
+def test_database_error_between_write_and_finish_is_reconciled_never_resent(
+    auth_client, auth_store, clock, monkeypatch
+):
+    h = signin(auth_client)
+    doc, receipt, path = plan_ready(auth_client, h)
+    filed(auth_client, h, doc, receipt)
+    destination = filing.SyntheticDestination()
+    real_finish = filing_worker.finish
+    failures = []
+
+    def broken(db, candidate, outcome):
+        if not failures:
+            failures.append(outcome)
+            raise OperationalError("UPDATE", {}, Exception("synthetic connection loss"))
+        return real_finish(db, candidate, outcome)
+
+    monkeypatch.setattr(filing_worker, "finish", broken)
+    first = filing_worker.run_once(destination, auth_store)
+    assert first["errors"] == 1 and destination.writes == 1 and failures
+    (row,) = rows(auth_store)
+    assert row.state == "pending" and row.attempt_started_at is not None and row.attempts == 1
+    # While the claim may still be live nothing is resent.
+    assert filing_worker.run_once(destination, auth_store)["checked"] == 0
+    assert destination.writes == 1 and rows(auth_store)[0].state == "pending"
+    # Once the deadline passes the unreported attempt becomes unknown, not a second write.
+    clock["now"] += filing.IN_FLIGHT_DEADLINE + filing.RECONCILE_INTERVAL
+    assert filing_worker.run_once(destination, auth_store)["unknown"] == 1
+    assert destination.writes == 1 and rows(auth_store)[0].state == "unknown"
+    clock["now"] += filing.RECONCILE_INTERVAL
+    assert filing_worker.run_once(destination, auth_store)["filed"] == 1
+    (row,) = rows(auth_store)
+    assert row.state == "filed" and destination.writes == 1 and list(destination.files) == [path]
+    assert operations(auth_store) == ["requested", "attempted", "unknown", "reconciled"]

@@ -133,6 +133,11 @@ BEGIN
     OR (OLD.state='unknown' AND NEW.state IN ('unknown','pending','filed','failed','cancelled'))) THEN
     RAISE EXCEPTION 'Invalid filing transition' USING ERRCODE='23514';
   END IF;
+  -- An outcome can only follow a claim: never filed, failed or unknown for an unclaimed attempt.
+  IF NEW.state IN ('filed','failed','unknown') AND (
+      NEW.attempts=0 OR (OLD.state='pending' AND OLD.attempt_started_at IS NULL)) THEN
+    RAISE EXCEPTION 'Invalid filing transition' USING ERRCODE='23514';
+  END IF;
   IF NEW.state='filed' AND (NEW.reason IS NOT NULL OR NEW.resolved_at IS DISTINCT FROM NEW.updated_at)
     OR NEW.state IN ('failed','cancelled') AND (NEW.reason IS NULL OR NEW.resolved_at IS DISTINCT FROM NEW.updated_at) THEN
     RAISE EXCEPTION 'Invalid filing timing' USING ERRCODE='23514';

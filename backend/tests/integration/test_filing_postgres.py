@@ -1,5 +1,6 @@
 """Restricted synthetic filing: single claims, sealed history, destination uniqueness, scrubbing."""
 
+import hashlib
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from uuid import uuid4
@@ -8,11 +9,12 @@ import pytest
 from conftest import SYNTHETIC_PASSWORD
 from sqlalchemy import select, text
 from sqlalchemy.exc import DBAPIError
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 from test_documents import call as document_call
 from test_filing import body
 from test_invoice_filing import approved, plan_call
 from test_invoice_review import TEXT, confirm, source
+from test_invoice_review import call as invoice_call
 
 from app import filing, filing_worker, identity
 from app.models import DocumentRecord, FilingExecution, FilingExecutionEvent, User
@@ -250,6 +252,34 @@ def test_raw_state_identity_destination_and_revision_guards(scenario, runtime_en
             text(f"UPDATE filing_executions SET {mutation} WHERE id=:id"),
             {"id": row.id, "other": uuid4()},
         )
+
+
+UNCLAIMED = [
+    "state='filed',next_attempt_at=NULL,resolved_at=updated_at,revision=revision+1",
+    (
+        "state='failed',reason='attempts_exhausted',next_attempt_at=NULL,"
+        "resolved_at=updated_at,revision=revision+1"
+    ),
+    (
+        "state='unknown',reason='ambiguous_outcome',"
+        "next_attempt_at=updated_at+interval '1 minute',revision=revision+1"
+    ),
+]
+
+
+@pytest.mark.parametrize("mutation", UNCLAIMED)
+def test_a_filing_that_was_never_claimed_cannot_be_marked_filed_failed_or_unknown(
+    scenario, runtime_engine, mutation
+):
+    _, _, _, admin, _ = scenario
+    _, _, _, _, _, row = requested(scenario, runtime_engine)
+    with runtime_engine.begin() as db, pytest.raises(DBAPIError) as refused:
+        db.execute(text(f"UPDATE filing_executions SET {mutation} WHERE id=:id"), {"id": row.id})
+    assert "Invalid filing transition" in str(refused.value)
+    with admin() as db:
+        state = db.get(FilingExecution, row.id)
+        assert state.state == "pending" and state.attempts == 0
+        assert state.authorization_consumed_at is None
 
 
 def test_terminal_state_cannot_be_revived(scenario, runtime_engine):
@@ -816,3 +846,202 @@ def test_forgetting_during_a_reconciliation_lookup_cannot_resurrect_the_filing(
     assert ops[-2:] == ["cancelled", "scrubbed"] and "reconciled" not in ops
     nulls, total = event_nulls(admin, row.id)
     assert nulls == total
+
+
+def test_invoice_level_forgetting_scrubs_the_filing_on_postgres(scenario, runtime_engine):
+    client, h, _, admin, _ = scenario
+    maker, _, doc, receipt, _path, row = requested(scenario, runtime_engine)
+    assert invoice_call(client, h, doc, "forget", receipt).status_code == 200
+    with admin() as db:
+        state = db.get(FilingExecution, row.id)
+        assert state.state == "cancelled" and state.reason == "source_changed"
+        assert state.destination_key is None and state.scrubbed_at is not None
+    nulls, total = event_nulls(admin, row.id)
+    assert nulls == total >= 2
+    destination = filing.SyntheticDestination()
+    assert filing_worker.process(maker, row, destination) == "skipped"
+    assert destination.writes == 0
+
+
+def test_the_reservation_unique_index_alone_turns_a_lost_race_into_a_conflict(
+    scenario, runtime_engine, monkeypatch
+):
+    # A same-owner race is serialised by the owner row lock, so the application pre-check is
+    # hidden here to prove the database refusal is translated to 409 and never a server error.
+    client, h, _, _, _ = scenario
+    name = "synthetic-" + uuid4().hex[:8] + ".txt"
+    first, first_receipt, _ = manual_source(scenario, name)
+    second, second_receipt, _ = manual_source(scenario, name)
+    created = client.post("/api/v1/filing/request", headers=h, json=body(first, first_receipt))
+    assert created.status_code == 201
+    original = Session.scalar
+    hidden = []
+
+    def blind(self, statement, *args, **kwargs):
+        text_ = str(statement)
+        if "destination_key =" in text_ and "state IN" in text_:
+            hidden.append(text_)
+            return None
+        return original(self, statement, *args, **kwargs)
+
+    monkeypatch.setattr(Session, "scalar", blind)
+    refused = client.post("/api/v1/filing/request", headers=h, json=body(second, second_receipt))
+    assert refused.status_code == 409, refused.text
+    assert hidden, "the application pre-check was not intercepted, so the fallback was not proven"
+
+
+def test_one_authorization_per_document_and_plan_revision_even_when_the_first_is_cancelled(
+    scenario, runtime_engine
+):
+    client, h, uid, admin = scenario[0], scenario[1], scenario[4], scenario[3]
+    _, _, doc, receipt, path, row = requested(scenario, runtime_engine)
+    cancelled = client.post(
+        "/api/v1/filing/cancel",
+        headers=h,
+        json={"scope": doc["scope"], "execution_id": str(row.id), "expected_revision": 1},
+    )
+    assert cancelled.status_code == 200
+    # The cancelled row no longer holds the destination, so only the dedup constraint can refuse.
+    with runtime_engine.begin() as db, pytest.raises(DBAPIError) as refused:
+        db.execute(text(INSERT), insert_values(doc, receipt, path, owner=uid))
+    assert "uq_filing_dedup" in str(refused.value)
+    with admin() as db:
+        assert (
+            db.scalar(
+                select(text("count(*)"))
+                .select_from(FilingExecution)
+                .where(FilingExecution.document_id == doc["id"])
+            )
+            == 1
+        )
+
+
+def test_no_event_can_be_inserted_after_scrubbing(scenario, runtime_engine):
+    client, h, _, admin, _ = scenario
+    maker, _, doc, _, _, row = requested(scenario, runtime_engine)
+    assert filing_worker.process(maker, row, filing.SyntheticDestination()) == "filed"
+    assert document_call(client, h, doc, "forget").status_code == 200
+    with admin() as db:
+        state = db.get(FilingExecution, row.id)
+        revision, stamp, owner = state.revision, state.updated_at, state.owner_id
+    event = {
+        "execution_id": row.id,
+        "owner_id": owner,
+        "revision": revision,
+        "recorded_at": stamp,
+    }
+    with maker.begin() as db:
+        honest_snapshot = filing.document(db.get(FilingExecution, row.id))
+    for operation, snapshot in (
+        ("filed", honest_snapshot),
+        ("filed", None),
+        ("attempted", honest_snapshot),
+    ):
+        with maker.begin() as db, pytest.raises(DBAPIError) as refused:
+            db.add(FilingExecutionEvent(operation=operation, snapshot=snapshot, **event))
+            db.flush()
+        assert "Filing history mismatch" in str(refused.value)
+    # A repeated scrub marker at the same revision is refused by the history key.
+    with maker.begin() as db, pytest.raises(DBAPIError):
+        db.add(FilingExecutionEvent(operation="scrubbed", snapshot=None, **event))
+        db.flush()
+    nulls, total = event_nulls(admin, row.id)
+    assert nulls == total == 4
+
+
+PARITY_VARIANTS = {
+    "uppercase": lambda token: f"Invoices/Manual/{token.upper()}.TXT",
+    "duplicate_separators": lambda token: f"invoices//manual///{token}.txt",
+    "trailing_separator": lambda token: f"invoices/manual/{token}.txt/",
+    "decomposed_unicode": lambda token: f"invoices/manual/cafe\u0301-{token}.txt",
+    "precomposed_unicode": lambda token: f"invoices/manual/caf\u00e9-{token}.txt",
+    "mixed": lambda token: f"Invoices//Manual/Cafe\u0301-{token.upper()}.TXT/",
+}
+
+
+@pytest.mark.parametrize("variant", sorted(PARITY_VARIANTS))
+def test_python_and_postgresql_derive_the_same_destination_key(scenario, runtime_engine, variant):
+    uid, admin = scenario[4], scenario[3]
+    doc, receipt, _ = approved_source(scenario)
+    raw = PARITY_VARIANTS[variant](uuid4().hex[:12])
+    share_path(admin, doc, raw)
+    key = filing.destination_key(doc["scope"], raw)
+    with runtime_engine.begin() as db:
+        db.execute(text(INSERT), insert_values(doc, receipt, raw, owner=uid))
+    with admin() as db:
+        stored = db.scalar(
+            select(FilingExecution.destination_key).where(FilingExecution.document_id == doc["id"])
+        )
+    assert stored == key
+    # A key derived from anything but the canonical form of the plan path is refused.
+    other, other_receipt, _ = approved_source(scenario)
+    share_path(admin, other, raw)
+    raw_key = hashlib.sha256(f"{other['scope']}:{raw}".encode()).hexdigest()
+    if raw_key != key:
+        with runtime_engine.begin() as db, pytest.raises(DBAPIError) as refused:
+            db.execute(
+                text(INSERT), insert_values(other, other_receipt, raw, owner=uid, key=raw_key)
+            )
+        assert "Filing requires a current approved plan" in str(refused.value)
+    # The honest key for the same path is refused only because the destination is already held.
+    with runtime_engine.begin() as db, pytest.raises(DBAPIError) as held:
+        db.execute(text(INSERT), insert_values(other, other_receipt, raw, owner=uid))
+    assert "uq_filing_destination_active" in str(held.value)
+
+
+def test_bounded_repeated_forgetting_races_neither_deadlock_nor_leave_residue(
+    scenario, runtime_engine
+):
+    import threading
+    import time
+
+    client, h, _, admin, _ = scenario
+    started = time.monotonic()
+    for _ in range(6):
+        maker, _, doc, _, _, row = requested(scenario, runtime_engine)
+        barrier = threading.Barrier(2)
+        outcome = {}
+        destination = filing.SyntheticDestination()
+
+        def work(maker=maker, row=row, barrier=barrier, outcome=outcome, destination=destination):
+            barrier.wait(5)
+            try:
+                outcome["worker"] = filing_worker.process(maker, row, destination)
+            except Exception as exc:  # noqa: BLE001 - recorded and asserted below
+                outcome["worker"] = repr(exc)
+
+        thread = threading.Thread(target=work)
+        thread.start()
+        barrier.wait(5)
+        assert document_call(client, h, doc, "forget").status_code == 200
+        thread.join(15)
+        assert not thread.is_alive()
+        assert outcome["worker"] in {"filed", "skipped", "cancelled"}, outcome
+        assert destination.writes <= 1
+        with admin() as db:
+            state = db.get(FilingExecution, row.id)
+            assert state.scrubbed_at is not None and state.destination_key is None
+            assert state.state in {"filed", "cancelled"}
+        nulls, total = event_nulls(admin, row.id)
+        assert nulls == total
+    assert time.monotonic() - started < 120
+
+
+def test_bounded_repeated_contended_claims_file_exactly_once(scenario, runtime_engine):
+    started = __import__("time").monotonic()
+    for _ in range(6):
+        maker, _, _, _, _, row = requested(scenario, runtime_engine)
+        destination = filing.SyntheticDestination()
+
+        def attempt(_, maker=maker, row=row, destination=destination):
+            try:
+                return filing_worker.process(maker, row, destination)
+            except Exception as exc:  # noqa: BLE001 - recorded and asserted below
+                return repr(exc)
+
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            results = list(pool.map(attempt, range(4)))
+        assert results.count("filed") == 1, results
+        assert set(results) <= {"filed", "skipped"}, results
+        assert destination.writes == 1
+    assert __import__("time").monotonic() - started < 120
