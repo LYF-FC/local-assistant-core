@@ -514,7 +514,7 @@ class NotificationDelivery(Base):
             name="ck_notification_timing",
         ),
         CheckConstraint(
-            "reason IS NULL OR reason IN ('quiet_hours','daily_limit','transient_error','rejected','attempts_exhausted','ambiguous_outcome','reconciled_absent','owner_unavailable','scope_unavailable','reminder_closed')",
+            "reason IS NULL OR reason IN ('quiet_hours','daily_limit','paused','transient_error','rejected','attempts_exhausted','ambiguous_outcome','reconciled_absent','owner_unavailable','scope_unavailable','reminder_closed')",
             name="ck_notification_reason",
         ),
         Index("ix_notification_due", "state", "next_attempt_at", "id"),
