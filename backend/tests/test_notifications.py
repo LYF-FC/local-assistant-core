@@ -226,14 +226,28 @@ def test_daily_limit_counts_notifications_and_defers_to_next_local_day(
     assert identity.aware(held.next_attempt_at).date() > clock["now"].date()
 
 
-def test_paused_preferences_hold_pending_without_sending(auth_client, auth_store, clock):
+def test_paused_preferences_park_the_delivery_once_and_resume_later(auth_client, auth_store, clock):
     h = signin(auth_client)
     delivered_reminder(auth_client, auth_store, clock, h)
     tighten(auth_client, h, enabled=False)
     channel = notes.SyntheticChannel()
     result = notification_worker.run_once(channel, auth_store)
-    assert result["enqueued"] == 1 and result["skipped"] == 1 and channel.sent == 0
-    assert rows(auth_store)[0].state == "pending"
+    assert result["enqueued"] == 1 and result["deferred"] == 1 and channel.sent == 0
+    (row,) = rows(auth_store)
+    assert row.state == "pending" and row.reason == "paused"
+    revision = row.revision
+    # Not selected again, not rewritten and never cancelled while the owner stays paused.
+    for _ in range(3):
+        clock["now"] += timedelta(minutes=5)
+        assert notification_worker.run_once(channel, auth_store)["checked"] == 0
+    assert rows(auth_store)[0].revision == revision
+    assert operations(auth_store).count("deferred") == 1
+    # Resuming makes it eligible again without a new delivery.
+    tighten_back = policy(auth_client, h, expected_revision=2, enabled=True)
+    assert tighten_back.status_code == 200
+    assert notification_worker.run_once(channel, auth_store)["delivered"] == 1
+    (row,) = rows(auth_store)
+    assert row.state == "delivered" and row.reason is None and channel.sent == 1
 
 
 def test_acknowledged_or_cancelled_reminder_cancels_pending_delivery(
