@@ -133,6 +133,7 @@ def configure(connection, password: str) -> None:
             "task_reminders",
             "reminder_preferences",
             "notification_deliveries",
+            "filing_executions",
         ):
             cursor.execute(
                 sql.SQL("GRANT SELECT, INSERT, UPDATE ON TABLE public.{} TO {}").format(
@@ -151,8 +152,13 @@ def configure(connection, password: str) -> None:
         )
         cursor.execute(
             sql.SQL(
-                "GRANT SELECT, INSERT ON public.task_reminder_events, public.notification_delivery_events TO {}"
+                "GRANT SELECT, INSERT ON public.task_reminder_events, public.notification_delivery_events, public.filing_execution_events TO {}"
             ).format(sql.Identifier(ROLE))
+        )
+        cursor.execute(
+            sql.SQL("GRANT UPDATE (snapshot) ON public.filing_execution_events TO {}").format(
+                sql.Identifier(ROLE)
+            )
         )
         cursor.execute(
             sql.SQL(
