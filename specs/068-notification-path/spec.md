@@ -21,3 +21,8 @@ Deliver the first item of the agreed synthetic-MVP order: a durable notification
 ## Out of scope
 
 Real providers or accounts, device/OS push, email, per-channel preferences UI, frontend, daily summaries, urgency levels, recurrence, invoice filing and operations monitoring. CORE-11 stays partial; no counter claims full acceptance.
+
+## Corrections after independent audit (PR following #24)
+
+- **Paused scheduling.** A paused owner's due deliveries were returned to the due set unchanged on every pass, oldest first, so enough of them could fill the bounded pass and delay other owners. They are now parked once as `pending` with reason `paused` and excluded from selection until the owner resumes. Paused stays distinct from cancelled; quiet-hours, daily-limit and reconciliation behaviour are unchanged.
+- **History integrity.** The 0032 history guard did not compare channel, next-attempt, resolution, creation or update times, nor require every field with the right JSON type. Migration 0033 makes it validate all fourteen snapshot fields against the parent delivery.
