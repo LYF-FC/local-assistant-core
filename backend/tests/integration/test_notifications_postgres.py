@@ -54,7 +54,7 @@ def test_runtime_delivers_once_and_records_sealed_history(scenario, runtime_engi
 
 
 def test_concurrent_workers_send_a_cycle_once(scenario, runtime_engine, monkeypatch):
-    maker, admin, _, _, delivery = enqueued(runtime_engine, scenario, monkeypatch)
+    maker, _, _, _, delivery = enqueued(runtime_engine, scenario, monkeypatch)
     channel = notes.SyntheticChannel()
     with ThreadPoolExecutor(max_workers=2) as pool:
         results = list(
@@ -177,7 +177,7 @@ INSERT = (
 def test_duplicate_cycle_unknown_channel_and_unsent_reminder_are_refused(
     scenario, runtime_engine, monkeypatch
 ):
-    client, h, _, uid, _, row = setup(scenario, monkeypatch)
+    _, _, _, uid, _, row = setup(scenario, monkeypatch)
     # Scheduled but not yet delivered: a delivery may not exist for it.
     with runtime_engine.begin() as db, pytest.raises(DBAPIError):
         db.execute(
