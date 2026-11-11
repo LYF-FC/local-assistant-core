@@ -92,4 +92,6 @@ The feature dashboard is an offline generated documentation artifact, outside th
 
 ### Spec067 (merged PR #22) — scoped task/document search
 
+[Notifications](docs/NOTIFICATIONS.md) hand delivered reminders to a synthetic channel through a committed claim, an out-of-transaction send and lookup-based reconciliation, so a crash or timeout leaves a visible unknown state rather than a resend. Locks always run recipient then delivery.
+
 [Search](docs/SCOPED_RECORD_SEARCH.md) composes existing protected task/document queries without a new backend/index. Metadata-only results retain separate cursors and one original-query privacy deadline. A current-source read validates immutable identity/monotonic revision; full-record navigation carries minimal coordinates and rereads at destination. Ordinary library failures remain independent; authority denial clears the whole view. No persistence, model, source-link fetch or permission widening.

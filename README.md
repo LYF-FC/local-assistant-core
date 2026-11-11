@@ -12,7 +12,7 @@ GitHub renders the Markdown overview directly. Download the HTML dashboard and o
 
 - [Setup](SETUP.md), [architecture](ARCHITECTURE.md), [security](SECURITY.md).
 - [Development](docs/DEVELOPMENT.md), [tests](docs/TESTING.md), [CI](docs/CI_COMPUTE.md).
-- [Document library](docs/DOCUMENT_LIBRARY.md), [optional local archive](docs/DOCUMENT_ARCHIVE.md), [tasks](docs/MANUAL_TASKS_AGENDA.md), [reminders](docs/TASK_REMINDERS.md).
+- [Document library](docs/DOCUMENT_LIBRARY.md), [optional local archive](docs/DOCUMENT_ARCHIVE.md), [tasks](docs/MANUAL_TASKS_AGENDA.md), [reminders](docs/TASK_REMINDERS.md), [synthetic notifications](docs/NOTIFICATIONS.md).
 - [Full scope](docs/SCOPE.md), [feature register](docs/FEATURE_REGISTER.md), [MVP acceptance](docs/MVP_ACCEPTANCE.md), [roadmap](ROADMAP.md).
 - [Planned configurable installations](docs/CONFIGURABLE_INSTALLATIONS.md): onboarding, private configuration and feature controls are scope, not delivered setup.
 - [Planned model research](docs/LLM_RESEARCH.md): task-specific local models and dense/MoE evaluation; no model selected.

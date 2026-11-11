@@ -127,7 +127,7 @@ Finish the everyday MVP with synthetic data and synthetic adapters first. Then, 
 
 | Proposed order of remaining synthetic MVP work | Notes |
 |---|---|
-| 1 · One notification path with a synthetic channel | Delivery states (pending/delivered/failed/unknown), recipient mapping, quiet hours, day budgets, deduplication and bounded retry. |
+| 1 · One notification path with a synthetic channel (spec068 branch engineering, [contract](docs/NOTIFICATIONS.md)) | Delivery states (pending/delivered/failed/unknown), recipient mapping, quiet hours, day budgets, deduplication and bounded retry. |
 | 2 · Invoice filing and job recovery | Synthetic destination and restricted inbox; exactly-once filing under crashes and restarts. Reuses item 1 delivery/retry semantics. |
 | 3 · Calendar recurrence and full briefing | Recurrence/time zone expansion and a provider-shaped synthetic source. |
 | 4 · Unified attention inbox | Pending approvals and remaining search gaps. |

@@ -42,3 +42,5 @@ PR21 operations foundations are verified merged:OPS-09 advances only to partial 
 
 
 PR22 scoped search is verified merged. Counts are unchanged: named 19 partial, all 155 references 40 partial, 15 merged public engineering batches and no full retained feature contract accepted. The earlier statement that spec067 is current branch engineering is superseded. Remaining MVP gaps and their proposed order are in the [roadmap](../ROADMAP.md#delivery-strategy--synthetic-mvp-first-then-connector-spikes-agreed-10-november-2026).
+
+Spec068 [synthetic notification path](NOTIFICATIONS.md) is current branch engineering for item1 of the agreed order: durable delivery states, quiet/day-budget reuse, per-cycle deduplication, bounded retry and unknown-outcome reconciliation against a synthetic channel. Counts are unchanged until merge; no real provider, device push or email is supplied and CORE-11 stays partial.
