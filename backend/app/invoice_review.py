@@ -146,6 +146,9 @@ def forget_for_document(db, user, source):
     row.revision += 1
     row.updated_at = identity.now_utc()
     db.flush()
+    from app import filing
+
+    filing.scrub_for_document(db, row.document_id)
     db.execute(
         update(Revision).where(Revision.document_id == row.document_id).values(snapshot=None)
     )

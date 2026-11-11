@@ -15,6 +15,7 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     Uuid,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -564,6 +565,101 @@ class NotificationDeliveryEvent(Base):
     operation: Mapped[str] = mapped_column(String(16), nullable=False)
     recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     snapshot: Mapped[dict] = mapped_column(JSON_TYPE, nullable=False)
+
+
+class FilingExecution(Base):
+    __tablename__ = "filing_executions"
+    __table_args__ = (
+        UniqueConstraint("document_id", "plan_revision", name="uq_filing_dedup"),
+        CheckConstraint(
+            "revision>=1 AND plan_revision>=1 AND source_revision>=1 AND attempts BETWEEN 0 AND 3",
+            name="ck_filing_versions",
+        ),
+        CheckConstraint(
+            "scope_key IN ('household_shared','member_a_private','member_b_private')",
+            name="ck_filing_scope",
+        ),
+        CheckConstraint("destination IN ('synthetic')", name="ck_filing_destination"),
+        CheckConstraint(
+            "destination_key IS NULL OR length(destination_key)=64", name="ck_filing_key"
+        ),
+        CheckConstraint(
+            "state IN ('pending','filed','failed','unknown','cancelled')", name="ck_filing_state"
+        ),
+        CheckConstraint(
+            "(state='pending' AND next_attempt_at IS NOT NULL AND resolved_at IS NULL) OR (state='unknown' AND next_attempt_at IS NOT NULL AND attempt_started_at IS NULL AND resolved_at IS NULL) OR (state IN ('filed','failed','cancelled') AND next_attempt_at IS NULL AND attempt_started_at IS NULL AND resolved_at IS NOT NULL)",
+            name="ck_filing_timing",
+        ),
+        CheckConstraint(
+            "reason IS NULL OR reason IN ('transient_error','collision','attempts_exhausted','ambiguous_outcome','reconciled_absent','cancelled_by_owner','plan_changed','source_changed','owner_unavailable','scope_unavailable')",
+            name="ck_filing_reason",
+        ),
+        CheckConstraint(
+            "(attempts=0 AND authorization_consumed_at IS NULL) OR (attempts>0 AND authorization_consumed_at IS NOT NULL)",
+            name="ck_filing_consumed",
+        ),
+        CheckConstraint(
+            "scrubbed_at IS NULL OR (destination_key IS NULL AND state IN ('filed','failed','cancelled'))",
+            name="ck_filing_scrubbed",
+        ),
+        Index("ix_filing_due", "state", "next_attempt_at", "id"),
+        Index("ix_filing_owner_scope", "owner_id", "scope_key", "id"),
+        Index(
+            "uq_filing_destination_active",
+            "scope_key",
+            "destination_key",
+            unique=True,
+            postgresql_where=text("state IN ('pending','unknown','filed')"),
+            sqlite_where=text("state IN ('pending','unknown','filed')"),
+        ),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    document_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("document_records.id"), nullable=False
+    )
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    scope_key: Mapped[str] = mapped_column(String(96), nullable=False)
+    plan_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    source_revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    destination_key: Mapped[str | None] = mapped_column(String(64))
+    destination: Mapped[str] = mapped_column(String(16), nullable=False)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    state: Mapped[str] = mapped_column(String(16), nullable=False)
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False)
+    next_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    attempt_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    authorization_consumed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    scrubbed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    reason: Mapped[str | None] = mapped_column(String(24))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class FilingExecutionEvent(Base):
+    __tablename__ = "filing_execution_events"
+    __table_args__ = (
+        UniqueConstraint("execution_id", "revision", name="uq_filing_event_revision"),
+        CheckConstraint("revision>=1", name="ck_filing_event_revision"),
+        CheckConstraint(
+            "operation IN ('requested','attempted','filed','retry_scheduled','failed','unknown','reconciled','cancelled','scrubbed')",
+            name="ck_filing_event_operation",
+        ),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    execution_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("filing_executions.id"), nullable=False
+    )
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    operation: Mapped[str] = mapped_column(String(16), nullable=False)
+    actor_id: Mapped[uuid.UUID | None] = mapped_column(Uuid(as_uuid=True), ForeignKey("users.id"))
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    snapshot: Mapped[dict | None] = mapped_column(MEMORY_JSON, nullable=True)
 
 
 class DocumentRecord(Base):

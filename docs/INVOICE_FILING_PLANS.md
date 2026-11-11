@@ -25,3 +25,7 @@ Restricted mail/email provenance, destination authorization/configuration, real 
 ## Offline email intake — spec 058
 
 [Spec 058](OFFLINE_EMAIL_INTAKE.md) can supply original email/attachment provenance through a bounded offline import. It does not activate mailbox rules, jobs or actual filing; existing approvals remain non-executable. Shared attachment/plan views do not grant raw-email access. Aggregate document forgetting scrubs managed envelope and plan copies together; disclosed message-checksum replay tombstones and old unmanaged copies retain their documented limits.
+
+## Synthetic execution — spec 069
+
+[Spec 069](FILING_EXECUTION.md) can carry out an approved plan against a synthetic in-process destination after a separate, exact, single-use owner request. Approval itself still never executes anything and the plan keeps `execution_authorized: false`; no real folder, share or connector is involved.

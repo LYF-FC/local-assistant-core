@@ -211,4 +211,6 @@ Spec066 [operations overview](OPERATIONS_OVERVIEW.md) uses existing identity/CSR
 
 Spec068 [notification path](NOTIFICATIONS.md) consumes delivered reminders and reminder preferences and defines the send/lookup adapter contract that invoice filing, job recovery and later connector spikes reuse. It supplies no real channel.
 
+Spec069 [filing execution](FILING_EXECUTION.md) consumes the spec 057 approved plan and the spec 068 claim/lookup contract and adds a separate single-use owner request, a canonical destination policy and scrub-on-forget. It supplies no real destination and does not change `execution_authorized`.
+
 Spec067 [search](SCOPED_RECORD_SEARCH.md) consumes existing task/document query/read authority and current grant/edit attribution. Independent cursors and original-query expiry apply across partial failures; destinations reread minimal source targets. Broader libraries/semantic search/pending approvals remain separate retained dependencies, not inferred from these two APIs.

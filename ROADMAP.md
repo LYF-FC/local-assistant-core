@@ -127,8 +127,8 @@ Finish the everyday MVP with synthetic data and synthetic adapters first. Then, 
 
 | Proposed order of remaining synthetic MVP work | Notes |
 |---|---|
-| 1 · One notification path with a synthetic channel (spec068 branch engineering, [contract](docs/NOTIFICATIONS.md)) | Delivery states (pending/delivered/failed/unknown), recipient mapping, quiet hours, day budgets, deduplication and bounded retry. |
-| 2 · Invoice filing and job recovery | Synthetic destination and restricted inbox; exactly-once filing under crashes and restarts. Reuses item 1 delivery/retry semantics. |
+| 1 · One notification path with a synthetic channel (spec068, merged in [PR #24](https://github.com/LYF-FC/local-assistant-core/pull/24) with corrections in [PR #25](https://github.com/LYF-FC/local-assistant-core/pull/25); [contract](docs/NOTIFICATIONS.md)) | Delivery states (pending/delivered/failed/unknown), recipient mapping, quiet hours, day budgets, deduplication and bounded retry. |
+| 2 · Invoice filing and job recovery (spec069 branch engineering, [contract](docs/FILING_EXECUTION.md)) | Synthetic destination; separate exact single-use filing request, single claimant, reconcile-before-retry and scrub-on-forget under crashes. Reuses item 1 delivery/retry semantics. Restart behaviour, a restricted inbox and any real adapter remain open; the guarantee is conditional on the destination, not unconditional exactly-once. |
 | 3 · Calendar recurrence and full briefing | Recurrence/time zone expansion and a provider-shaped synthetic source. |
 | 4 · Unified attention inbox | Pending approvals and remaining search gaps. |
 | 5 · Operations and recovery | Worker/backup/capacity observation, clean-host restore including originals. |
