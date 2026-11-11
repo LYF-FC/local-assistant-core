@@ -493,6 +493,79 @@ class ReminderPreferences(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
+class NotificationDelivery(Base):
+    __tablename__ = "notification_deliveries"
+    __table_args__ = (
+        UniqueConstraint("reminder_id", "cycle", name="uq_notification_dedup"),
+        CheckConstraint(
+            "revision>=1 AND cycle>=1 AND attempts BETWEEN 0 AND 3", name="ck_notification_versions"
+        ),
+        CheckConstraint(
+            "scope_key IN ('household_shared','member_a_private','member_b_private')",
+            name="ck_notification_scope",
+        ),
+        CheckConstraint("channel IN ('synthetic')", name="ck_notification_channel"),
+        CheckConstraint(
+            "state IN ('pending','delivered','failed','unknown','cancelled')",
+            name="ck_notification_state",
+        ),
+        CheckConstraint(
+            "(state='pending' AND next_attempt_at IS NOT NULL AND resolved_at IS NULL) OR (state='unknown' AND next_attempt_at IS NOT NULL AND attempt_started_at IS NULL AND resolved_at IS NULL) OR (state IN ('delivered','failed','cancelled') AND next_attempt_at IS NULL AND attempt_started_at IS NULL AND resolved_at IS NOT NULL)",
+            name="ck_notification_timing",
+        ),
+        CheckConstraint(
+            "reason IS NULL OR reason IN ('quiet_hours','daily_limit','transient_error','rejected','attempts_exhausted','ambiguous_outcome','reconciled_absent','owner_unavailable','scope_unavailable','reminder_closed')",
+            name="ck_notification_reason",
+        ),
+        Index("ix_notification_due", "state", "next_attempt_at", "id"),
+        Index("ix_notification_owner_scope", "owner_id", "scope_key", "id"),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    reminder_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("task_reminders.id"), nullable=False
+    )
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    scope_key: Mapped[str] = mapped_column(String(96), nullable=False)
+    cycle: Mapped[int] = mapped_column(Integer, nullable=False)
+    channel: Mapped[str] = mapped_column(String(16), nullable=False)
+    recipient_ref: Mapped[str] = mapped_column(String(64), nullable=False)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    state: Mapped[str] = mapped_column(String(16), nullable=False)
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False)
+    next_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    attempt_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    reason: Mapped[str | None] = mapped_column(String(24))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class NotificationDeliveryEvent(Base):
+    __tablename__ = "notification_delivery_events"
+    __table_args__ = (
+        UniqueConstraint("delivery_id", "revision", name="uq_notification_event_revision"),
+        CheckConstraint("revision>=1", name="ck_notification_event_revision"),
+        CheckConstraint(
+            "operation IN ('enqueued','attempted','delivered','retry_scheduled','deferred','failed','unknown','reconciled','cancelled')",
+            name="ck_notification_event_operation",
+        ),
+        Index("ix_notification_deliveries_day", "owner_id", "operation", "recorded_at"),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    delivery_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("notification_deliveries.id"), nullable=False
+    )
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    operation: Mapped[str] = mapped_column(String(16), nullable=False)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    snapshot: Mapped[dict] = mapped_column(JSON_TYPE, nullable=False)
+
+
 class DocumentRecord(Base):
     __tablename__ = "document_records"
     __table_args__ = (

@@ -96,6 +96,8 @@ Use [explicit observed/configured/disabled/unknown states](docs/OPERATIONS_OVERV
 
 ### Spec067 (merged PR #22) — bounded search before complete unified inbox
 
+Prove delivery semantics against a [synthetic channel](docs/NOTIFICATIONS.md) before any real connector: commit the attempt claim before sending, treat timeouts as unknown and reconcile by lookup instead of resending, and keep one delivery per reminder cycle. Real providers need a separate spike and authorization.
+
 Use [one explicit scope and two existing libraries](docs/SCOPED_RECORD_SEARCH.md), with honest page/unavailable/review labels. Do not call first pages complete global search or generate rankings/advice. Keep pending approvals, Memory/finance/Work and semantic search requirements open. Current-source rereads and minimal navigation targets prevent old matches becoming edit authority.
 
 

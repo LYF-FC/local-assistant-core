@@ -209,4 +209,6 @@ Spec065 [financial UI](FINANCIAL_UI.md) consumes merged spec064 server authority
 Spec066 [operations overview](OPERATIONS_OVERVIEW.md) uses existing identity/CSRF/technical-admin membership locking, metadata audit and runtime package metadata; own technical job statuses use existing SELECT grants. OPS-10 needs a separately reviewed narrow audit projection; no general audit SELECT is introduced. Full monitoring/scouting/independent recovery remain dependencies of acceptance, not inferred from configured flags.
 
 
+Spec068 [notification path](NOTIFICATIONS.md) consumes delivered reminders and reminder preferences and defines the send/lookup adapter contract that invoice filing, job recovery and later connector spikes reuse. It supplies no real channel.
+
 Spec067 [search](SCOPED_RECORD_SEARCH.md) consumes existing task/document query/read authority and current grant/edit attribution. Independent cursors and original-query expiry apply across partial failures; destinations reread minimal source targets. Broader libraries/semantic search/pending approvals remain separate retained dependencies, not inferred from these two APIs.

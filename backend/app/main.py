@@ -19,6 +19,7 @@ from app.installation_routes import router as installation_router
 from app.invoice_routes import router as invoice_router
 from app.job_routes import router as job_router
 from app.memory_routes import router as memory_router
+from app.notification_routes import router as notification_router
 from app.operations_routes import router as operations_router
 from app.reminder_routes import router as reminder_router
 from app.routine_routes import router as routine_router
@@ -62,6 +63,7 @@ def create_app() -> FastAPI:
     application.include_router(email_router)
     application.include_router(answer_router)
     application.include_router(reminder_router)
+    application.include_router(notification_router)
     application.include_router(discovery_router)
     application.include_router(context_router)
     application.include_router(work_router)

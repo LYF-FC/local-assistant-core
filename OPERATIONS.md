@@ -93,4 +93,6 @@ A current technical administrator can reload [Operations overview](docs/OPERATIO
 
 ### Spec067 (merged PR #22) — search privacy
 
+[Synthetic notification worker](docs/NOTIFICATIONS.md) is optional development/test engineering (`python -m app.notification_worker --once`); it reaches no provider and is not started by default. Keep it stopped across schema updates and after older-backup restores until pending intent is reviewed.
+
 [Search tasks/documents](docs/SCOPED_RECORD_SEARCH.md) requires explicit submission and current grants. Queries/results/previews clear on hidden tab, context change, denial or the original60second deadline; paging cannot renew unchanged sections. Source references remain inert. No deployment, backend, provider or model activation; existing recovery/activation gates remain.

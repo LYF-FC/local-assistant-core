@@ -201,4 +201,6 @@ Spec065 [financial UI](FINANCIAL_UI.md) merged in PR20 over PR19; this is engine
 Spec066 [operations overview](OPERATIONS_OVERVIEW.md) is current branch engineering for existing OPS-09/RND-01 foundations. OPS-10 audit/reporting stays open; no new feature reference, original scope reduction or current-branch count promotion.
 
 
+Spec068 [synthetic notification path](NOTIFICATIONS.md) is current branch engineering for existing CORE-11 (and the delivery semantics later reused by CORE-13/ORG-03/REM-01). A synthetic channel, delivery states, quiet/day-budget reuse, per-cycle deduplication, bounded retry and ambiguity reconciliation are not a real provider, device push, email, summary, recurrence or whole-MVP acceptance. No current-branch promotion or retained scope reduction.
+
 Spec067 [scoped task/document search](SCOPED_RECORD_SEARCH.md) is current branch engineering for existing CORE-08/UI-01. Two bounded libraries and current-source navigation are not all-library/semantic search, pending approvals or whole-MVP acceptance. No current branch promotion or retained scope reduction.
