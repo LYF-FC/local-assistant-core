@@ -14,6 +14,7 @@ from app.db import SessionLocal
 from app.discovery_routes import router as discovery_router
 from app.document_routes import router as document_router
 from app.email_routes import router as email_router
+from app.filing_routes import router as filing_router
 from app.finance_routes import router as finance_router
 from app.installation_routes import router as installation_router
 from app.invoice_routes import router as invoice_router
@@ -64,6 +65,7 @@ def create_app() -> FastAPI:
     application.include_router(answer_router)
     application.include_router(reminder_router)
     application.include_router(notification_router)
+    application.include_router(filing_router)
     application.include_router(discovery_router)
     application.include_router(context_router)
     application.include_router(work_router)
