@@ -193,3 +193,58 @@ def test_repeated_timeouts_never_accumulate_workers(world, monkeypatch):  # noqa
     assert multiprocessing.active_children() == []
     assert threading.active_count() == threads
     assert world.state(source).attempts == 2
+
+
+def test_an_unreapable_child_is_reported_not_swallowed(monkeypatch, caplog):
+    """A child that survives SIGKILL and the bounded wait is an explicit, logged failure."""
+    monkeypatch.setattr(sync, "REAP_SECONDS", 0.05)
+    monkeypatch.setattr(sync.os, "waitpid", lambda pid, flags: (0, 0))  # never finishes
+    killed = []
+    real_kill = os.kill
+    monkeypatch.setattr(sync.os, "kill", lambda pid, sig: (killed.append(sig), real_kill(pid, sig)))
+
+    class Fine:
+        def changes(self, since, limit):
+            return ChangePage((), "v1:0", False)
+
+    with caplog.at_level("ERROR"), pytest.raises(sync.FetchNotTerminated) as caught:
+        sync.fetch(Fine(), None, 5)
+    assert signal.SIGKILL in killed
+    assert isinstance(caught.value, provider_module.ProviderUnavailable)
+    assert "survived SIGKILL" in caplog.text
+    assert sync.failure(caught.value) == ("retry", "provider_unavailable")
+    monkeypatch.undo()
+    # the fake wait never reaped the (already exited or killed) child: collect it, then nothing
+    # at all is left
+    finished, _status = os.waitpid(-1, 0)
+    assert finished > 0
+    with pytest.raises(ChildProcessError):
+        os.waitpid(-1, os.WNOHANG)
+
+
+def test_a_reaped_or_vanished_child_counts_as_gone():
+    assert sync._reap(2**22 + 12345) is True  # no such process, no such child
+
+
+def test_concurrent_fetches_from_many_threads_all_succeed():
+    """The multiprocessing.Process bookkeeping raced here and reported live children as stuck."""
+
+    class Quick:
+        def changes(self, since, limit):
+            return ChangePage((), "v1:0", False)
+
+    failures = []
+
+    def run():
+        for _ in range(15):
+            try:
+                assert sync.fetch(Quick(), None, 10).next_cursor == "v1:0"
+            except Exception as error:  # noqa: BLE001
+                failures.append(repr(error))
+
+    workers = [threading.Thread(target=run) for _ in range(8)]
+    [w.start() for w in workers]
+    [w.join(120) for w in workers]
+    assert failures == []
+    with pytest.raises(ChildProcessError):
+        os.waitpid(-1, os.WNOHANG)

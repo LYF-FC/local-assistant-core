@@ -12,10 +12,12 @@ Proposal sections 6.8, 6.9, 7.3 and 7.3.1. One page is one complete cycle:
 The provider has no write method and no network is used (synthetic fixtures only).
 """
 
+import logging
 import math
 import multiprocessing
 import os
 import signal
+import time
 from collections import Counter
 from dataclasses import dataclass
 from datetime import timedelta
@@ -512,6 +514,10 @@ def apply_page(db, taken, page, since):
 # ---------------------------------------------------------------------------------------------
 # Fetch (no lock, no open transaction) and the pass
 # ---------------------------------------------------------------------------------------------
+REAP_SECONDS = 5
+logger = logging.getLogger(__name__)
+
+
 def default_factory(ref):
     if not enabled():
         raise provider_module.ProviderUnavailable("provider mode is not enabled")
@@ -539,13 +545,36 @@ def _fetch_child(provider, since, sender, timeout):
         os._exit(0)
 
 
-def _reap(process):
-    """End the child for certain: SIGKILL cannot be ignored, and the wait is bounded."""
-    if process.is_alive():
-        process.kill()
-    process.join(5)
-    if not process.is_alive():
-        process.close()
+class FetchNotTerminated(provider_module.ProviderUnavailable):
+    """The fetch child was still alive after SIGKILL and the bounded wait (a stuck process).
+
+    It is an ordinary retryable failure (``provider_unavailable``, with backoff), never a silent
+    success, and it is logged at error level with the child's process id for the operator.
+    """
+
+
+def _reap(pid):
+    """End the child for certain: SIGKILL cannot be ignored, and the wait is bounded.
+
+    Waits for this one pid only. Returns True when the child is gone (reaped here, or already
+    reaped elsewhere); False means it survived SIGKILL and ``REAP_SECONDS`` (for example a process
+    stuck in uninterruptible I/O) and the caller must surface that.
+    """
+    try:
+        os.kill(pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+    deadline = time.monotonic() + REAP_SECONDS
+    while True:
+        try:
+            finished, _status = os.waitpid(pid, os.WNOHANG)
+        except ChildProcessError:
+            return True
+        if finished:
+            return True
+        if time.monotonic() >= deadline:
+            return False
+        time.sleep(0.005)
 
 
 def fetch(provider, since, timeout):
@@ -555,13 +584,21 @@ def fetch(provider, since, timeout):
     A running Python thread cannot be cancelled, so a thread would keep working after the timeout
     (and would hold a worker's exit open); a process can be ended for certain. No thread, child
     process or open pipe survives this function, whatever the outcome.
+
+    The child is forked and waited for directly (``os.fork``/``os.waitpid`` on its own pid), not
+    through ``multiprocessing.Process``: that class keeps process-wide child bookkeeping that races
+    when several threads fetch at once (a child reaped by another thread's cleanup looks alive).
     """
-    context = multiprocessing.get_context("fork")
-    receiver, sender = context.Pipe(duplex=False)
-    process = context.Process(
-        target=_fetch_child, args=(provider, since, sender, timeout), daemon=True
-    )
-    process.start()
+    receiver, sender = multiprocessing.Pipe(duplex=False)
+    try:
+        pid = os.fork()
+    except BaseException:
+        receiver.close()
+        sender.close()
+        raise
+    if pid == 0:  # the child: never returns
+        receiver.close()
+        _fetch_child(provider, since, sender, timeout)
     sender.close()
     try:
         if not receiver.poll(timeout):
@@ -572,7 +609,9 @@ def fetch(provider, since, timeout):
             raise provider_module.ProviderUnavailable("fetch ended without a result") from None
     finally:
         receiver.close()
-        _reap(process)
+        if not _reap(pid):
+            logger.error("calendar fetch child pid=%s survived SIGKILL; not reaped", pid)
+            raise FetchNotTerminated("fetch process could not be terminated")
     if kind == "error":
         # Only ordinary exceptions cross over: a SystemExit or KeyboardInterrupt raised inside the
         # provider must never end this process.
