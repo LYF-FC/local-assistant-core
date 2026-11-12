@@ -5,6 +5,7 @@ assertion names the constraint or trigger that refused it (``diag.constraint_nam
 that no row of the calendar tables changed (a fingerprint of the whole content before and after).
 """
 
+import contextlib
 import json
 import os
 import subprocess
@@ -38,7 +39,18 @@ TABLES = (
 )
 UPSERT_HASH = "a" * 64
 LITERAL_TOMBSTONE = "136a90c93d282c605c5a7003b6a381fa429e9bce3201d454cb59a41480005b01"
-DATA = json.dumps({"status": "setup_required", "label": "Synthetic provider"})
+# The complete stored shape of an unconfigured source (as the application creates it). A row
+# without these keys is not a state the application can produce, and rows left in a shared test
+# database must not break the briefing tests that read every visible source of a scope.
+DATA = json.dumps(
+    {
+        "status": "setup_required",
+        "label": "Synthetic provider",
+        "window": None,
+        "attempt_at": None,
+        "changes": None,
+    }
+)
 
 
 def now():
@@ -51,6 +63,7 @@ class World:
     def __init__(self, admin_engine, runtime_engine):
         self.admin = admin_engine
         self.rt = runtime_engine
+        self.created = []
         maker = sessionmaker(bind=admin_engine, expire_on_commit=False)
         with maker.begin() as db:
             self.owner = provision(
@@ -63,6 +76,7 @@ class World:
     # -- fixtures -------------------------------------------------------------------------
     def source(self, owner=None, scope=SCOPE, link=True, state=True):
         sid, owner, t = uuid4(), owner or self.owner, now()
+        self.created.append(sid)
         with self.rt.begin() as c:
             c.execute(
                 text(
@@ -236,7 +250,14 @@ class World:
 
 @pytest.fixture
 def world(postgres_engine, runtime_engine):
-    return World(postgres_engine, runtime_engine)
+    world = World(postgres_engine, runtime_engine)
+    yield world
+    # Retire every source still active (best effort): committed rows outlive a test in the shared
+    # database, and the briefing tests read the first 25 active sources of the shared scope.
+    for src in world.created:
+        if world.scalar("SELECT state FROM calendar_sources WHERE id=:s", s=src) == "active":
+            with contextlib.suppress(DBAPIError):
+                forget(world, src)
 
 
 UPDATE_SERIES = "UPDATE calendar_series SET {set}, revision=revision+1, updated_at=:t WHERE id=:id"

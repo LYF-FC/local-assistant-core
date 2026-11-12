@@ -867,3 +867,69 @@ def declare(db, token, csrf, identifier, body):
         metadata={"provider_kind": "synthetic"},
     )
     return identity.Result(200, {"source_id": str(row.id), "provider": status_view(state)})
+
+
+# ---------------------------------------------------------------------------------------------
+# Owner routes (8.1): sync and sync-status exist only where ``enabled()``; any other case is the
+# same 404 (disabled, foreign, forgotten, not linked), so the routes reveal nothing.
+# ---------------------------------------------------------------------------------------------
+def _owned(db, token, csrf, identifier, body):
+    current = manual_tasks.authority(db, token, csrf, body.scope, event_prefix="calendar")
+    if isinstance(current, identity.Result):
+        return current
+    user, _ = current
+    if not enabled():
+        return identity.denied(db, 404, "calendar.not_found", user=user)
+    row = db.scalar(
+        select(CalendarSource)
+        .where(CalendarSource.id == identifier, CalendarSource.scope_key == body.scope)
+        .execution_options(populate_existing=True)
+    )
+    state = db.get(CalendarSyncState, identifier) if row is not None else None
+    if (
+        row is None
+        or row.owner_id != user.id
+        or row.state != "active"
+        or state is None
+        or state.status == "blocked"
+        and state.blocked_reason == "source_forgotten"
+    ):
+        return identity.denied(db, 404, "calendar.not_found", user=user)
+    return user, row, state
+
+
+def authorize(db, token, csrf, identifier, body):
+    """Authorize an owner sync request; nothing is written."""
+    found = _owned(db, token, csrf, identifier, body)
+    return found if isinstance(found, identity.Result) else identity.Result(200, {})
+
+
+def status(db, token, csrf, identifier, body, summary=None):
+    """The owner's sync status: codes, counts and times only, never content or the cursor."""
+    found = _owned(db, token, csrf, identifier, body)
+    if isinstance(found, identity.Result):
+        return found
+    user, row, state = found
+    payload = {"source_id": str(row.id), "provider": status_view(state)}
+    metadata = {"status": state.status}
+    if summary is not None:
+        brief = {
+            "outcome": summary["outcome"],
+            "reason": summary.get("reason"),
+            "pages": summary["pages"],
+            "changes": summary["changes"],
+            "counters": summary.get("counters", {}),
+        }
+        payload["sync"] = brief
+        metadata.update(outcome=brief["outcome"], pages=brief["pages"], changes=brief["changes"])
+    identity.audit(
+        db,
+        "calendar.sync_requested" if summary is not None else "calendar.sync_status",
+        "success",
+        user=user,
+        scope=body.scope,
+        entity_type="calendar_source",
+        entity=str(row.id),
+        metadata=metadata,
+    )
+    return identity.Result(200, payload)

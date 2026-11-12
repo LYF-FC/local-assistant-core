@@ -15,14 +15,20 @@ import pytest
 from calendar_synthetic_writer import SyntheticWriter
 from sqlalchemy import select, text
 from sqlalchemy.orm import sessionmaker
-from test_calendar_sync import Clock, World, override_item, series_item
+from test_calendar_sync import RID_NEXT, Clock, World, override_item, series_item
 from test_calendars import call, create
 
 from app import calendar_codes as codes
 from app import calendar_sync as sync
 from app import identity
 from app.config import settings
-from app.models import CalendarChange, CalendarOverride, CalendarSeries, CalendarSyncState
+from app.models import (
+    CalendarChange,
+    CalendarOverride,
+    CalendarSeries,
+    CalendarSource,
+    CalendarSyncState,
+)
 
 pytestmark = pytest.mark.integration
 
@@ -37,7 +43,28 @@ def pg(scenario, runtime_engine, tmp_path, monkeypatch):
     world = World(maker, tmp_path, SyntheticWriter(tmp_path / "household.sqlite"), clock)
     world.client, world.headers, world.admin, world.user = client, headers, admin, user_id
     world.token = client.cookies.get(identity.COOKIE)
-    return world
+    yield world
+    retire(world)
+
+
+def retire(world):
+    """Forget every source this fixture's user still has, through the API (best effort).
+
+    Committed synthetic rows outlive a test in the shared database, and the briefing tests read the
+    first 25 active sources of the shared scope, so leaving many active sources behind would crowd
+    them out. Forgetting is the real, supported way to retire a source.
+    """
+    with world.admin() as db:
+        rows = list(
+            db.execute(
+                select(CalendarSource.id, CalendarSource.scope_key, CalendarSource.revision).where(
+                    CalendarSource.owner_id == world.user, CalendarSource.state == "active"
+                )
+            )
+        )
+    for identifier, scope, revision in rows:
+        row = {"id": str(identifier), "scope": scope, "revision": revision}
+        call(world.client, world.headers, row, "forget")
 
 
 def api_source(world):
@@ -259,6 +286,10 @@ def crash(pg, point, source):
         check=False,
     )
     assert done.returncode == 31, (point, done.stdout, done.stderr[-2000:])
+    # The subprocess stamped its claim with the real clock. The fixture clock started earlier, so
+    # without this a lease of 120 s could still look unexpired after "lease + 1 s" (start-up of the
+    # subprocess takes seconds): that was an intermittent failure. Never move the clock backwards.
+    pg.clock.value = max(pg.clock.value, identity.now_utc())
 
 
 def invariants(pg, source):
@@ -349,3 +380,31 @@ def test_backoff_and_failed_state_survive_on_the_database(pg):
         "provider_timeout",
     )
     assert pg.sync(source)["reason"] == "failed"
+
+
+def test_briefing_v2_and_the_owner_sync_route_run_on_the_restricted_role(pg):
+    _row, source = api_source(pg)
+    pg.writer.append([series_item(rrule="FREQ=DAILY;COUNT=10"), override_item(rid=RID_NEXT)])
+    base = {"scope": "household_shared"}
+    synced = pg.client.post(f"/api/v1/calendars/{source}/sync", headers=pg.headers, json=base)
+    assert synced.status_code == 200, synced.text
+    assert synced.json()["sync"]["outcome"] == "ok" and "cursor" not in synced.text
+    status = pg.client.post(
+        f"/api/v1/calendars/{source}/sync-status", headers=pg.headers, json=base
+    )
+    assert status.status_code == 200 and status.json()["provider"]["applied_seq"] == 2
+    response = pg.client.post(
+        "/api/v1/calendars/briefing",
+        headers=pg.headers,
+        json={**base, "day": "2026-03-15", "timezone": "Europe/Paris", "horizon_days": 3},
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    entry = next(c for c in body["calendars"] if c["id"] == str(source))
+    assert (entry["mode"], entry["source_state"]) == ("provider", "available")
+    mine = [e for e in body["events"] if e["source_id"] == str(source)]
+    assert [e["days"] for e in mine] == [["2026-03-15"], ["2026-03-17"]]
+    assert body["cancelled_count"] >= 1 and body["limits"]["events"]["truncated"] is False
+    # a foreign or unknown source is the same 404 as a forgotten one
+    unknown = pg.client.post(f"/api/v1/calendars/{UUID(int=3)}/sync", headers=pg.headers, json=base)
+    assert unknown.status_code == 404

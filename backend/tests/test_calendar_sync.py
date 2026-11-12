@@ -30,6 +30,7 @@ from app.models import (
 )
 
 RID = "TZID=Europe/Paris:20260322T090000"
+RID_NEXT = RID.replace("0322", "0316")
 CANON = "2026-03-22T09:00:00"
 
 
@@ -156,14 +157,18 @@ class World:
         )
 
 
-@pytest.fixture
-def world(auth_store, tmp_path, monkeypatch):
+def make_world(auth_store, tmp_path, monkeypatch):
     clock = Clock()
     monkeypatch.setattr(sync, "clock", clock)
     monkeypatch.setattr(settings, "calendar_synthetic_directory", tmp_path)
     monkeypatch.setattr(settings, "calendar_lease_seconds", 120)
     monkeypatch.setattr(settings, "calendar_fetch_timeout_seconds", 30.0)
     return World(auth_store, tmp_path, SyntheticWriter(tmp_path / "household.sqlite"), clock)
+
+
+@pytest.fixture
+def world(auth_store, tmp_path, monkeypatch):
+    return make_world(auth_store, tmp_path, monkeypatch)
 
 
 # ---------------------------------------------------------------------------------------------

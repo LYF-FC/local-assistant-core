@@ -1,5 +1,5 @@
 import type { Session } from "./api";
-import { CalendarError, getBriefing, type Briefing } from "./calendars-api";
+import { CalendarError, getBriefing, type AgendaCalendar, type AgendaEvent, type Briefing } from "./calendars-api";
 import { DocumentError, list, type Document, type Page } from "./documents-api";
 import { listReminders, ReminderError, type ReminderPage } from "./reminders-api";
 import { taskScopes, type TaskScope } from "./tasks-api";
@@ -44,7 +44,7 @@ export async function loadOverview(session: Session, selection: Selection, signa
   if (!validSelection(selection)) throw new Error("Choose a valid day and IANA timezone.");
   const started = Date.now();
   const [briefing, reminders, documents] = await Promise.allSettled([
-    getBriefing(selection.scope, selection.day, selection.timezone, session.csrfToken, signal).then(value => {
+    getBriefing(selection.scope, selection.day, selection.timezone, session.csrfToken, signal, 1).then(value => {
       if (selection.scope !== "household_shared" && (value.calendars.some(row => row.owner_id !== session.user.id) || value.tasks.some(row => row.owner_id !== session.user.id))) throw new Error("Invalid private briefing");
       return value;
     }),
@@ -71,4 +71,38 @@ export function documentAttention(row: Document): string | null {
     return ({ no_text: "No text extracted", encrypted: "Encrypted original", invalid: "Invalid PDF", resource_limit: "Parser limit reached", unavailable: "Parser unavailable" } as const)[row.extraction.status];
   }
   return row.reviewed ? null : "Text review needed";
+}
+
+// Honest wording per source state. A source that is not "available" never supports a free-day claim.
+export function sourceNote(row: AgendaCalendar): string {
+  const read = row.unreadable ? ` ${row.unreadable} stored item${row.unreadable === 1 ? "" : "s"} could not be read and ${row.unreadable === 1 ? "is" : "are"} not shown.` : "";
+  const reason = row.blocked_reason ? ` (${row.blocked_reason})` : "";
+  const when = row.as_of ? ` as of ${row.as_of}` : "";
+  switch (row.source_state) {
+    case undefined: return `${row.status}; ${row.covers_day ? "covers selected day" : "selected day not covered"}${row.stale ? "; stale last-known snapshot" : ""}.`;
+    case "available": return `available${when}; ${row.mode === "provider" ? "synchronized copy, not a live provider check" : "imported snapshot, not a live provider check"}.${read}`;
+    case "stale": return `stale${when}; events shown are last-known and may have changed.${read}`;
+    case "unavailable": return `unavailable${when}; last-known events are shown and may be out of date.${read}`;
+    case "blocked": return `sync blocked${reason}; the last stored data is shown and may be incomplete until the owner resolves it.${read}`;
+    case "limit_reached": return `limit reached${reason}; sync is paused and the data may be incomplete.${read}`;
+    case "unknown_coverage": return `coverage unknown${row.covers_day === false ? "; selected day not covered" : ""}; no event here does not mean a free day.${read}`;
+  }
+}
+export function limitNotes(briefing: Briefing): string[] {
+  const limits = briefing.limits;
+  if (!limits) return Object.entries(briefing.truncated).filter(([, flag]) => flag).map(([name]) => `More ${name} exist than this briefing can show.`);
+  const notes: string[] = [];
+  for (const [name, limit] of [["calendar sources", limits.sources], ["calendar occurrences", limits.events], ["tasks", limits.tasks], ["memory references", limits.memories]] as const) {
+    if (limit.truncated) notes.push(`Showing ${limit.shown} ${name}; at least ${limit.omitted_at_least} more exist and are not shown.`);
+  }
+  if (limits.unreadable_items) notes.push(`${limits.unreadable_items} stored calendar item${limits.unreadable_items === 1 ? "" : "s"} could not be read; the agenda may be incomplete.`);
+  return notes;
+}
+export function eventMarks(row: AgendaEvent): string {
+  const marks: string[] = [];
+  if (row.recurring) marks.push("recurring");
+  if (row.exception === "modified") marks.push("changed instance");
+  if (row.continues && row.days) marks.push(`continues across ${row.days.length} days`);
+  if (row.possible_duplicate_of?.length) marks.push(`possible duplicate of ${row.possible_duplicate_of.length} other event${row.possible_duplicate_of.length === 1 ? "" : "s"} (not merged)`);
+  return marks.join("; ");
 }
