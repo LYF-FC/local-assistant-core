@@ -1,12 +1,15 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 from sqlalchemy import (
+    CHAR,
     JSON,
     Boolean,
     CheckConstraint,
+    Date,
     DateTime,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     LargeBinary,
@@ -749,6 +752,7 @@ class CalendarSource(Base):
             name="ck_calendar_content",
         ),
         Index("ix_calendar_scope_owner", "scope_key", "owner_id", "id"),
+        Index("uq_calendar_source_identity", "id", "owner_id", "scope_key", unique=True),
     )
     id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     owner_id: Mapped[uuid.UUID] = mapped_column(
@@ -778,6 +782,327 @@ class CalendarRevision(Base):
     )
     snapshot: Mapped[dict | None] = mapped_column(MEMORY_JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+_SCOPES = "'household_shared','member_a_private','member_b_private'"
+
+
+class CalendarProviderLink(Base):
+    """Marks a source as provider-mode (immutable). The PostgreSQL-only constraints and every
+    trigger live in migration 0035; the model carries only portable constraints so unit tests on
+    SQLite can create the tables."""
+
+    __tablename__ = "calendar_provider_links"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["source_id", "owner_id", "scope_key"],
+            ["calendar_sources.id", "calendar_sources.owner_id", "calendar_sources.scope_key"],
+            name="fk_calendar_link_source",
+        ),
+        UniqueConstraint("source_id", "owner_id", "scope_key", name="uq_calendar_link_identity"),
+        CheckConstraint(f"scope_key IN ({_SCOPES})", name="ck_calendar_link_scope"),
+        CheckConstraint("provider_kind IN ('synthetic')", name="ck_calendar_link_kind"),
+    )
+    source_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    scope_key: Mapped[str] = mapped_column(String(96), nullable=False)
+    provider_kind: Mapped[str] = mapped_column(String(16), nullable=False)
+    provider_ref: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class CalendarSeries(Base):
+    __tablename__ = "calendar_series"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["source_id", "owner_id", "scope_key"],
+            [
+                "calendar_provider_links.source_id",
+                "calendar_provider_links.owner_id",
+                "calendar_provider_links.scope_key",
+            ],
+            name="fk_calendar_series_link",
+        ),
+        UniqueConstraint(
+            "id", "source_id", "owner_id", "scope_key", name="uq_calendar_series_identity"
+        ),
+        UniqueConstraint("source_id", "uid", name="uq_calendar_series_uid"),
+        CheckConstraint(f"scope_key IN ({_SCOPES})", name="ck_calendar_series_scope"),
+        CheckConstraint(
+            "state IN ('active','deleted','forgotten')", name="ck_calendar_series_state"
+        ),
+        CheckConstraint(
+            "kind IS NULL OR kind IN ('timed','all_day')", name="ck_calendar_series_kind"
+        ),
+        CheckConstraint(
+            "status IS NULL OR status IN ('confirmed','tentative','cancelled')",
+            name="ck_calendar_series_status",
+        ),
+        CheckConstraint("sequence >= 0", name="ck_calendar_series_sequence"),
+        CheckConstraint("revision >= 1", name="ck_calendar_series_revision"),
+        CheckConstraint(
+            "duration_seconds IS NULL OR duration_seconds BETWEEN 1 AND 2678400",
+            name="ck_calendar_series_duration_seconds",
+        ),
+        CheckConstraint(
+            "duration_days IS NULL OR duration_days BETWEEN 1 AND 31",
+            name="ck_calendar_series_duration_days",
+        ),
+        CheckConstraint(
+            "title IS NULL OR length(trim(title)) > 0", name="ck_calendar_series_title"
+        ),
+        CheckConstraint(
+            "(state = 'forgotten' AND uid IS NULL) OR (state <> 'forgotten' AND uid IS NOT NULL)",
+            name="ck_calendar_series_uid",
+        ),
+        CheckConstraint(
+            "(state = 'deleted') = (deleted_at IS NOT NULL)", name="ck_calendar_series_deleted_at"
+        ),
+        CheckConstraint(
+            "(state = 'active' AND status IS NOT NULL AND title IS NOT NULL"
+            " AND exdates IS NOT NULL AND rdates IS NOT NULL"
+            " AND ((kind = 'timed' AND start_local IS NOT NULL AND zone IS NOT NULL"
+            " AND duration_seconds IS NOT NULL AND start_date IS NULL AND duration_days IS NULL)"
+            " OR (kind = 'all_day' AND start_date IS NOT NULL AND duration_days IS NOT NULL"
+            " AND start_local IS NULL AND zone IS NULL AND duration_seconds IS NULL)))"
+            " OR (state IN ('deleted','forgotten') AND kind IS NULL AND status IS NULL"
+            " AND title IS NULL AND start_local IS NULL AND start_date IS NULL AND zone IS NULL"
+            " AND duration_seconds IS NULL AND duration_days IS NULL AND rule IS NULL"
+            " AND exdates IS NULL AND rdates IS NULL AND provider_version IS NULL)",
+            name="ck_calendar_series_content",
+        ),
+        Index("ix_calendar_series_source_state", "source_id", "state"),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    source_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    scope_key: Mapped[str] = mapped_column(String(96), nullable=False)
+    uid: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    state: Mapped[str] = mapped_column(String(16), nullable=False)
+    kind: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    status: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    title: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    start_local: Mapped[datetime | None] = mapped_column(DateTime(timezone=False), nullable=True)
+    start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    zone: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    duration_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    duration_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    rule: Mapped[dict | None] = mapped_column(MEMORY_JSON, nullable=True)
+    exdates: Mapped[list | None] = mapped_column(MEMORY_JSON, nullable=True)
+    rdates: Mapped[list | None] = mapped_column(MEMORY_JSON, nullable=True)
+    provider_version: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class CalendarOverride(Base):
+    __tablename__ = "calendar_overrides"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["series_id", "source_id", "owner_id", "scope_key"],
+            [
+                "calendar_series.id",
+                "calendar_series.source_id",
+                "calendar_series.owner_id",
+                "calendar_series.scope_key",
+            ],
+            name="fk_calendar_override_series",
+        ),
+        UniqueConstraint(
+            "id", "source_id", "owner_id", "scope_key", name="uq_calendar_override_identity"
+        ),
+        UniqueConstraint("series_id", "recurrence_id", name="uq_calendar_override_instance"),
+        CheckConstraint(f"scope_key IN ({_SCOPES})", name="ck_calendar_override_scope"),
+        CheckConstraint(
+            "state IN ('active','deleted','forgotten')", name="ck_calendar_override_state"
+        ),
+        CheckConstraint(
+            "status IS NULL OR status IN ('confirmed','tentative','cancelled')",
+            name="ck_calendar_override_status",
+        ),
+        CheckConstraint("sequence >= 0", name="ck_calendar_override_sequence"),
+        CheckConstraint("revision >= 1", name="ck_calendar_override_revision"),
+        CheckConstraint(
+            "duration IS NULL OR duration BETWEEN 1 AND 2678400",
+            name="ck_calendar_override_duration",
+        ),
+        CheckConstraint(
+            "title IS NULL OR length(trim(title)) > 0", name="ck_calendar_override_title"
+        ),
+        CheckConstraint(
+            "NOT deleted_by_cascade OR state = 'deleted'", name="ck_calendar_override_cascade"
+        ),
+        CheckConstraint(
+            "(state = 'deleted') = (deleted_at IS NOT NULL)", name="ck_calendar_override_deleted_at"
+        ),
+        CheckConstraint(
+            "(state = 'active' AND status IS NOT NULL)"
+            " OR (state IN ('deleted','forgotten') AND status IS NULL AND start_wall IS NULL"
+            " AND duration IS NULL AND title IS NULL)",
+            name="ck_calendar_override_content",
+        ),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    series_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    source_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    scope_key: Mapped[str] = mapped_column(String(96), nullable=False)
+    recurrence_id: Mapped[str] = mapped_column(String(32), nullable=False)
+    state: Mapped[str] = mapped_column(String(16), nullable=False)
+    deleted_by_cascade: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    status: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    start_wall: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    duration: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    title: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class CalendarChange(Base):
+    __tablename__ = "calendar_changes"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["source_id", "owner_id", "scope_key"],
+            [
+                "calendar_provider_links.source_id",
+                "calendar_provider_links.owner_id",
+                "calendar_provider_links.scope_key",
+            ],
+            name="fk_calendar_change_link",
+        ),
+        ForeignKeyConstraint(
+            ["series_id", "source_id", "owner_id", "scope_key"],
+            [
+                "calendar_series.id",
+                "calendar_series.source_id",
+                "calendar_series.owner_id",
+                "calendar_series.scope_key",
+            ],
+            name="fk_calendar_change_series",
+        ),
+        ForeignKeyConstraint(
+            ["override_id", "source_id", "owner_id", "scope_key"],
+            [
+                "calendar_overrides.id",
+                "calendar_overrides.source_id",
+                "calendar_overrides.owner_id",
+                "calendar_overrides.scope_key",
+            ],
+            name="fk_calendar_change_override",
+        ),
+        UniqueConstraint("source_id", "seq", name="uq_calendar_change_seq"),
+        CheckConstraint(f"scope_key IN ({_SCOPES})", name="ck_calendar_change_scope"),
+        CheckConstraint("seq BETWEEN 1 AND 5000", name="ck_calendar_change_seq"),
+        CheckConstraint("entity IN ('series','override')", name="ck_calendar_change_entity"),
+        CheckConstraint(
+            "(entity = 'series' AND series_id IS NOT NULL AND override_id IS NULL)"
+            " OR (entity = 'override' AND override_id IS NOT NULL AND series_id IS NULL)",
+            name="ck_calendar_change_target",
+        ),
+        CheckConstraint(
+            "operation IN ('upsert','delete','revive')", name="ck_calendar_change_operation"
+        ),
+        CheckConstraint("sequence >= 0", name="ck_calendar_change_sequence"),
+        CheckConstraint(
+            "cascade_count BETWEEN 0 AND 100 AND (cascade_count = 0 OR"
+            " (entity = 'series' AND operation IN ('delete','revive')))",
+            name="ck_calendar_change_cascade",
+        ),
+        CheckConstraint("actor_id IS NULL", name="ck_calendar_change_actor"),
+        Index(
+            "uq_calendar_change_applied",
+            "source_id",
+            "entity",
+            text("COALESCE(series_id, override_id)"),
+            "sequence",
+            "content_hash",
+            unique=True,
+        ),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    source_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    scope_key: Mapped[str] = mapped_column(String(96), nullable=False)
+    seq: Mapped[int] = mapped_column(Integer, nullable=False)
+    entity: Mapped[str] = mapped_column(String(16), nullable=False)
+    series_id: Mapped[uuid.UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
+    override_id: Mapped[uuid.UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
+    operation: Mapped[str] = mapped_column(String(16), nullable=False)
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    cascade_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    content_hash: Mapped[str] = mapped_column(CHAR(64), nullable=False)
+    snapshot: Mapped[dict | None] = mapped_column(MEMORY_JSON, nullable=True)
+    actor_id: Mapped[uuid.UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
+    sync_run_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    cursor_after: Mapped[str] = mapped_column(String(512), nullable=False)
+    applied_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class CalendarSyncState(Base):
+    __tablename__ = "calendar_sync_state"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["source_id", "owner_id", "scope_key"],
+            [
+                "calendar_provider_links.source_id",
+                "calendar_provider_links.owner_id",
+                "calendar_provider_links.scope_key",
+            ],
+            name="fk_calendar_sync_link",
+        ),
+        CheckConstraint(f"scope_key IN ({_SCOPES})", name="ck_calendar_sync_scope"),
+        CheckConstraint(
+            "status IN ('never','ok','retry_wait','failed','blocked')",
+            name="ck_calendar_sync_status",
+        ),
+        CheckConstraint("attempts BETWEEN 0 AND 5", name="ck_calendar_sync_attempts"),
+        CheckConstraint("applied_seq BETWEEN 0 AND 5000", name="ck_calendar_sync_applied"),
+        CheckConstraint("revision >= 1", name="ck_calendar_sync_revision"),
+        CheckConstraint(
+            "(claim_token IS NULL) = (claim_expires_at IS NULL)", name="ck_calendar_sync_claim"
+        ),
+        CheckConstraint(
+            "(status = 'blocked') = (blocked_reason IS NOT NULL)", name="ck_calendar_sync_blocked"
+        ),
+        CheckConstraint(
+            "blocked_detail IS NULL OR status = 'blocked'", name="ck_calendar_sync_detail"
+        ),
+    )
+    source_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    scope_key: Mapped[str] = mapped_column(String(96), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    cursor: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    applied_seq: Mapped[int] = mapped_column(Integer, nullable=False)
+    claim_token: Mapped[uuid.UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
+    claim_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False)
+    next_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_attempt_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_success_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    blocked_reason: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    blocked_detail: Mapped[dict | None] = mapped_column(MEMORY_JSON, nullable=True)
+    last_error_code: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    revision: Mapped[int] = mapped_column(Integer, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
 class Routine(Base):

@@ -125,6 +125,9 @@ def configure(connection, password: str) -> None:
             "memory_records",
             "manual_tasks",
             "calendar_sources",
+            "calendar_series",
+            "calendar_overrides",
+            "calendar_sync_state",
             "routines",
             "invoice_reviews",
             "installation_config",
@@ -202,6 +205,28 @@ def configure(connection, password: str) -> None:
         )
         cursor.execute(
             sql.SQL("GRANT UPDATE (snapshot) ON public.calendar_revisions TO {}").format(
+                sql.Identifier(ROLE)
+            )
+        )
+        # Calendar provider mode (migration 0035): no DELETE or TRUNCATE anywhere. Links are
+        # immutable except provider_ref -> NULL; the change log is append-only except snapshot.
+        cursor.execute(
+            sql.SQL("GRANT SELECT, INSERT ON public.calendar_provider_links TO {}").format(
+                sql.Identifier(ROLE)
+            )
+        )
+        cursor.execute(
+            sql.SQL("GRANT UPDATE (provider_ref) ON public.calendar_provider_links TO {}").format(
+                sql.Identifier(ROLE)
+            )
+        )
+        cursor.execute(
+            sql.SQL("GRANT SELECT, INSERT ON public.calendar_changes TO {}").format(
+                sql.Identifier(ROLE)
+            )
+        )
+        cursor.execute(
+            sql.SQL("GRANT UPDATE (snapshot) ON public.calendar_changes TO {}").format(
                 sql.Identifier(ROLE)
             )
         )
