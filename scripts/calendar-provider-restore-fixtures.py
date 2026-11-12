@@ -4,15 +4,24 @@ seed:  one synchronized provider source (series, an override, a series tombstone
        cursor, gapless change rows) and one provider source that was forgotten after syncing.
 check: after pg_restore, every row, counter, tombstone floor, cursor and scrub survived; a resumed
        sync from the restored cursor applies only what is new and never repeats a change.
-No provider network, no external credential: the feed is an in-process synthetic object.
+No provider network, no external credential: the feed is a synthetic SQLite fixture file read by
+the real isolated fetch child (the same path the worker uses), kept in the temp directory between
+the seed and check phases.
 """
 
+import shutil
 import sys
+import tempfile
+from pathlib import Path
 from uuid import NAMESPACE_URL, UUID, uuid5
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend" / "tests"))
+
+from calendar_synthetic_writer import SyntheticWriter
+from sqlalchemy import func, select, update
 
 from app import calendar_sync as sync
 from app import calendars, identity
-from app.calendar_provider import ChangePage, ProviderItem
 from app.config import settings
 from app.db import SessionLocal
 from app.manage import set_scope
@@ -26,7 +35,6 @@ from app.models import (
     CalendarSyncState,
     User,
 )
-from sqlalchemy import func, select, update
 
 assert settings.env == "test" and settings.postgres_db in {
     "butler_test",
@@ -49,43 +57,36 @@ def ident(name):
     return uuid5(NAMESPACE_URL, "butler-synthetic-calendar-provider-restore-" + name)
 
 
-class Feed:
-    """Serves fixed pages keyed by the cursor it is given."""
-
-    def __init__(self, pages):
-        self.pages = pages
-
-    def changes(self, since, limit):
-        items, nxt = self.pages[since]
-        return ChangePage(tuple(items), nxt, False)
+def item(entity, operation, uid, sequence, recurrence_id, body):
+    return {
+        "entity": entity,
+        "operation": operation,
+        "uid": uid,
+        "sequence": sequence,
+        "recurrence_id": recurrence_id,
+        "body": body,
+    }
 
 
 FIRST = [
-    ProviderItem("series", "upsert", "s1", 1, None, BODY),
-    ProviderItem(
-        "override",
-        "upsert",
-        "s1",
-        1,
-        RID,
-        {"recurrence_id": RID, "status": "cancelled"},
-    ),
-    ProviderItem(
-        "series", "upsert", "s2", 1, None, {**BODY, "title": "Synthetic to delete"}
-    ),
+    item("series", "upsert", "s1", 1, None, BODY),
+    item("override", "upsert", "s1", 1, RID, {"recurrence_id": RID, "status": "cancelled"}),
+    item("series", "upsert", "s2", 1, None, {**BODY, "title": "Synthetic to delete"}),
 ]
-SECOND = [ProviderItem("series", "delete", "s2", 2, None, None)]
-THIRD = [
-    ProviderItem(
-        "series", "upsert", "s3", 1, None, {**BODY, "title": "Synthetic after restore"}
-    )
-]
+SECOND = [item("series", "delete", "s2", 2, None, None)]
+THIRD = [item("series", "upsert", "s3", 1, None, {**BODY, "title": "Synthetic after restore"})]
+# The synthetic fixture file the real fetch child reads; it must survive between the two phases.
+FIXTURES = Path(tempfile.gettempdir()) / "butler-synthetic-calendar-restore"
+settings.calendar_synthetic_directory = FIXTURES
 
 
-def feed():
-    return Feed(
-        {None: (FIRST, "v1:3"), "v1:3": (SECOND, "v1:4"), "v1:4": (THIRD, "v1:5")}
-    )
+def writer():
+    if phase == "seed" and not hasattr(writer, "ready"):
+        shutil.rmtree(FIXTURES, ignore_errors=True)
+        FIXTURES.mkdir(mode=0o700)
+        writer.ready = True
+    assert FIXTURES.is_dir(), "the seed phase must run first on this host"
+    return SyntheticWriter(FIXTURES / "household.sqlite")
 
 
 def create(db, owner, name):
@@ -142,9 +143,7 @@ def membership(grant):
 
 
 def synchronize(source_id):
-    outcome = sync.sync_source(
-        SessionLocal, source_id, lambda ref: feed(), explicit=True
-    )
+    outcome = sync.sync_source(SessionLocal, source_id, explicit=True)
     assert outcome["outcome"] == "ok", outcome
     return outcome
 
@@ -155,12 +154,13 @@ if phase == "seed":
         assert owner and owner.slug == "synthetic-queue-restore"
         create(db, owner, "active")
         create(db, owner, "forgotten")
-    # first page, then the delete page (a second pass continues from the stored cursor)
     membership(True)
     try:
-        for name in ("active", "forgotten"):
-            synchronize(ident(name))
-            synchronize(ident(name))
+        # the first page, then (a second pass continues from the stored cursor) the delete page
+        for batch in (FIRST, SECOND):
+            writer().append(batch)
+            for name in ("active", "forgotten"):
+                synchronize(ident(name))
     finally:
         membership(False)
     with SessionLocal.begin() as db:
@@ -194,20 +194,13 @@ else:
     with SessionLocal.begin() as db:
         source = ident("active")
         state = db.get(CalendarSyncState, source)
-        assert (
-            state.status == "ok" and state.cursor == "v1:4" and state.applied_seq == 4
-        ), state
+        assert state.status == "ok" and state.cursor == "v1:4" and state.applied_seq == 4, state
         assert state.claim_token is None and state.last_success_at is not None
         series = {
             r.uid: r
-            for r in db.scalars(
-                select(CalendarSeries).where(CalendarSeries.source_id == source)
-            )
+            for r in db.scalars(select(CalendarSeries).where(CalendarSeries.source_id == source))
         }
-        assert (
-            series["s1"].state == "active"
-            and series["s1"].title == "Synthetic restore series"
-        )
+        assert series["s1"].state == "active" and series["s1"].title == "Synthetic restore series"
         assert (
             series["s2"].state == "deleted"
             and series["s2"].sequence == 2
@@ -218,9 +211,7 @@ else:
         ).one()
         assert override.state == "active" and override.status == "cancelled"
         seqs = sorted(
-            db.scalars(
-                select(CalendarChange.seq).where(CalendarChange.source_id == source)
-            )
+            db.scalars(select(CalendarChange.seq).where(CalendarChange.source_id == source))
         )
         assert seqs == [1, 2, 3, 4], seqs
         gone = ident("forgotten")
@@ -228,31 +219,23 @@ else:
         assert row.state == "forgotten" and row.data is None
         assert db.get(CalendarProviderLink, gone).provider_ref is None
         scrubbed = db.get(CalendarSyncState, gone)
-        assert (
-            scrubbed.status == "blocked"
-            and scrubbed.blocked_reason == "source_forgotten"
-        )
+        assert scrubbed.status == "blocked" and scrubbed.blocked_reason == "source_forgotten"
         assert scrubbed.cursor is None
         assert all(
             r.state == "forgotten" and r.uid is None and r.title is None
-            for r in db.scalars(
-                select(CalendarSeries).where(CalendarSeries.source_id == gone)
-            )
+            for r in db.scalars(select(CalendarSeries).where(CalendarSeries.source_id == gone))
         )
         assert all(
             c.snapshot is None
-            for c in db.scalars(
-                select(CalendarChange).where(CalendarChange.source_id == gone)
-            )
+            for c in db.scalars(select(CalendarChange).where(CalendarChange.source_id == gone))
         )
     # resume from the restored cursor: only the new series is applied, nothing is repeated
+    writer().append(THIRD)
     membership(True)
     try:
         outcome = synchronize(ident("active"))
         assert (
-            sync.sync_source(
-                SessionLocal, ident("forgotten"), lambda ref: feed(), explicit=True
-            )["outcome"]
+            sync.sync_source(SessionLocal, ident("forgotten"), explicit=True)["outcome"]
             == "skipped"
         )
     finally:
@@ -261,17 +244,10 @@ else:
     with SessionLocal.begin() as db:
         seqs = sorted(
             db.scalars(
-                select(CalendarChange.seq).where(
-                    CalendarChange.source_id == ident("active")
-                )
+                select(CalendarChange.seq).where(CalendarChange.source_id == ident("active"))
             )
         )
         assert seqs == [1, 2, 3, 4, 5], seqs
     # the forgotten source stays closed
-    assert (
-        sync.sync_source(
-            SessionLocal, ident("forgotten"), lambda ref: feed(), explicit=True
-        )["outcome"]
-        == "skipped"
-    )
+    assert sync.sync_source(SessionLocal, ident("forgotten"), explicit=True)["outcome"] == "skipped"
 print("Synthetic provider calendar sync/cursor/tombstone/scrub recovery verified")
