@@ -9,6 +9,8 @@ import itertools
 import os
 import subprocess
 import sys
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from uuid import UUID
 
 import pytest
@@ -408,3 +410,127 @@ def test_briefing_v2_and_the_owner_sync_route_run_on_the_restricted_role(pg):
     # a foreign or unknown source is the same 404 as a forgotten one
     unknown = pg.client.post(f"/api/v1/calendars/{UUID(int=3)}/sync", headers=pg.headers, json=base)
     assert unknown.status_code == 404
+
+
+# ---------------------------------------------------------------------------------------------
+# Real concurrency: threads against the restricted role, actual row waits (no mocks of locking)
+# ---------------------------------------------------------------------------------------------
+class Gate:
+    """A provider that waits (outside any database transaction) until released."""
+
+    def __init__(self, inner):
+        self.inner, self.reached, self.release = inner, threading.Event(), threading.Event()
+
+    def changes(self, since, limit):
+        page = self.inner.changes(since, limit)
+        self.reached.set()
+        assert self.release.wait(20)
+        return page
+
+
+def test_two_concurrent_explicit_syncs_apply_the_page_exactly_once(pg):
+    _row, source = api_source(pg)
+    pg.writer.append([series_item(), override_item()])
+    gate = Gate(None)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        first = pool.submit(pg.sync, source, factory=lambda ref: _gated(gate, ref), explicit=True)
+        assert gate.reached.wait(20)
+        # the lease is held while the provider is being read: every other claimant is a no-op
+        second = pg.sync(source, explicit=True)
+        assert (second["outcome"], second["reason"]) == ("skipped", "lease_held")
+        gate.release.set()
+        assert first.result(30)["outcome"] == "ok"
+    assert [r.seq for r in sorted(pg.rows(CalendarChange, source), key=lambda r: r.seq)] == [1, 2]
+    invariants(pg, source)
+
+
+def _gated(gate, ref):
+    gate.inner = sync.default_factory(ref)
+    return gate
+
+
+def test_concurrent_passes_and_owner_syncs_never_duplicate_or_skip_a_change(pg):
+    _row, source = api_source(pg)
+    for number in range(6):
+        pg.writer.append([series_item(uid=f"c{number}", sequence=1)])
+    barrier = threading.Barrier(4)
+
+    def worker(kind):
+        barrier.wait(20)
+        if kind == "pass":
+            return sync.run_pass(pg.maker)
+        return pg.sync(source, explicit=True)
+
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        results = list(pool.map(worker, ["pass", "sync", "pass", "sync"]))
+    assert results
+    for _ in range(2):  # whatever the interleaving, a final sync converges
+        pg.clock.advance(seconds=settings.calendar_lease_seconds + 1)
+        pg.sync(source, explicit=True)
+    invariants(pg, source)
+    assert len(pg.rows(CalendarSeries, source)) == 6
+    assert pg.state(source).applied_seq == 6
+
+
+@pytest.mark.parametrize("round_number", range(4))
+def test_forgetting_races_a_sync_and_always_ends_fully_scrubbed(pg, round_number):
+    row, source = api_source(pg)
+    pg.writer.append([series_item(), override_item(), series_item("s2", 1)])
+    barrier = threading.Barrier(2)
+
+    def sync_side():
+        barrier.wait(20)
+        return pg.sync(source, explicit=True)
+
+    def forget_side():
+        barrier.wait(20)
+        return call(pg.client, pg.headers, row, "forget")
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        syncing, forgetting = pool.submit(sync_side), pool.submit(forget_side)
+        outcome, response = syncing.result(60), forgetting.result(60)
+    assert response.status_code in {200, 409}, response.text
+    if response.status_code == 409:  # the sync advanced the source revision first: retry once
+        row = {
+            **row,
+            "revision": pg.client.post(
+                f"/api/v1/calendars/{source}/read", headers=pg.headers, json={"scope": row["scope"]}
+            ).json()["revision"],
+        }
+        assert call(pg.client, pg.headers, row, "forget").status_code == 200
+    assert outcome["outcome"] in {"ok", "skipped", "lost"}, outcome
+    state = pg.state(source)
+    assert (state.status, state.blocked_reason, state.cursor, state.claim_token) == (
+        "blocked",
+        "source_forgotten",
+        None,
+        None,
+    )
+    assert all(r.state == "forgotten" and r.uid is None for r in pg.rows(CalendarSeries, source))
+    assert all(r.state == "forgotten" for r in pg.rows(CalendarOverride, source))
+    assert all(r.snapshot is None for r in pg.rows(CalendarChange, source))
+    seqs = sorted(r.seq for r in pg.rows(CalendarChange, source))
+    assert seqs == list(range(1, len(seqs) + 1))  # counts and hashes stay gapless
+    assert pg.sync(source)["reason"] == "forgotten"
+
+
+def test_a_database_failure_during_apply_rolls_back_and_a_retry_applies_once(pg, monkeypatch):
+    _row, source = api_source(pg)
+    pg.writer.append([series_item(), override_item()])
+    original = sync.record_change
+    calls = {"n": 0}
+
+    def failing(*args, **kwargs):
+        calls["n"] += 1
+        if calls["n"] == 2:
+            raise RuntimeError("synthetic injected failure after the first change row")
+        return original(*args, **kwargs)
+
+    with monkeypatch.context() as scoped:  # a plain undo() would also revert the fixture's clock
+        scoped.setattr(sync, "record_change", failing)
+        with pytest.raises(RuntimeError):
+            pg.sync(source, explicit=True)
+    assert pg.rows(CalendarSeries, source) == [] and pg.rows(CalendarChange, source) == []
+    pg.clock.advance(seconds=settings.calendar_lease_seconds + 1)
+    assert pg.sync(source, explicit=True)["outcome"] == "ok"
+    invariants(pg, source)

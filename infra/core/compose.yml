@@ -264,6 +264,48 @@ services:
     - app.routine_worker
     - --loop
 
+  # Batch 3: one-shot synthetic calendar sync pass. Development and test only: the worker refuses to
+  # start unless BUTLER_ENV is development or test and a synthetic fixture directory is configured.
+  # No restart, no loop, internal data network only (no provider network, no external write).
+  calendar_worker:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    depends_on:
+      role_setup:
+        condition: service_completed_successfully
+    security_opt:
+    - no-new-privileges:true
+    read_only: true
+    cap_drop:
+    - ALL
+    tmpfs:
+    - /tmp
+    pids_limit: 128
+    mem_limit: 512m
+    environment:
+      BUTLER_ENV: ${BUTLER_ENV:-development}
+      BUTLER_APP_VERSION: 0.1.0-dev
+      BUTLER_POSTGRES_DB: ${BUTLER_POSTGRES_DB:-butler}
+      BUTLER_POSTGRES_USER: butler_runtime
+      BUTLER_POSTGRES_PASSWORD: ${BUTLER_RUNTIME_PASSWORD:?BUTLER_RUNTIME_PASSWORD is required}
+      BUTLER_POSTGRES_HOST: postgres
+      BUTLER_POSTGRES_PORT: '5432'
+      BUTLER_AUTH_ORIGIN: ${BUTLER_AUTH_ORIGIN:-https://localhost:8443}
+      BUTLER_CALENDAR_SYNTHETIC_DIRECTORY: ${BUTLER_CALENDAR_SYNTHETIC_DIRECTORY:-/fixtures/calendar}
+    volumes:
+    - ${BUTLER_CALENDAR_SYNTHETIC_HOST_DIRECTORY:-./calendar-fixtures}:/fixtures/calendar:ro
+    profiles:
+    - calendar
+    restart: 'no'
+    networks:
+    - data
+    command:
+    - python
+    - -m
+    - app.calendar_worker
+    - --once
+
 volumes:
   postgres_data: null
   caddy_data: null
