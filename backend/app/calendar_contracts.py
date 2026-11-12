@@ -99,6 +99,45 @@ def interval(event):
     )
 
 
+def all_day_dates(event):
+    """Calendar dates of a stored all-day occurrence; malformed data is refused, never guessed."""
+    try:
+        first = date.fromisoformat(event["start_date"])
+        last = date.fromisoformat(event["end_date"])
+    except (KeyError, TypeError, ValueError):
+        raise ValueError("Malformed all-day occurrence") from None
+    if not 1 <= (last - first).days <= 31:
+        raise ValueError("Malformed all-day occurrence")
+    return first, last
+
+
+def placed_on_day(event, day, start, end):
+    """Whether an occurrence belongs to the display day ``day`` (the instants ``start`` to ``end``).
+
+    An all-day occurrence is placed by its calendar dates alone (``start_date <= day < end_date``;
+    the end date is exclusive), never by instants, so neither zone matters. A timed occurrence is
+    placed by instant overlap, exactly as before. Any other kind is refused.
+    """
+    kind = event.get("kind") if isinstance(event, dict) else None
+    if kind == "all_day":
+        first, last = all_day_dates(event)
+        return first <= day < last
+    if kind == "timed":
+        a, b = interval(event)
+        return a < end and b > start
+    raise ValueError("Unknown occurrence kind")
+
+
+def agenda_key(event):
+    """Sort key: all-day before timed; all-day by dates, timed by instants; then stable id."""
+    kind = event.get("kind") if isinstance(event, dict) else None
+    if kind == "all_day":
+        return (0, *all_day_dates(event), event["id"])
+    if kind == "timed":
+        return (1, *interval(event), event["id"])
+    raise ValueError("Unknown occurrence kind")
+
+
 def key(event):
     return event["uid"], event["recurrence_id"]
 

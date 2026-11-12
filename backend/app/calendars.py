@@ -375,8 +375,8 @@ def briefing(db, token, csrf, body):
         if not snap:
             continue
         for event in snap["events"]:
-            a, b = contract.interval(event)
-            if event["status"] == "cancelled" or a >= end or b <= start:
+            placed = contract.placed_on_day(event, body.day, start, end)
+            if event["status"] == "cancelled" or not placed:
                 continue
             identifier = str(uuid5(source.id, json.dumps(contract.key(event), ensure_ascii=False)))
             events.append(
@@ -391,7 +391,7 @@ def briefing(db, token, csrf, body):
                     "possible_conflict": False,
                 }
             )
-    events.sort(key=lambda e: (*contract.interval(e), e["id"]))
+    events.sort(key=contract.agenda_key)
     # A sweep marks overlapping intervals without a quadratic pair scan.
     latest_event, latest_end = None, None
     for event in events:
