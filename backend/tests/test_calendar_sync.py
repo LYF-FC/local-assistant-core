@@ -4,6 +4,8 @@ The database triggers of migration 0035 do not exist on SQLite; the same scenari
 real PostgreSQL in ``tests/integration/test_calendar_sync_postgres.py``.
 """
 
+import os
+import sys
 from datetime import timedelta
 from types import SimpleNamespace
 from uuid import UUID
@@ -489,16 +491,12 @@ def test_a_malformed_provider_item_blocks_without_echoing_content(world):
     assert world.state(source).blocked_detail["code"] == "item_malformed"
 
 
-def test_cursor_that_does_not_progress_blocks(world):
+def test_cursor_that_does_not_progress_blocks(world, monkeypatch):
     source = world.source()
-
-    class Stuck:
-        def changes(self, since, limit):
-            from app.calendar_provider import ChangePage
-
-            return ChangePage((), since or "v1:0", True)
-
-    assert world.sync(source, factory=lambda ref: Stuck())["reason"] == "cursor_no_progress"
+    stub = os.path.join(os.path.dirname(os.path.abspath(__file__)), "calendar_fetch_stub_child.py")
+    # a (scripted) fetch child that answers "same cursor, more to come" forever
+    monkeypatch.setattr(sync, "CHILD_ARGV", [sys.executable, "-I", "-S", stub, "same_cursor"])
+    assert world.sync(source)["reason"] == "cursor_no_progress"
     assert world.state(source).blocked_reason == "cursor_no_progress"
 
 

@@ -104,6 +104,17 @@ CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
 """
 
 
+def child_request(provider):
+    """What the isolated fetch child needs to rebuild ``provider`` (plain data only).
+
+    Only a synthetic provider can be rebuilt by the child; anything else is refused. This is a
+    module function, not a method, so the provider keeps a read-only public surface (``changes``).
+    """
+    if not isinstance(provider, SyntheticProvider):
+        raise ProviderUnavailable("this provider cannot run in the isolated fetch child")
+    return {"directory": provider._root, "ref": provider._ref}
+
+
 def _cursor_id(cursor):
     if cursor is None:
         return 0
@@ -124,6 +135,7 @@ class SyntheticProvider:
         if os.path.dirname(resolved) != root or not os.path.isfile(resolved):
             raise ProviderUnavailable("fixture not available")
         self._path = resolved
+        self._root, self._ref = root, ref
         self._faults = None  # (kind, remaining, arg) read once, consumed in memory
 
     def _connect(self):

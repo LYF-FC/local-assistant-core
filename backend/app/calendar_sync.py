@@ -12,11 +12,13 @@ Proposal sections 6.8, 6.9, 7.3 and 7.3.1. One page is one complete cycle:
 The provider has no write method and no network is used (synthetic fixtures only).
 """
 
+import json
 import logging
-import math
-import multiprocessing
 import os
+import selectors
 import signal
+import subprocess  # nosec B404
+import sys
 import time
 from collections import Counter
 from dataclasses import dataclass
@@ -524,27 +526,6 @@ def default_factory(ref):
     return provider_module.SyntheticProvider(settings.calendar_synthetic_directory, ref)
 
 
-def _fetch_child(provider, since, sender, timeout):
-    """Runs in the forked child only: one provider call, one result, then a hard exit.
-
-    The child arms its own alarm, so even if the parent dies and never kills it, it ends itself
-    shortly after the timeout. ``os._exit`` skips every inherited destructor and atexit hook, so
-    the parent's database connections and buffers are never touched from here.
-    """
-    try:
-        signal.alarm(max(1, math.ceil(timeout) + 1))
-        try:
-            result = ("ok", provider.changes(since, codes.PAGE_ITEMS_MAX))
-        except BaseException as error:  # noqa: BLE001 - every failure is reported to the parent
-            result = ("error", error)
-        try:
-            sender.send(result)
-        except Exception:  # noqa: BLE001 - an unpicklable page or error
-            sender.send(("error", provider_module.ProviderUnavailable("unreadable result")))
-    finally:
-        os._exit(0)
-
-
 class FetchNotTerminated(provider_module.ProviderUnavailable):
     """The fetch child was still alive after SIGKILL and the bounded wait (a stuck process).
 
@@ -553,72 +534,142 @@ class FetchNotTerminated(provider_module.ProviderUnavailable):
     """
 
 
-def _reap(pid):
-    """End the child for certain: SIGKILL cannot be ignored, and the wait is bounded.
+_CHILD_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "calendar_fetch_child.py")
+# -I: no PYTHON* variables, no user site, no working directory on the path; -S: no site packages.
+CHILD_ARGV = [sys.executable, "-I", "-S", _CHILD_SCRIPT]
+RESULT_BYTES_MAX = 8 * codes.PAGE_BYTES_MAX
+_ERRORS = {
+    "InvalidCursor": provider_module.InvalidCursor,
+    "CursorExpired": provider_module.CursorExpired,
+    "PageTooLarge": provider_module.PageTooLarge,
+    "ProviderTimeout": provider_module.ProviderTimeout,
+    "ProviderUnavailable": provider_module.ProviderUnavailable,
+}
 
-    Waits for this one pid only. Returns True when the child is gone (reaped here, or already
-    reaped elsewhere); False means it survived SIGKILL and ``REAP_SECONDS`` (for example a process
-    stuck in uninterruptible I/O) and the caller must surface that.
+
+def _converse(process, request, deadline):
+    """Send the request, read the whole answer; the deadline covers start-up, run and answer."""
+    try:
+        process.stdin.write(request)
+        process.stdin.close()
+    except OSError:
+        pass  # the child is already gone: the read below reports that
+    chunks, size = [], 0
+    descriptor = process.stdout.fileno()
+    with selectors.DefaultSelector() as selector:
+        selector.register(descriptor, selectors.EVENT_READ)
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0 or not selector.select(remaining):
+                raise provider_module.ProviderTimeout("fetch exceeded its timeout")
+            data = os.read(descriptor, 65536)
+            if not data:
+                return b"".join(chunks)
+            size += len(data)
+            if size > RESULT_BYTES_MAX:
+                raise provider_module.ProviderUnavailable("fetch result too large")
+            chunks.append(data)
+
+
+def _reap(process):
+    """End the child (and anything it started) for certain: SIGKILL cannot be ignored.
+
+    Returns True when the child is gone and reaped. False means it survived SIGKILL and
+    ``REAP_SECONDS`` (for example a process stuck in uninterruptible I/O); the caller must surface
+    that. The child leads its own process group, so the whole group is killed.
     """
     try:
-        os.kill(pid, signal.SIGKILL)
-    except ProcessLookupError:
+        os.killpg(process.pid, signal.SIGKILL)
+    except (ProcessLookupError, PermissionError):
         pass
-    deadline = time.monotonic() + REAP_SECONDS
-    while True:
-        try:
-            finished, _status = os.waitpid(pid, os.WNOHANG)
-        except ChildProcessError:
-            return True
-        if finished:
-            return True
-        if time.monotonic() >= deadline:
-            return False
-        time.sleep(0.005)
+    for stream in (process.stdin, process.stdout):
+        if stream is not None:
+            try:
+                stream.close()
+            except OSError:
+                pass
+    try:
+        process.wait(timeout=REAP_SECONDS)
+    except subprocess.TimeoutExpired:
+        return False
+    return True
+
+
+def _decode(output):
+    """Strictly rebuild the page from the child's JSON; anything else is ``provider_unavailable``."""
+    unreadable = provider_module.ProviderUnavailable("unreadable fetch result")
+    try:
+        message = json.loads(output)
+    except ValueError:
+        raise unreadable from None
+    if not isinstance(message, dict) or len(message) != 1:
+        raise unreadable
+    if "error" in message:
+        error = message["error"]
+        if not isinstance(error, dict):
+            raise unreadable
+        if error.get("kind") == "MalformedItem" and type(error.get("index")) is int:
+            raise provider_module.MalformedItem(error["index"])
+        raise _ERRORS.get(error.get("kind"), provider_module.ProviderUnavailable)("fetch failed")
+    page = message.get("ok")
+    fields = {"entity", "operation", "uid", "sequence", "recurrence_id", "body"}
+    if not isinstance(page, dict) or set(page) != {"items", "next_cursor", "has_more"}:
+        raise unreadable
+    items = page["items"]
+    if not isinstance(items, list) or len(items) > codes.PAGE_ITEMS_MAX:
+        raise unreadable
+    if not isinstance(page["next_cursor"], str) or type(page["has_more"]) is not bool:
+        raise unreadable
+    for item in items:
+        if not isinstance(item, dict) or set(item) != fields:
+            raise unreadable
+    return provider_module.ChangePage(
+        tuple(provider_module.ProviderItem(**item) for item in items),
+        page["next_cursor"],
+        page["has_more"],
+    )
 
 
 def fetch(provider, since, timeout):
     """One bounded fetch; a fetch that outlives ``timeout`` is a ProviderTimeout.
 
-    The provider call runs in a forked child process that is killed (SIGKILL) at the timeout.
-    A running Python thread cannot be cancelled, so a thread would keep working after the timeout
-    (and would hold a worker's exit open); a process can be ended for certain. No thread, child
-    process or open pipe survives this function, whatever the outcome.
-
-    The child is forked and waited for directly (``os.fork``/``os.waitpid`` on its own pid), not
-    through ``multiprocessing.Process``: that class keeps process-wide child bookkeeping that races
-    when several threads fetch at once (a child reaped by another thread's cleanup looks alive).
+    The provider call runs in a fresh interpreter started with exec, in its own process group,
+    and is killed (SIGKILL) at the timeout. A running Python thread cannot be cancelled, so a
+    thread would keep working after the timeout (and would hold a worker's exit open); a process
+    can be ended for certain. Fork is deliberately not used: running Python code in a forked
+    copy of a multithreaded API process can inherit a lock held by another thread and stall, and
+    that cannot be ruled out for every library in the process. An exec'd child inherits no lock,
+    thread, database connection or environment variable (it runs with an empty environment).
+    No thread, child process or open pipe survives this function, whatever the outcome. The
+    answer crosses the process boundary as JSON only (nothing from the child is ever unpickled).
     """
-    receiver, sender = multiprocessing.Pipe(duplex=False)
+    request = json.dumps(
+        {
+            **provider_module.child_request(provider),
+            "since": since,
+            "limit": codes.PAGE_ITEMS_MAX,
+            "timeout": timeout,
+        }
+    ).encode()
+    deadline = time.monotonic() + timeout
+    # Fixed argv, no shell, nothing from a request or a provider is part of the command line.
+    process = subprocess.Popen(  # nosec B603
+        CHILD_ARGV,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        env={},
+        cwd="/",
+        close_fds=True,
+        start_new_session=True,
+    )
     try:
-        pid = os.fork()
-    except BaseException:
-        receiver.close()
-        sender.close()
-        raise
-    if pid == 0:  # the child: never returns
-        receiver.close()
-        _fetch_child(provider, since, sender, timeout)
-    sender.close()
-    try:
-        if not receiver.poll(timeout):
-            raise provider_module.ProviderTimeout("fetch exceeded its timeout")
-        try:
-            kind, value = receiver.recv()
-        except (EOFError, OSError):
-            raise provider_module.ProviderUnavailable("fetch ended without a result") from None
+        output = _converse(process, request, deadline)
     finally:
-        receiver.close()
-        if not _reap(pid):
-            logger.error("calendar fetch child pid=%s survived SIGKILL; not reaped", pid)
+        if not _reap(process):
+            logger.error("calendar fetch child pid=%s survived SIGKILL; not reaped", process.pid)
             raise FetchNotTerminated("fetch process could not be terminated")
-    if kind == "error":
-        # Only ordinary exceptions cross over: a SystemExit or KeyboardInterrupt raised inside the
-        # provider must never end this process.
-        raise (
-            value if isinstance(value, Exception) else provider_module.ProviderUnavailable("failed")
-        )
-    return value
+    return _decode(output)
 
 
 def failure(error):

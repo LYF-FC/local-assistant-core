@@ -6,7 +6,6 @@ the triggers of migration 0035 (which SQLite does not have). Crash tests exit a 
 """
 
 import itertools
-import multiprocessing
 import os
 import subprocess
 import sys
@@ -25,6 +24,7 @@ from test_calendars import call, create
 from app import calendar_codes as codes
 from app import calendar_sync as sync
 from app import identity
+from app.calendar_provider import SyntheticProvider
 from app.config import settings
 from app.models import (
     CalendarChange,
@@ -402,7 +402,8 @@ def test_a_fetch_that_outlives_its_timeout_is_killed_and_the_lease_released(pg, 
         "provider_timeout",
     )
     assert state.claim_token is None and state.claim_expires_at is None and state.applied_seq == 0
-    assert multiprocessing.active_children() == []
+    with pytest.raises(ChildProcessError):  # no fetch child is left, not even a zombie
+        os.waitpid(-1, os.WNOHANG)
     # the lease is free at once: an explicit sync may run again, and after recovery it applies once
     pg.writer.clear_faults()
     assert pg.sync(source, explicit=True)["outcome"] == "ok"
@@ -441,41 +442,23 @@ def test_briefing_v2_and_the_owner_sync_route_run_on_the_restricted_role(pg):
 # ---------------------------------------------------------------------------------------------
 # Real concurrency: threads against the restricted role, actual row waits (no mocks of locking)
 # ---------------------------------------------------------------------------------------------
-class Gate:
-    """A provider that waits (outside any database transaction) until released.
-
-    The fetch runs in a forked child, so the gate's events must be shared across processes."""
-
-    def __init__(self, inner):
-        context = multiprocessing.get_context("fork")
-        self.inner, self.reached, self.release = inner, context.Event(), context.Event()
-
-    def changes(self, since, limit):
-        page = self.inner.changes(since, limit)
-        self.reached.set()
-        assert self.release.wait(20)
-        return page
-
-
 def test_two_concurrent_explicit_syncs_apply_the_page_exactly_once(pg):
     _row, source = api_source(pg)
     pg.writer.append([series_item(), override_item()])
-    gate = Gate(None)
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        first = pool.submit(pg.sync, source, factory=lambda ref: _gated(gate, ref), explicit=True)
-        assert gate.reached.wait(20)
+    # the provider call takes ~3 s, outside any database transaction, while the lease is held
+    pg.writer.add_fault("delay", arg="3")
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        first = pool.submit(pg.sync, source, explicit=True)
+        give_up = time.monotonic() + 20
+        while pg.state(source).claim_token is None:  # the claim is committed before the fetch
+            assert time.monotonic() < give_up, "the first sync never took the lease"
+            time.sleep(0.02)
         # the lease is held while the provider is being read: every other claimant is a no-op
         second = pg.sync(source, explicit=True)
         assert (second["outcome"], second["reason"]) == ("skipped", "lease_held")
-        gate.release.set()
-        assert first.result(30)["outcome"] == "ok"
+        assert first.result(60)["outcome"] == "ok"
     assert [r.seq for r in sorted(pg.rows(CalendarChange, source), key=lambda r: r.seq)] == [1, 2]
     invariants(pg, source)
-
-
-def _gated(gate, ref):
-    gate.inner = sync.default_factory(ref)
-    return gate
 
 
 def test_concurrent_passes_and_owner_syncs_never_duplicate_or_skip_a_change(pg):
@@ -563,3 +546,201 @@ def test_a_database_failure_during_apply_rolls_back_and_a_retry_applies_once(pg,
     pg.clock.advance(seconds=settings.calendar_lease_seconds + 1)
     assert pg.sync(source, explicit=True)["outcome"] == "ok"
     invariants(pg, source)
+
+
+# ---------------------------------------------------------------------------------------------
+# The provider call must never stall because of what other threads of the API process are doing
+# ---------------------------------------------------------------------------------------------
+class Activity:
+    """Unrelated work on other threads of the same process, as the live API process has it.
+
+    Real requests through the application on the restricted role (authentication, briefing,
+    queries: starlette, anyio worker threads, psycopg, SQLAlchemy, pydantic), plus the library
+    activity of the answer path (an httpx client against a local HTTP server, which builds TLS
+    contexts), logging, hashing, JSON, garbage collection and imports.
+    """
+
+    def __init__(self, pg):
+        self.pg, self.stop, self.threads, self.errors, self.count = pg, threading.Event(), [], [], 0
+
+    def _loop(self, work):
+        while not self.stop.is_set():
+            try:
+                work()
+                self.count += 1
+            except Exception as error:  # noqa: BLE001
+                if "LockNotAvailable" not in repr(error):  # same-user row contention is by design
+                    self.errors.append(repr(error))
+                    return
+            time.sleep(0.002)  # steady traffic, not a CPU hog that starves every other thread
+
+    def _api_requests(self):
+        """Unrelated requests; a 503 (pool busy under this deliberate load) is not the point."""
+        base = {"scope": "household_shared"}
+        pg = self.pg
+        briefing = {**base, "day": "2026-03-15", "timezone": "Europe/Paris", "horizon_days": 3}
+        for response in (
+            pg.client.get("/api/v1/auth/me", headers=pg.headers),
+            pg.client.post("/api/v1/calendars/briefing", headers=pg.headers, json=briefing),
+            pg.client.post("/api/v1/calendars/query", headers=pg.headers, json=base),
+        ):
+            assert response.status_code in (200, 422, 503), response.status_code
+
+    def _database(self):
+        with self.pg.maker.begin() as db:
+            db.execute(text("select count(*) from calendar_sources")).scalar()
+
+    def _libraries(self):
+        import gc
+        import hashlib
+        import importlib
+        import json
+        import logging
+        import uuid
+
+        logging.getLogger("fetch-activity").info("x" * 200)
+        hashlib.sha256(os.urandom(4096)).hexdigest()
+        json.loads(json.dumps({"k": [uuid.uuid4().hex] * 50}))
+        importlib.import_module("json.tool")
+        _ = [bytearray(4000) for _ in range(40)]
+        if self.count % 25 == 0:
+            gc.collect()
+
+    def _http_client(self):
+        import httpx
+
+        with httpx.Client(timeout=5) as client:  # builds an SSL context, opens a socket
+            assert client.get(self.url).status_code == 200
+
+    def __enter__(self):
+        import http.server
+        import socketserver
+
+        class Quiet(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(200)
+                self.send_header("Content-Length", "2")
+                self.end_headers()
+                self.wfile.write(b"ok")
+
+            def log_message(self, *args):
+                pass
+
+        class Server(socketserver.ThreadingMixIn, http.server.HTTPServer):
+            daemon_threads = True
+
+        self.server = Server(("127.0.0.1", 0), Quiet)
+        self.url = f"http://127.0.0.1:{self.server.server_address[1]}/"
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        work = [self._api_requests] + [self._database] + [self._libraries] * 3
+        work += [self._http_client] * 2
+        self.threads = [threading.Thread(target=self._loop, args=(w,), daemon=True) for w in work]
+        for thread in self.threads:
+            thread.start()
+        return self
+
+    def __exit__(self, *exc):
+        self.stop.set()
+        for thread in self.threads:
+            thread.join(30)
+        self.server.shutdown()
+        self.server.server_close()
+
+
+def test_concurrent_provider_fetches_never_stall_beside_unrelated_api_activity(pg, monkeypatch):
+    sources = [api_source(pg)[1] for _ in range(4)]
+    pg.writer.append([series_item(), override_item()])
+    monkeypatch.setattr(settings, "calendar_fetch_timeout_seconds", 10)
+    durations, fetch_errors, real_fetch = [], [], sync.fetch
+
+    def timed(provider, since, timeout):
+        started = time.monotonic()
+        try:
+            return real_fetch(provider, since, timeout)
+        except Exception as error:
+            fetch_errors.append(repr(error))
+            raise
+        finally:
+            durations.append(time.monotonic() - started)
+
+    monkeypatch.setattr(sync, "fetch", timed)
+    outcomes, failures, contended = [], [], []
+
+    def syncs(source):
+        # Exactly what the owner sync route runs after it has authorized the request. The apply
+        # step takes the owner's row lock with a short lock timeout, so unrelated same-user
+        # requests can make it fail fast: the lease then simply runs out (crash-equivalent, as the
+        # injected-failure test pins), later explicit syncs are "skipped / lease_held", and the
+        # recovery check below proves the source syncs again. None of that is a fetch problem.
+        for _ in range(30):
+            try:
+                outcomes.append(pg.sync(source, explicit=True)["outcome"])
+            except Exception as error:  # noqa: BLE001
+                (contended if "LockNotAvailable" in repr(error) else failures).append(repr(error))
+
+    def route_syncs(source):
+        # Requests of one user contend on that user's row with a short lock timeout (a documented
+        # fast failure, a 503 or a lock error): that is the API's behaviour, not what is tested.
+        try:
+            for _ in range(8):
+                response = pg.client.post(
+                    f"/api/v1/calendars/{source}/sync",
+                    headers=pg.headers,
+                    json={"scope": "household_shared"},
+                )
+                if response.status_code == 200:
+                    outcomes.append(response.json()["sync"]["outcome"])
+                elif response.status_code == 503:
+                    contended.append(response.text)
+                else:
+                    failures.append(f"{response.status_code} {response.text[:200]}")
+        except Exception as error:  # noqa: BLE001
+            (contended if "LockNotAvailable" in repr(error) else failures).append(repr(error))
+
+    direct, direct_failures = [], []
+    household = SyntheticProvider(settings.calendar_synthetic_directory, "household")
+    expected_page = household.changes(None, codes.PAGE_ITEMS_MAX)
+
+    def direct_fetches():
+        # concurrent provider fetches themselves, a guaranteed number of them
+        for _ in range(25):
+            started = time.monotonic()
+            try:
+                direct.append(real_fetch(household, None, 10) == expected_page)
+            except Exception as error:  # noqa: BLE001
+                direct_failures.append(repr(error))
+            durations.append(time.monotonic() - started)
+
+    with Activity(pg) as activity:
+        threads = [threading.Thread(target=syncs, args=(s,)) for s in sources[:2]]
+        threads.append(threading.Thread(target=route_syncs, args=(sources[3],)))
+        threads += [threading.Thread(target=direct_fetches) for _ in range(4)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(300)
+    assert not any(thread.is_alive() for thread in threads)
+    assert activity.errors == [], activity.errors[:3]
+    assert activity.count > 100, activity.count  # the other threads really were busy throughout
+    assert failures == [], failures[:3]
+    # every fetch finished quickly and cleanly: no timeout, no stuck child, no protocol error
+    assert fetch_errors == [], fetch_errors[:3]
+    assert direct_failures == [], direct_failures[:3]
+    assert direct == [True] * 100  # every direct fetch returned exactly the expected page
+    assert max(durations) < 5, max(durations)  # nothing came near the 10 s fetch timeout
+    # The sync-level part has no count floor (user-row lock timeouts decide how many syncs run);
+    # what it proves is that every outcome is a normal one.
+    assert set(outcomes) <= {"ok", "skipped"}, {o: outcomes.count(o) for o in set(outcomes)}
+    with pytest.raises(ChildProcessError):  # no fetch child is left, not even a zombie
+        os.waitpid(-1, os.WNOHANG)
+    # recovery: once any lease left by a fast-failed apply has run out, every source syncs again
+    pg.clock.advance(seconds=codes.LEASE_SECONDS + 1)
+    for source in sources:
+        assert pg.sync(source, explicit=True)["outcome"] == "ok"
+        assert pg.state(source).claim_token is None
+        invariants(pg, source)
+    print(
+        f"stress: {len(durations)} fetches (100 direct), max {max(durations):.3f}s, "
+        f"{outcomes.count('ok')} syncs ok, {outcomes.count('skipped')} skipped, "
+        f"{len(contended)} user-row lock timeouts, unrelated operations {activity.count}"
+    )
