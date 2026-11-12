@@ -1,6 +1,6 @@
 # Feature overview
 
-Snapshot: **10 November 2026**, verified merged main [`267020d`](https://github.com/LYF-FC/local-assistant-core/commit/267020dd1eebcd7b4700dcbe362995d009ffef6e) through PR #22. This view does not query CI or certify exact-main/host/provider acceptance.
+Snapshot: **12 November 2026**, verified merged main [`8476320`](https://github.com/LYF-FC/local-assistant-core/commit/84763205f335bf368399a95b5f4fa156e603518a) through PR #27. This view does not query CI or certify exact-main/host/provider acceptance.
 
 [Critical review of every feature](FEATURE_REVIEW.md) · [Interactive dashboard — download HTML](FEATURE_DASHBOARD.html) · [Source metadata](FEATURE_PROGRESS.json)
 
@@ -39,7 +39,7 @@ A feature is counted once at its first stage; later expansions remain retained. 
 
 ## Delivered building blocks
 
-15 public feature batches have merged after the imported engineering foundation. Documentation PRs are not feature deliveries; building blocks are not added to the original-feature denominator.
+18 public feature batches have merged after the imported engineering foundation. Documentation PRs are not feature deliveries; building blocks are not added to the original-feature denominator.
 
 | Evidence | Working engineering subset |
 |---|---|
@@ -59,6 +59,9 @@ A feature is counted once at its first stage; later expansions remain retained. 
 | [PR #20 · Financial capture UI](https://github.com/LYF-FC/local-assistant-core/pull/20) | Typed owner forms, explicit unknown/forecast/zero, plan review/reset, bounded history/copy/forget and privacy clearing; full financial/MVP/host acceptance remains open. |
 | [PR #21 · Operations observations](https://github.com/LYF-FC/local-assistant-core/pull/21) | Protected API/database transaction observations, runtime software metadata and bounded own technical job statuses; configured flags remain unverified, audit review and full monitoring/host acceptance stay open. |
 | [PR #22 · Scoped task/document search](https://github.com/LYF-FC/local-assistant-core/pull/22) | Bounded keyword search over existing task and document APIs with independent paging, current-source validation and source-view navigation; no status counts change and pending approvals, broader search and whole-MVP acceptance remain open. |
+| [PR #24 · Synthetic notification path](https://github.com/LYF-FC/local-assistant-core/pull/24) | Durable delivery states, quiet hours, day budgets, per-cycle deduplication and bounded retry against a synthetic channel; no real provider, device push or whole-MVP acceptance. |
+| [PR #25 · Notification audit corrections](https://github.com/LYF-FC/local-assistant-core/pull/25) | Paused deliveries are parked and history snapshots are fully validated (audit of PR #24); no status count changes. |
+| [PR #26 · Synthetic invoice filing execution](https://github.com/LYF-FC/local-assistant-core/pull/26) | A separate single-use exact filing request, single claimant, reconcile-before-retry, no overwrite and scrub-on-forget against a synthetic destination only; no real adapter, original-byte copy or restart proof, and no status count changes. |
 
 ## All original named features
 
