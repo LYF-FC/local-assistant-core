@@ -45,7 +45,8 @@ class RecurrenceError(ValueError):
     """A typed, stable refusal: ``code`` is always a member of ``codes.BLOCKED_REASONS``."""
 
     def __init__(self, code):
-        assert code in codes.BLOCKED_REASONS, code
+        if code not in codes.BLOCKED_REASONS:
+            raise ValueError(f"Unknown blocked reason: {code}")
         super().__init__(code)
         self.code = code
 
