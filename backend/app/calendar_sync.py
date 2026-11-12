@@ -12,9 +12,11 @@ Proposal sections 6.8, 6.9, 7.3 and 7.3.1. One page is one complete cycle:
 The provider has no write method and no network is used (synthetic fixtures only).
 """
 
+import math
+import multiprocessing
+import os
+import signal
 from collections import Counter
-from concurrent.futures import ThreadPoolExecutor
-from concurrent.futures import TimeoutError as FutureTimeout
 from dataclasses import dataclass
 from datetime import timedelta
 from uuid import uuid4
@@ -516,17 +518,68 @@ def default_factory(ref):
     return provider_module.SyntheticProvider(settings.calendar_synthetic_directory, ref)
 
 
-def fetch(provider, since, timeout):
-    """One bounded fetch; a fetch that outlives ``timeout`` is a ProviderTimeout."""
-    executor = ThreadPoolExecutor(max_workers=1)
+def _fetch_child(provider, since, sender, timeout):
+    """Runs in the forked child only: one provider call, one result, then a hard exit.
+
+    The child arms its own alarm, so even if the parent dies and never kills it, it ends itself
+    shortly after the timeout. ``os._exit`` skips every inherited destructor and atexit hook, so
+    the parent's database connections and buffers are never touched from here.
+    """
     try:
-        future = executor.submit(provider.changes, since, codes.PAGE_ITEMS_MAX)
+        signal.alarm(max(1, math.ceil(timeout) + 1))
         try:
-            return future.result(timeout=timeout)
-        except FutureTimeout:
-            raise provider_module.ProviderTimeout("fetch exceeded its timeout") from None
+            result = ("ok", provider.changes(since, codes.PAGE_ITEMS_MAX))
+        except BaseException as error:  # noqa: BLE001 - every failure is reported to the parent
+            result = ("error", error)
+        try:
+            sender.send(result)
+        except Exception:  # noqa: BLE001 - an unpicklable page or error
+            sender.send(("error", provider_module.ProviderUnavailable("unreadable result")))
     finally:
-        executor.shutdown(wait=False)
+        os._exit(0)
+
+
+def _reap(process):
+    """End the child for certain: SIGKILL cannot be ignored, and the wait is bounded."""
+    if process.is_alive():
+        process.kill()
+    process.join(5)
+    if not process.is_alive():
+        process.close()
+
+
+def fetch(provider, since, timeout):
+    """One bounded fetch; a fetch that outlives ``timeout`` is a ProviderTimeout.
+
+    The provider call runs in a forked child process that is killed (SIGKILL) at the timeout.
+    A running Python thread cannot be cancelled, so a thread would keep working after the timeout
+    (and would hold a worker's exit open); a process can be ended for certain. No thread, child
+    process or open pipe survives this function, whatever the outcome.
+    """
+    context = multiprocessing.get_context("fork")
+    receiver, sender = context.Pipe(duplex=False)
+    process = context.Process(
+        target=_fetch_child, args=(provider, since, sender, timeout), daemon=True
+    )
+    process.start()
+    sender.close()
+    try:
+        if not receiver.poll(timeout):
+            raise provider_module.ProviderTimeout("fetch exceeded its timeout")
+        try:
+            kind, value = receiver.recv()
+        except (EOFError, OSError):
+            raise provider_module.ProviderUnavailable("fetch ended without a result") from None
+    finally:
+        receiver.close()
+        _reap(process)
+    if kind == "error":
+        # Only ordinary exceptions cross over: a SystemExit or KeyboardInterrupt raised inside the
+        # provider must never end this process.
+        raise (
+            value if isinstance(value, Exception) else provider_module.ProviderUnavailable("failed")
+        )
+    return value
 
 
 def failure(error):

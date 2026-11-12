@@ -6,10 +6,12 @@ the triggers of migration 0035 (which SQLite does not have). Crash tests exit a 
 """
 
 import itertools
+import multiprocessing
 import os
 import subprocess
 import sys
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from uuid import UUID
 
@@ -384,6 +386,30 @@ def test_backoff_and_failed_state_survive_on_the_database(pg):
     assert pg.sync(source)["reason"] == "failed"
 
 
+def test_a_fetch_that_outlives_its_timeout_is_killed_and_the_lease_released(pg, monkeypatch):
+    _row, source = api_source(pg)
+    pg.writer.append([series_item()])
+    pg.writer.add_fault("delay", arg="60")  # far beyond the timeout: the child must be killed
+    monkeypatch.setattr(settings, "calendar_fetch_timeout_seconds", 0.5)
+    started = time.monotonic()
+    result = pg.sync(source, explicit=True)
+    assert time.monotonic() - started < 15
+    assert result["outcome"] == "retry_wait"
+    state = pg.state(source)
+    assert (state.status, state.attempts, state.last_error_code) == (
+        "retry_wait",
+        1,
+        "provider_timeout",
+    )
+    assert state.claim_token is None and state.claim_expires_at is None and state.applied_seq == 0
+    assert multiprocessing.active_children() == []
+    # the lease is free at once: an explicit sync may run again, and after recovery it applies once
+    pg.writer.clear_faults()
+    assert pg.sync(source, explicit=True)["outcome"] == "ok"
+    assert [r.seq for r in pg.rows(CalendarChange, source)] == [1]
+    invariants(pg, source)
+
+
 def test_briefing_v2_and_the_owner_sync_route_run_on_the_restricted_role(pg):
     _row, source = api_source(pg)
     pg.writer.append([series_item(rrule="FREQ=DAILY;COUNT=10"), override_item(rid=RID_NEXT)])
@@ -416,10 +442,13 @@ def test_briefing_v2_and_the_owner_sync_route_run_on_the_restricted_role(pg):
 # Real concurrency: threads against the restricted role, actual row waits (no mocks of locking)
 # ---------------------------------------------------------------------------------------------
 class Gate:
-    """A provider that waits (outside any database transaction) until released."""
+    """A provider that waits (outside any database transaction) until released.
+
+    The fetch runs in a forked child, so the gate's events must be shared across processes."""
 
     def __init__(self, inner):
-        self.inner, self.reached, self.release = inner, threading.Event(), threading.Event()
+        context = multiprocessing.get_context("fork")
+        self.inner, self.reached, self.release = inner, context.Event(), context.Event()
 
     def changes(self, since, limit):
         page = self.inner.changes(since, limit)

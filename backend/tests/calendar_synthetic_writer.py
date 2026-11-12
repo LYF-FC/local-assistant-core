@@ -112,6 +112,13 @@ class SyntheticWriter:
         finally:
             connection.close()
 
+    def clear_faults(self):
+        connection = self._connect()
+        try:
+            connection.execute("DELETE FROM faults")
+        finally:
+            connection.close()
+
     def add_fault(self, kind, times=1, arg=None):
         connection = self._connect()
         try:
