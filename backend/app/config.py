@@ -35,11 +35,23 @@ class Settings(BaseSettings):
     work_notes_interface_enabled: bool = False
     work_notes_export_enabled: bool = False
     work_synthetic_secret_directory: Path | None = None
+    calendar_synthetic_directory: Path | None = None
+    calendar_lease_seconds: int = 120
+    calendar_fetch_timeout_seconds: float = 30.0
     document_archive_directory: Path | None = None
     pdf_socket_directory: Path | None = None
     document_answers_enabled: bool = False
     document_answer_model: str = ""
     document_answer_digest: str = ""
+
+    @model_validator(mode="after")
+    def calendar_sync_configuration(self):
+        # The fetch must be strictly shorter than its own lease (proposal 7.3 item 2).
+        if not 1 <= self.calendar_lease_seconds <= 600:
+            raise ValueError("The calendar lease must be between 1 and 600 seconds")
+        if not 0 < self.calendar_fetch_timeout_seconds < self.calendar_lease_seconds:
+            raise ValueError("The calendar fetch timeout must be shorter than the lease")
+        return self
 
     @model_validator(mode="after")
     def answer_model_configuration(self):

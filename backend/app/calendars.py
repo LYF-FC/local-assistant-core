@@ -7,7 +7,7 @@ from uuid import uuid5
 from sqlalchemy import func, or_, select, update
 
 from app import calendar_contracts as contract
-from app import identity, manual_tasks
+from app import calendar_sync, identity, manual_tasks
 from app.models import CalendarRevision, CalendarSource, ManualTask, MemoryRecord
 
 
@@ -163,9 +163,17 @@ def operate(db, token, csrf, identifier, body, operation):
             )
         )
         audit(db, user, body.scope, operation, row, returned=min(len(history), 5))
+        provider = (
+            {"provider": calendar_sync.export_view(db, row.id)}
+            if operation == "export"
+            and row.state != "forgotten"
+            and calendar_sync.linked(db, row.id)
+            else {}
+        )
         return identity.Result(
             200,
             {
+                **provider,
                 "schema_version": 1,
                 "source_id": str(row.id),
                 "scope": body.scope,
@@ -187,6 +195,9 @@ def operate(db, token, csrf, identifier, body, operation):
     if row.state == "forgotten":
         audit(db, user, body.scope, "forgotten_read", row)
         return identity.Result(410, receipt(row, user))
+    if operation in {"import", "unavailable"} and calendar_sync.linked(db, row.id):
+        # A provider-mode source is fed only by the sync worker (6.6); refused before the trigger.
+        return identity.denied(db, 409, "calendar.provider_mode", user=user)
     window = body.window.canonical() if operation == "import" else None
     # Exact replay is allowed after a lost response, but never resets an offline state.
     if (
@@ -263,6 +274,10 @@ def operate(db, token, csrf, identifier, body, operation):
             .where(CalendarRevision.source_id == row.id)
             .values(snapshot=None)
         )
+        if calendar_sync.linked(db, row.id):
+            # Same transaction, after the source reads forgotten (6.9); the deferred trigger of
+            # 6.6 refuses the commit if any scrub step is missing.
+            calendar_sync.scrub(db, row.id, row.updated_at)
     remember(db, user, row)
     audit(db, user, body.scope, operation, row)
     return identity.Result(200, receipt(row, user))
