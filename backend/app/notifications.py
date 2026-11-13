@@ -12,7 +12,7 @@ from sqlalchemy import select
 from app import identity
 from app import manual_tasks as tasks
 from app.config import settings
-from app.models import AuditEvent, NotificationDelivery, NotificationDeliveryEvent
+from app.models import AuditEvent, NotificationDelivery, NotificationDeliveryEvent, TaskReminder
 
 MAX_ATTEMPTS = 3
 BACKOFF = (timedelta(minutes=1), timedelta(minutes=5), timedelta(minutes=15))
@@ -105,6 +105,30 @@ def document(row):
     }
 
 
+def related_tasks(db, rows):
+    """Verify each delivery's reminder in the source data; one query for the whole page.
+
+    The task id is released only when the reminder belongs to the same owner and scope as the
+    delivery. Anything else yields None, so navigation fails closed and never reveals a task.
+    """
+    reminders = {
+        r.id: r
+        for r in db.scalars(
+            select(TaskReminder).where(TaskReminder.id.in_({row.reminder_id for row in rows}))
+        )
+    }
+    found = {}
+    for row in rows:
+        reminder = reminders.get(row.reminder_id)
+        ok = (
+            reminder is not None
+            and reminder.owner_id == row.owner_id
+            and reminder.scope_key == row.scope_key
+        )
+        found[row.id] = str(reminder.task_id) if ok else None
+    return found
+
+
 def record_event(db, row, operation):
     db.flush()
     db.add(
@@ -193,6 +217,7 @@ def listing(db, token, csrf, body):
     if body.after:
         query = query.where(NotificationDelivery.id > body.after)
     rows = list(db.scalars(query.order_by(NotificationDelivery.id).limit(26)))
+    tasks_by = related_tasks(db, rows[:25]) if rows else {}
     if identity.resolve(db, token, refresh_session=True) is None:
         return identity.denied(db, 401, "notifications.session_denied", user=user)
     session.last_seen_at = identity.now_utc()
@@ -213,7 +238,7 @@ def listing(db, token, csrf, body):
             "owner_id": str(user.id),
             "scope": body.scope,
             "state": body.state,
-            "items": [document(row) for row in rows[:25]],
+            "items": [{**document(row), "task_id": tasks_by[row.id]} for row in rows[:25]],
             "next_cursor": str(rows[24].id) if len(rows) > 25 else None,
         },
     )
