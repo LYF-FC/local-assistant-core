@@ -170,7 +170,7 @@ PR index: #1 scope reconciliation (docs); #2 spec 050; #3 spec 051; #4 spec 052;
 
 Dependencies, from the existing roadmap and gate text: restart/recovery evidence (priorities 1 and 3) precedes any claim of exactly-once or durability; connector spikes need separately approved sandbox accounts and come after the synthetic gates they inform (calendar and notification first, because their schemas are sealed and costly to change; mail intake and local model after); the unified inbox depends on the merged approvals, search and notification paths; whole-MVP acceptance tests depend on all of them.
 
-Current priorities, in order. **Owner-approved: the owner confirmed this order on 13 November 2026.** It derives from the roadmap's earlier proposed order and the backlog's tracked item; changing it needs a new owner decision:
+Current priorities, in order. **Proposed — awaiting owner confirmation; not yet owner-approved.** This is a proposed delivery order derived from the roadmap's earlier proposed order and the backlog's tracked item. It does not change the established scope, gate definitions, gate statuses or acceptance criteria, which are unaffected by whether the order is confirmed:
 
 1. **Process-level restart evidence for Gate 7 and the notification worker (Gate 5).** The only way to turn in-process evidence into restart evidence without a real adapter; unblocks the open half of MVP-03. Needs an agreed host-level kill/restart procedure. *Proposed implementation method (not a claim that MVP-03 is complete):* use a persistent synthetic destination that survives worker-process termination, and test (a) termination before the effect, (b) termination after the effect but before the outcome is recorded, (c) reconciliation by a fresh process, and (d) prevention of a duplicate effect.
 2. **Unified attention inbox** (pending approvals and remaining search gaps; Gate 2).
@@ -178,7 +178,7 @@ Current priorities, in order. **Owner-approved: the owner confirmed this order o
 4. **Time-boxed connector spikes** with sandbox accounts, calendar and notification first (Gates 4, 5); mail intake and local model after (Gates 7, 3). Each needs its own approval and data-flow statement.
 5. **Whole-MVP acceptance tests:** cross-user leakage, offline/model-failure and restart journeys (Gates 1, 8, MVP-01).
 
-The next implementation task should be selected from priority 1 unless the owner decides otherwise. No feature work is part of the governance PR that introduced this file.
+Priority 1 is the proposed next implementation task; the owner confirms, changes or rejects the order before it is treated as approved. No feature work is part of the governance PR that introduced this file.
 
 ## 8. Documentation map and update rules
 
