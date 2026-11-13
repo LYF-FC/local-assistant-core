@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AttentionError, parseApprovalPage, parseFilingPage, parseNotificationPage } from "./attention-api";
-import { deadline, documentLabels, EMPTY_TEXT, emptyState, expired, groups, InboxDenied, loadInbox, merge, retrySource, SOURCES, VIEW_LIFETIME_MS, type Card, type Inbox } from "./attention-inbox";
+import { deadline, documentLabels, EMPTY_TEXT, emptyState, expired, groups, InboxDenied, LINK_NOTE, loadInbox, merge, MORE_TEXT, moreApprovals, retrySource, SOURCES, VIEW_LIFETIME_MS, type Card, type Inbox } from "./attention-inbox";
 import { task } from "./test-support/tasks";
 import { approval, approvalPage, doc, documentPage, filingPage, filingRow, me, notificationPage, notificationRow, now, other, reminderPage, reminderRow, scope, SECRET, session, soon, stamp, taskPage, uid } from "./test-support/attention";
 
@@ -241,6 +241,14 @@ describe("cards, navigation and duplicates", () => {
     expect(merge([failed], [{ ...failed }])[0].changedDuringRefresh).toBe(true);
     expect(merge([unknown], [failed])[0]).toMatchObject({ status: "Delivery not confirmed", revision: 3 });
   });
+  it("revision tiebreak: higher wins, lower never replaces, an equal revision takes the later read", () => {
+    const base = mkCard("filing", uid(8), { revision: 2, status: "first" });
+    expect(merge([base], [{ ...base, revision: 3, status: "higher" }])[0]).toMatchObject({ status: "higher", revision: 3 });
+    expect(merge([{ ...base, revision: 3, status: "held" }], [{ ...base, revision: 2, status: "lower" }])[0]).toMatchObject({ status: "held", revision: 3 });
+    expect(merge([base], [{ ...base, status: "later" }])[0]).toMatchObject({ status: "later", revision: 2, changedDuringRefresh: true });
+    expect(merge([{ ...base, status: "later" }], [base])[0].status).toBe("first");
+    expect(merge([base], [mkCard("filing", uid(10))])).toHaveLength(2);
+  });
   it("never merges different record kinds that share an id", () => {
     expect(merge([mkCard("filing", uid(9))], [mkCard("document", uid(9))])).toHaveLength(2);
   });
@@ -271,4 +279,75 @@ function emptyInbox(): Inbox {
 }
 it("an empty available inbox groups six sections in the specified order", () => {
   expect(groups(emptyInbox()).map(group => group.id)).toEqual(["approvals", "filing", "notifications", "documents", "reminders", "tasks"]);
+});
+
+describe("approvals paging and honest section wording", () => {
+  const ids = (from: number, n: number) => Array.from({ length: n }, (_, i) => approval(from + i));
+  it("reads the next approvals page only on request, appends it, and never extends the deadline", async () => {
+    const calls: unknown[] = [];
+    const fetch = vi.fn(async (path: string, init: RequestInit) => {
+      const body = JSON.parse(String(init.body));
+      if (path === "/api/v1/approvals/query") { calls.push(body); return new Response(JSON.stringify(body.after ? approvalPage(ids(26, 2)) : approvalPage(ids(1, 25), { next_cursor: uid(25) }))); }
+      return route(path, body, {});
+    });
+    vi.stubGlobal("fetch", fetch);
+    const inbox = await loadInbox(session, scope, signal());
+    const first = groups(inbox)[0];
+    expect(first).toMatchObject({ more: true, pageable: true });
+    expect(first.cards).toHaveLength(25);
+    expect(calls).toEqual([{ scope }]);
+    const paged = await moreApprovals(inbox, session, signal());
+    expect(calls).toEqual([{ scope }, { scope, after: uid(25) }]);
+    const group = groups(paged)[0];
+    expect(group.cards).toHaveLength(27);
+    expect(group).toMatchObject({ more: false, pageable: false });
+    expect(paged.expiresAt).toBeLessThanOrEqual(inbox.expiresAt);
+    expect(paged.startedAt).toBe(inbox.startedAt);
+    // Nothing but the read query was sent: no approval operation route and no GET.
+    for (const [path, init] of fetch.mock.calls) { expect(path).not.toMatch(/\/approvals\/[0-9a-f-]{36}|decide|cancel|consume/); expect((init as RequestInit).method).toBe("POST"); }
+    expect(JSON.stringify(paged)).not.toContain(SECRET);
+  });
+  it("does nothing without a cursor, and a failed or out-of-order page keeps the held cards", async () => {
+    mock();
+    const inbox = await loadInbox(session, scope, signal());
+    expect(await moreApprovals(inbox, session, signal())).toBe(inbox);
+    vi.stubGlobal("fetch", vi.fn(async (path: string, init: RequestInit) => {
+      const body = JSON.parse(String(init.body));
+      if (path === "/api/v1/approvals/query") return new Response(JSON.stringify(body.after ? approvalPage(ids(3, 1)) : approvalPage(ids(1, 25), { next_cursor: uid(25) })));
+      return route(path, body, {});
+    }));
+    const paged = await loadInbox(session, scope, signal());
+    await expect(moreApprovals(paged, session, signal())).rejects.toThrow();
+    expect(groups(paged)[0].cards).toHaveLength(25);
+  });
+  it("denial while paging clears via InboxDenied", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (path: string, init: RequestInit) => {
+      const body = JSON.parse(String(init.body));
+      if (path === "/api/v1/approvals/query" && body.after) return new Response("{}", { status: 403 });
+      if (path === "/api/v1/approvals/query") return new Response(JSON.stringify(approvalPage(ids(1, 25), { next_cursor: uid(25) })));
+      return route(path, body, {});
+    }));
+    await expect(moreApprovals(await loadInbox(session, scope, signal()), session, signal())).rejects.toBeInstanceOf(InboxDenied);
+  });
+  it("never offers paging for sources that cannot show more, and says so plainly", async () => {
+    mock({ "/api/v1/filing/query:failed": () => new Response(JSON.stringify({ ...filingPage("failed", [filingRow(1, "failed")]), next_cursor: uid(1) })) });
+    const failed = await loadInbox(session, scope, signal());
+    const filing = groups(failed).find(g => g.id === "filing")!;
+    expect(filing).toMatchObject({ more: false });
+    mock({ "/api/v1/filing/query:failed": () => new Response(JSON.stringify({ ...filingPage("failed", Array.from({ length: 25 }, (_, i) => filingRow(i + 1, "failed"))), next_cursor: uid(25) })) });
+    const inbox = await loadInbox(session, scope, signal());
+    const section = groups(inbox).find(g => g.id === "filing")!;
+    expect(section).toMatchObject({ more: true, pageable: false });
+    expect(MORE_TEXT.filing).toMatch(/cannot be viewed from here/);
+    expect(MORE_TEXT.notifications).toMatch(/cannot be viewed from here/);
+    expect(MORE_TEXT.filing).not.toMatch(/open the source/i);
+    expect(LINK_NOTE.filing).toMatch(/does not show this filing request/);
+    expect(LINK_NOTE.notification).toMatch(/does not show this delivery record/);
+  });
+  it("an unavailable approvals source is never described as empty or paged", async () => {
+    mock({ "/api/v1/approvals/query": () => new Response("{}", { status: 500 }) });
+    const inbox = await loadInbox(session, scope, signal());
+    expect(groups(inbox)[0]).toMatchObject({ unavailable: ["approvals"], more: false, pageable: false, cards: [] });
+    expect(await moreApprovals(inbox, session, signal())).toBe(inbox);
+  });
 });

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Session } from "./api";
-import { EMPTY_TEXT, emptyState, expired, groups, InboxDenied, loadInbox, retrySource, type Card, type Inbox, type Open, type SourceKey } from "./attention-inbox";
+import { EMPTY_TEXT, emptyState, expired, groups, InboxDenied, LINK_NOTE, loadInbox, MORE_TEXT, moreApprovals, retrySource, type Card, type Inbox, type Open, type SourceKey } from "./attention-inbox";
 import { taskScopes, type TaskScope } from "./tasks-api";
 
 const SOURCE_NAME: Record<SourceKey, string> = {
@@ -8,6 +8,7 @@ const SOURCE_NAME: Record<SourceKey, string> = {
   notifications_failed: "failed notifications", notifications_unknown: "notifications with unconfirmed delivery",
   documents: "documents needing review", reminders: "delivered reminders", tasks: "overdue open tasks",
 };
+const LINK_LABEL: Partial<Record<Card["kind"], string>> = { filing: "Go to Documents (this scope)", notification: "Go to Reminders (this scope)" };
 const IDLE = "Choose a scope, then refresh the inbox. Nothing is read until you do.";
 
 export default function AttentionInboxPanel({ session, onUnauthorized, onOpen, onSearch }: { session: Session; onUnauthorized: () => void; onOpen: (open: Open) => void; onSearch: () => void }) {
@@ -67,6 +68,21 @@ export default function AttentionInboxPanel({ session, onUnauthorized, onOpen, o
       if (!denied(error)) setMessage(`Could not re-read ${SOURCE_NAME[key]}.`);
     } finally { if (!controller.signal.aborted && id === generation.current) setBusy(false); }
   }
+  async function loadMoreApprovals() {
+    if (!data || expired(data)) { clear("This inbox expired. Refresh to see current items."); return; }
+    const controller = new AbortController(), id = generation.current;
+    pending.current = controller;
+    setBusy(true);
+    try {
+      const result = await moreApprovals(data, session, controller.signal);
+      if (controller.signal.aborted || id !== generation.current) return;
+      if (!arm(result)) return;
+      setData(result); setMessage("Read the next page of pending approvals. Other sources were not refreshed.");
+    } catch (error) {
+      if (controller.signal.aborted || id !== generation.current) return;
+      if (!denied(error)) setMessage("Could not read more approvals. The approvals already shown are unchanged.");
+    } finally { if (!controller.signal.aborted && id === generation.current) setBusy(false); }
+  }
   const membership = session.user.scopes.join("\0");
   useEffect(() => {
     clear(IDLE);
@@ -96,7 +112,7 @@ export default function AttentionInboxPanel({ session, onUnauthorized, onOpen, o
         <h3>{group.title}</h3>
         {group.unavailable.map(key => <p key={key}>Unavailable: {SOURCE_NAME[key]}. This is not an empty result. <button disabled={busy} onClick={() => void retry(key)}>Retry {SOURCE_NAME[key]}</button></p>)}
         {group.notices.map(note => <p key={note} className="hint">{note}</p>)}
-        {group.more && <p>More records exist than this first page shows; open the source for the rest.</p>}
+        {group.more && <p>{MORE_TEXT[group.id]}{group.pageable && <> <button disabled={busy} onClick={() => void loadMoreApprovals()}>Load more approvals</button></>}</p>}
         {!group.unavailable.length && !group.cards.length && <p>None in this first page.</p>}
         {group.id === "approvals" && group.cards.length > 0 && <p className="hint">Approvals are shown for awareness only. No approvals screen is available in this release; nothing here can approve, reject, cancel or consume a request.</p>}
         <ul>{group.cards.map(item => <Item key={item.key} item={item} onOpen={open} />)}</ul>
@@ -110,6 +126,6 @@ function Item({ item, onOpen }: { item: Card; onOpen: (open: Open) => void }) {
     <br />{item.evidence.join(" · ")} · Read {item.readAt}.
     {item.uncertainty.map(note => <span key={note}><br />{note}</span>)}
     {item.changedDuringRefresh && <><br />Changed while this inbox was loading.</>}
-    {item.open ? <> <button onClick={() => onOpen(item.open!)}>Open {item.kind}: {item.title}</button></> : item.openNote ? <><br /><em>{item.openNote}</em></> : null}
+    {item.open ? <>{LINK_NOTE[item.kind] && <><br /><em>{LINK_NOTE[item.kind]}</em></>} <button onClick={() => onOpen(item.open!)}>{LINK_LABEL[item.kind] ?? `Open ${item.kind}: ${item.title}`}</button></> : item.openNote ? <><br /><em>{item.openNote}</em></> : null}
   </li>;
 }

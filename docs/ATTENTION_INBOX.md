@@ -15,7 +15,7 @@ Choose **Attention inbox** in the records workspace, pick one granted scope and 
 | Filing failures | filing query | failed and unknown (two reads) |
 | Notification failures | notification query | failed and unknown (two reads) |
 
-Each source is read separately. The sections are not one consistent snapshot, and each shows its own read time. Only first pages are read; the view says when more records exist and never shows a total count.
+Each source is read separately. The sections are not one consistent snapshot, and each shows its own read time. First pages are read, and the view never shows a total count. When more records exist the message is specific to the section: pending approvals can be paged inside the inbox with **Load more approvals** (explicit, one page per click, same cursor contract, one audit event per page, never extending the 60-second view lifetime); filing and notification sections say that no screen in this release lists those records, so the rest cannot be viewed; documents, reminders and tasks name the existing view that lists them. "More records exist" is never presented as "more records can be opened".
 
 ## Pending approvals are evidence only
 
@@ -32,7 +32,7 @@ Each list request (every page) writes one metadata-only audit event `approval.qu
 
 ## Navigation and privacy
 
-Task, reminder and document cards open the existing destination with minimal coordinates; the destination rereads under current authorization and keeps its own confirmation boundaries. Filing and notification cards link at scope level (Documents or Reminders view) because the failure records do not carry the fields the existing source-navigation target requires. Routine origin is not shown: the existing task response does not provide it, and no field was added.
+Task, reminder and document cards open the existing destination with minimal coordinates; the destination rereads under current authorization and keeps its own confirmation boundaries. Filing and notification cards link at scope level (**Go to Documents (this scope)** and **Go to Reminders (this scope)**) and each card says that the destination does not show that filing request or delivery record. This is a deviation from the record-level destinations in the spec's navigation table: a document destination needs the document's revision and creation time, which the filing record does not carry (reading it would add a request outside the eight read queries), and the Reminders view cannot select a single reminder. The deviation is pending owner acceptance (see convergence). Routine origin is not shown: the existing task response does not provide it, and no field was added.
 
 Shared records stay read-only for non-owners; private records must belong to the actor. Parsers are strict allow-lists: an unexpected key, scope, owner or state makes that whole source unavailable. Content and identifiers stay in memory only: no browser storage, URL, telemetry or service-worker cache.
 

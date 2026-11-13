@@ -36,7 +36,7 @@ function envelope(v: unknown, scope: TaskScope, keys: string[]): Record<string, 
 export type ApprovalItem = { id: string; scope: TaskScope; action_type: string; status: "pending"; requested_at: string; expires_at: string; requested_by_you: boolean };
 export type ApprovalPage = { checked_at: string; items: ApprovalItem[]; next_cursor: string | null };
 const APPROVAL_KEYS = ["id", "scope", "action_type", "status", "requested_at", "expires_at", "requested_by_you"];
-export function parseApprovalPage(v: unknown, scope: TaskScope): ApprovalPage {
+export function parseApprovalPage(v: unknown, scope: TaskScope, after: string | null = null): ApprovalPage {
   const page = envelope(v, scope, ["schema_version", "mode", "checked_at", "page_limit", "items", "next_cursor"]);
   if (page.mode !== "approval_page" || page.page_limit !== 25) invalid();
   const items = (page.items as unknown[]).map((row): ApprovalItem => {
@@ -45,11 +45,11 @@ export function parseApprovalPage(v: unknown, scope: TaskScope): ApprovalPage {
     if (!uuid(row.id) || row.scope !== scope || !word(row.action_type) || row.status !== "pending" || !date(row.requested_at) || !date(row.expires_at) || typeof row.requested_by_you !== "boolean") invalid();
     return { id: row.id, scope, action_type: row.action_type, status: "pending", requested_at: row.requested_at, expires_at: row.expires_at, requested_by_you: row.requested_by_you };
   });
-  ordered(items.map(row => row.id), null, page.next_cursor);
+  ordered(items.map(row => row.id), after, page.next_cursor);
   return { checked_at: page.checked_at as string, items, next_cursor: page.next_cursor as string | null };
 }
-export async function listApprovals(scope: TaskScope, session: Session, signal: AbortSignal): Promise<ApprovalPage> {
-  return parseApprovalPage(await post("/api/v1/approvals/query", { scope }, session, signal), scope);
+export async function listApprovals(scope: TaskScope, session: Session, signal: AbortSignal, after: string | null = null): Promise<ApprovalPage> {
+  return parseApprovalPage(await post("/api/v1/approvals/query", after === null ? { scope } : { scope, after }, session, signal), scope, after);
 }
 
 export type FailureState = "failed" | "unknown";

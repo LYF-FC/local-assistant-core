@@ -2,7 +2,7 @@
 // one granted scope. It issues only read queries, holds only minimal card fields in memory, and can
 // never decide, cancel, consume, retry, acknowledge, file, send or complete anything.
 import type { Session } from "./api";
-import { AttentionError, listApprovals, listFiling, listNotifications, type FailureState } from "./attention-api";
+import { AttentionError, listApprovals, type ApprovalPage, listFiling, listNotifications, type FailureState } from "./attention-api";
 import type { Destination } from "./daily-overview";
 import { DocumentError, list as listDocuments, type Document } from "./documents-api";
 import type { SourceTarget } from "./record-search";
@@ -18,7 +18,7 @@ export type Card = {
   title: string; status: string; labels: string[]; evidence: string[]; uncertainty: string[];
   readAt: string; open: Open | null; openNote: string | null; expiresAt: string | null; changedDuringRefresh: boolean;
 };
-export type Source = { state: "available"; readAt: string; cards: Card[]; more: boolean; notice: string | null } | { state: "unavailable" };
+export type Source = { state: "available"; readAt: string; cards: Card[]; more: boolean; notice: string | null; cursor?: string | null } | { state: "unavailable" };
 export type Inbox = { scope: TaskScope; startedAt: number; expiresAt: number; sources: Record<SourceKey, Source> };
 export class InboxDenied extends Error {
   constructor(public status: number) { super("Inbox access is no longer available. Refresh your session before retrying."); }
@@ -35,18 +35,22 @@ const card = (partial: Pick<Card, "kind" | "id" | "scope" | "revision" | "title"
   labels: [], evidence: [], uncertainty: [], open: null, openNote: null, expiresAt: null, changedDuringRefresh: false, key: `${partial.kind}:${partial.id}`, ...partial,
 });
 
+function approvalCards(page: ApprovalPage, scope: TaskScope): Card[] {
+  return page.items.map(row => card({
+    kind: "approval", id: row.id, scope, revision: 0, title: `Approval request (${row.action_type})`, status: "Awaiting a decision", readAt: page.checked_at,
+    labels: [row.requested_by_you ? "Requested by you" : "Requested by another member of this scope"],
+    evidence: [`Requested ${row.requested_at}`, `Expires ${row.expires_at}`],
+    uncertainty: ["The stored status is read-only here and may change before it is opened elsewhere."],
+    openNote: NO_APPROVAL_SCREEN, expiresAt: row.expires_at,
+  }));
+}
+
 async function read(key: SourceKey, session: Session, scope: TaskScope, signal: AbortSignal): Promise<Source> {
   const csrf = session.csrfToken;
   switch (key) {
     case "approvals": {
       const page = await listApprovals(scope, session, signal);
-      return { state: "available", readAt: page.checked_at, more: page.next_cursor !== null, notice: null, cards: page.items.map(row => card({
-        kind: "approval", id: row.id, scope, revision: 0, title: `Approval request (${row.action_type})`, status: "Awaiting a decision", readAt: page.checked_at,
-        labels: [row.requested_by_you ? "Requested by you" : "Requested by another member of this scope"],
-        evidence: [`Requested ${row.requested_at}`, `Expires ${row.expires_at}`],
-        uncertainty: ["The stored status is read-only here and may change before it is opened elsewhere."],
-        openNote: NO_APPROVAL_SCREEN, expiresAt: row.expires_at,
-      })) };
+      return { state: "available", readAt: page.checked_at, more: page.next_cursor !== null, cursor: page.next_cursor, notice: null, cards: approvalCards(page, scope) };
     }
     case "filing_failed": case "filing_unknown": {
       const state: FailureState = key === "filing_failed" ? "failed" : "unknown";
@@ -143,14 +147,14 @@ export async function retrySource(inbox: Inbox, key: SourceKey, session: Session
 }
 
 // A record that changed state between the failed and unknown reads appears once; the higher
-// revision wins and a tie is flagged. Different record kinds are never merged.
-export type Group = { id: "approvals" | "filing" | "notifications" | "documents" | "reminders" | "tasks"; title: string; unavailable: SourceKey[]; cards: Card[]; more: boolean; notices: string[] };
+// revision wins, on a tie the later read wins, and the card is flagged. Different record kinds are never merged.
+export type Group = { id: "approvals" | "filing" | "notifications" | "documents" | "reminders" | "tasks"; title: string; unavailable: SourceKey[]; cards: Card[]; more: boolean; pageable: boolean; notices: string[] };
 export function merge(...lists: Card[][]): Card[] {
   const byKey = new Map<string, Card>();
   for (const row of lists.flat()) {
     const held = byKey.get(row.key);
     if (!held) { byKey.set(row.key, row); continue; }
-    const winner = row.revision > held.revision ? row : held;
+    const winner = row.revision >= held.revision ? row : held;
     byKey.set(row.key, { ...winner, changedDuringRefresh: true });
   }
   return [...byKey.values()];
@@ -163,6 +167,7 @@ export function groups(inbox: Inbox): Group[] {
       unavailable: parts.filter(part => part.source.state === "unavailable").map(part => part.key),
       cards: merge(...available.map(source => source.cards)),
       more: available.some(source => source.more),
+      pageable: available.some(source => source.more && !!source.cursor),
       notices: [...new Set(available.flatMap(source => source.notice ? [source.notice] : []))],
     };
   };
@@ -175,6 +180,40 @@ export function groups(inbox: Inbox): Group[] {
     { id: "tasks", title: "Overdue open tasks", ...pick("tasks") },
   ];
 }
+// Explicit, user-requested next approvals page using the existing cursor. It appends to the held
+// section, never extends the view deadline, and any failure leaves the held cards untouched.
+export async function moreApprovals(inbox: Inbox, session: Session, signal: AbortSignal): Promise<Inbox> {
+  if (!session.user.scopes.includes(inbox.scope)) throw new InboxDenied(403);
+  const held = inbox.sources.approvals;
+  if (held.state !== "available" || !held.cursor) return inbox;
+  let page;
+  try { page = await listApprovals(inbox.scope, session, signal, held.cursor); } catch (error) {
+    if (signal.aborted) throw new DOMException("Aborted", "AbortError");
+    if (isDenial(statusOf(error))) throw new InboxDenied(statusOf(error)!);
+    throw error;
+  }
+  if (signal.aborted) throw new DOMException("Aborted", "AbortError");
+  const next = approvalCards(page, inbox.scope);
+  const sources = { ...inbox.sources, approvals: { ...held, readAt: page.checked_at, more: page.next_cursor !== null, cursor: page.next_cursor, cards: merge(held.cards, next) } };
+  return { ...inbox, sources, expiresAt: Math.min(inbox.expiresAt, deadline(inbox.startedAt, sources)) };
+}
+
+// Honest per-section wording for "more records exist". Existing is not the same as reachable:
+// only approvals can be paged inside the inbox; the other sections say where, if anywhere, the
+// rest can be seen. No destination is promised that cannot show the records.
+export const MORE_TEXT: Record<Group["id"], string> = {
+  approvals: "More pending approvals exist than are shown. Use Load more approvals to read the next page; this is not a complete count.",
+  filing: "More failed or unconfirmed filing requests exist than this first page shows. No screen in this release lists filing requests, so the rest cannot be viewed from here.",
+  notifications: "More failed or unconfirmed reminder notifications exist than this first page shows. No screen in this release lists notification deliveries, so the rest cannot be viewed from here.",
+  documents: "More documents exist than this first page shows. The Documents view lists documents for this scope.",
+  reminders: "More delivered reminders exist than this first page shows. The Reminders view lists reminders for this scope.",
+  tasks: "More overdue tasks may exist than this first page shows. The Tasks view lists tasks for this scope.",
+};
+export const LINK_NOTE: Partial<Record<Kind, string>> = {
+  filing: "Opens the Documents view for this scope. It does not show this filing request or confirm its outcome.",
+  notification: "Opens the Reminders view for this scope. It does not show this delivery record or confirm delivery.",
+};
+
 export function emptyState(inbox: Inbox): "none" | "unavailable" | null {
   const all = SOURCES.map(key => inbox.sources[key]);
   const unavailable = all.some(source => source.state === "unavailable");

@@ -38,6 +38,7 @@ with SessionLocal.begin() as db:
             ("browser-tasks-flow", {"household_shared", "member_a_private"}),
             ("browser-reminders-flow", {"household_shared", "member_a_private"}),
             ("browser-reminders-viewer", {"household_shared", "member_a_private"}),
+            ("browser-inbox-flow", {"member_b_private"}),
             ("browser-memory-viewer", {"household_shared", "member_a_private"}),
             ("browser-memory-conflict", {"household_shared"}),
             ("browser-memory-race", {"member_a_private"}),

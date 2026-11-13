@@ -20,31 +20,44 @@
 | No state-changing request from the inbox | spec | Network-recording test (S1, S2) | Browser network test passed locally (harness). |
 | Mobile 390×844, keyboard and live-region behaviour (existing obligations only; REV-03 not claimed) | spec §Mobile | Browser workflow (mobile) | 390×844 run showed no horizontal overflow; passed locally. No screen-reader or device testing. |
 
+## Independent review findings (PR #34), fixed on the branch
+
+1. **Misleading "open the source for the rest" wording — fixed.** Each section now has specific wording (`MORE_TEXT`). Approvals can be paged inside the inbox with an explicit **Load more approvals** control using the existing `after` cursor (implemented; no new route, grant or architecture). Filing and notification sections state that no screen lists those records. Documents, reminders and tasks name the view that lists them. An unavailable source is never described as empty and offers no paging.
+2. **Navigation deviation — not removed, now explicit and pending owner decision.** Record-level links were assessed and are not feasible within the approved scope: a document destination needs the document's revision and creation time (the filing record has neither; fetching it adds a document read per card, which is outside the spec's eight-read network assertion S1), and the Reminders destination cannot select one reminder (it takes only a scope; adding that would be a new destination capability). The scope-level links remain, are labelled **Go to Documents (this scope)** and **Go to Reminders (this scope)**, and each card says the destination does not show that record. User impact: the user lands on the scope's Documents or Reminders view and must find the related item. **Owner decision pending:** accept the scope-level links for this slice, or approve record-level destinations (a Reminders selection capability and a document identity read) as later work. The spec was not edited to match the implementation.
+3. **Revision-tie dedup — fixed.** `merge()` now takes the later read on equal revisions (`>=`). Tests prove higher wins, lower does not replace, equal takes the later read, and kind/identity dedup is unchanged; the test fails when the old `>` is restored.
+4. **Real-stack browser coverage — added.** `frontend/e2e/inbox.spec.ts` (4 tests) uses the built UI, the real API under the restricted `butler_runtime` role, PostgreSQL and a real login session, with synthetic rows from `scripts/inbox-browser-fixtures.py` (isolated `member_b_private` scope, 26 pending approvals, one overdue task, one delivered reminder, one unknown notification, one unreviewed document, one failed filing request). It covers: opening the real RecordsWorkspace Inbox; all six sections; approval, filing, notification, document, reminder and task items; real cursor paging of approvals; no approval controls, payload, hash or policy text in the page; a source failure shown as unavailable (the only injected fault is a network 500 for the documents read) and retried alone; real destination navigation to the selected task and document and to the Reminders and Documents views; no state-changing or approval-operation request and no browser storage or URL state; and, after the run, `inbox-browser-fixtures.py check` proves in PostgreSQL that all 26 approvals, the filing, notification, reminder and document rows are unchanged and every `approval.query` audit event is count-only. The harness spec (`browser/attention-inbox.spec.ts`) remains a mocked component harness and is not real-stack coverage.
+   - **Where it runs in CI:** `scripts/test-containers.sh` (the `containers` job, browser phase): the fixture seed runs before the default `test-ci-browser.sh` run (which executes `e2e/inbox.spec.ts`), and the check runs after it. **It has not run in hosted CI.**
+   - **Local execution:** run locally against the real application stack (uvicorn as `butler_runtime`, local PostgreSQL 16, the built UI behind a local TLS proxy standing in for Caddy and nginx, with a throwaway local Playwright config that trusts the self-signed certificate): 4 passed, and the check phase passed. This is not the compose stack and uses a local PostgreSQL, so it does not replace the CI container run.
+
 ## Deviations and decisions
 
 1. Audit event name `approval.query`: rechecked; `audit_events.event_type` is an unrestricted varchar(128) with no code allow-list, so the name is used and pinned by a test. No migration.
 2. Routine origin: not shown (see above); no field added.
-3. Filing and notification cards link at scope level (Documents or Reminders view), not to a specific record, because those records lack the fields the existing source-navigation target needs.
-4. Approvals have no authorized in-app destination; adding one is a later owner decision.
+3. Filing and notification cards link at scope level (see finding 2 above); **owner decision pending**.
+4. Approvals have no authorized in-app destination; adding one is a later owner decision. They can now be paged within the inbox (evidence only).
 5. Open overdue tasks only; widening is a reviewer decision.
 
 ## Local checks that ran (synthetic data, disposable environment)
 
-- Backend: `ruff check` and `ruff format --check` passed; `pytest -m 'not integration' --allow-unix-socket`: 1564 passed, 1094 deselected.
-- Frontend: `npm test` 752 passed (32 files); `npm run build` succeeded (existing chunk-size warning only).
+Initial implementation run, then the correction pass (the correction-pass results are the current ones):
+
+- Backend: `ruff check` and `ruff format --check` passed (both runs). Initial run: `pytest -m 'not integration' --allow-unix-socket` 1564 passed, 1094 deselected. Correction pass changed no backend application code, so the full backend suite was not rerun; `test_approval_query.py` and `test_approvals.py` were rerun: 35 passed.
+- Frontend (correction pass): `npm test` 758 passed (32 files; 6 new tests for the tie rule, approvals paging and wording); `npm run build` succeeded (existing chunk-size warning only).
 - Policy: `check_repository.py` passed; `test_ci_scope.py` 23 passed.
-- PostgreSQL 16 (local, disposable `butler_test_i71`): approval query, approval, identity, manual-task and migration suites: 58 passed. The full integration suite was started but stopped after about 6% because it was too slow locally, so it was **not** completed here; hosted CI runs it.
-- Browser: `browser/attention-inbox.spec.ts` 12 passed with `playwright.local.config.ts` (local synthetic mode). This config is not run by CI.
+- PostgreSQL 16 (local, disposable): `test_approval_query_postgres.py` and `test_approval_postgres.py`, 22 passed (includes the induced audit-insert failure). Initial run: approval query, approval, identity, manual-task and migration suites, 58 passed. The full integration suite was started and stopped at about 6% because it was too slow locally, so it was **not** completed here; hosted CI runs it.
+- Browser, harness (mocked component page): `browser/attention-inbox.spec.ts` 12 passed with `playwright.local.config.ts` (`BUTLER_LOCAL_UI_TESTS=1`). This config is not run by CI.
+- Browser, real stack (see finding 4): `e2e/inbox.spec.ts` 4 passed locally plus the database check phase.
+- Security/dependency: `bandit -r app ../pdf-worker -q` exit 0; `pip-audit --local` "No known vulnerabilities found" (skipping the project's own package, as in CI); `npm audit --audit-level=high` 0 vulnerabilities.
 - Generators: `build_feature_overview.py` and `--check` ran; overview and dashboard output did not change.
-- Mutation spot-checks of the new backend and client code were run locally; surviving mutants led to stronger tests.
+- Mutation spot-checks: surviving mutants led to stronger tests; restoring the old `>` tie comparison fails the new tie test.
 
 ## Not run or not verified
 
-- Hosted CI on this change has not run. The `containers` job (compose e2e, `scripts/test-containers.sh`) could not run locally (no container runtime), and no real-stack Playwright spec for the inbox was authored, so the inbox browser tests are not exercised by CI. This is a gap for the reviewer.
-- `bandit`, `pip-audit` and `npm audit` were not run locally.
-- Local-only workarounds: `--allow-unix-socket` for pytest, and Chromium build symlinks for Playwright. Neither changes repository files.
+- Hosted CI on this change has not run, including the `containers` job that runs `e2e/inbox.spec.ts` under the real compose stack. The container runtime is unavailable locally, so the compose configuration, Caddy and nginx paths and the container-built migration image were not exercised.
+- The full PostgreSQL integration suite was not completed locally (see above).
+- Local-only workarounds: `--allow-unix-socket` for pytest, Chromium build symlinks, and a throwaway local TLS proxy and Playwright config for the real-stack run. None changes repository files.
 - Private-host and mobile-device acceptance, screen-reader testing, real providers and owner acceptance of Gate 2 are not done and are separate.
 
 ## Still required after review
 
-The merged commit and PR number once merged (recorded only after merge); hosted CI results; owner decision on the gaps above. Branch engineering is not merged delivery.
+The merged commit and PR number once merged (recorded only after merge); hosted CI results (including the first run of `e2e/inbox.spec.ts` in the `containers` job); the owner decision on scope-level navigation (finding 2). The owner-review box in `tasks.md` stays unchecked. Branch engineering is not merged delivery.
