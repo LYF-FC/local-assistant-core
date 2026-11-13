@@ -1,13 +1,16 @@
 """Local read snapshots and deterministic day briefing. No provider/model I/O."""
 
+import itertools
 import json
 from datetime import datetime, timedelta
 from uuid import uuid5
 
 from sqlalchemy import func, or_, select, update
 
+from app import calendar_codes as codes
 from app import calendar_contracts as contract
-from app import identity, manual_tasks
+from app import calendar_recurrence as rec
+from app import calendar_sync, calendar_view, identity, manual_tasks
 from app.models import CalendarRevision, CalendarSource, ManualTask, MemoryRecord
 
 
@@ -163,9 +166,17 @@ def operate(db, token, csrf, identifier, body, operation):
             )
         )
         audit(db, user, body.scope, operation, row, returned=min(len(history), 5))
+        provider = (
+            {"provider": calendar_sync.export_view(db, row.id)}
+            if operation == "export"
+            and row.state != "forgotten"
+            and calendar_sync.linked(db, row.id)
+            else {}
+        )
         return identity.Result(
             200,
             {
+                **provider,
                 "schema_version": 1,
                 "source_id": str(row.id),
                 "scope": body.scope,
@@ -187,6 +198,9 @@ def operate(db, token, csrf, identifier, body, operation):
     if row.state == "forgotten":
         audit(db, user, body.scope, "forgotten_read", row)
         return identity.Result(410, receipt(row, user))
+    if operation in {"import", "unavailable"} and calendar_sync.linked(db, row.id):
+        # A provider-mode source is fed only by the sync worker (6.6); refused before the trigger.
+        return identity.denied(db, 409, "calendar.provider_mode", user=user)
     window = body.window.canonical() if operation == "import" else None
     # Exact replay is allowed after a lost response, but never resets an offline state.
     if (
@@ -263,6 +277,10 @@ def operate(db, token, csrf, identifier, body, operation):
             .where(CalendarRevision.source_id == row.id)
             .values(snapshot=None)
         )
+        if calendar_sync.linked(db, row.id):
+            # Same transaction, after the source reads forgotten (6.9); the deferred trigger of
+            # 6.6 refuses the commit if any scrub step is missing.
+            calendar_sync.scrub(db, row.id, row.updated_at)
     remember(db, user, row)
     audit(db, user, body.scope, operation, row)
     return identity.Result(200, receipt(row, user))
@@ -273,6 +291,8 @@ def listing(db, token, csrf, body):
     if isinstance(current, identity.Result):
         return current
     user, _ = current
+    if body.days is not None and not 1 <= body.days <= codes.QUERY_HORIZON_DAYS:
+        return identity.denied(db, 422, "calendar.horizon_exceeded", user=user)
     query = select(CalendarSource).where(
         *visible(CalendarSource, user, body.scope), CalendarSource.state == "active"
     )
@@ -289,12 +309,40 @@ def listing(db, token, csrf, body):
     if identity.resolve(db, token, refresh_session=True) is None:
         return identity.denied(db, 401, "calendar.session_denied", user=user)
     audit(db, user, body.scope, "query", returned=min(25, len(rows)))
+    states = calendar_view.sync_states(db, [r.id for r in rows[:25]])
+    items = []
+    for row in rows[:25]:
+        item = receipt(row, user, False)
+        provider = states.get(row.id)
+        if provider is not None:
+            item["mode"] = "provider"
+            item["sync"] = {
+                "status": provider.status,
+                "last_success_at": calendar_sync.stamp(provider.last_success_at),
+                "blocked_reason": provider.blocked_reason,
+                "last_error_code": provider.last_error_code,
+            }
+            if body.days is not None:
+                window = rec.window_for_days(body.day, body.days, body.timezone)
+                events, info = calendar_view.expand_source(db, row, window, body.timezone)
+                events.sort(
+                    key=lambda e: (
+                        e["start"] if e["kind"] == "timed" else e["start_date"],
+                        e["uid"],
+                    )
+                )
+                item["occurrences"] = events[:366]
+                item["cancelled_count"] = info["cancelled_count"]
+                item["truncated"] = len(events) > 366 or bool(info["truncated_series"])
+                item["truncated_series"] = info["truncated_series"]
+                item["unreadable"] = info["unreadable"]
+        items.append(item)
     return identity.Result(
         200,
         {
             "schema_version": 1,
             "scope": body.scope,
-            "items": [receipt(r, user, False) for r in rows[:25]],
+            "items": items,
             "next_cursor": str(rows[24].id) if len(rows) > 25 else None,
         },
     )
@@ -306,13 +354,19 @@ def briefing(db, token, csrf, body):
         return current
     user, session = current
     now = identity.now_utc()
-    start = contract.midnight(body.day, body.timezone)
+    horizon = body.horizon_days
+    if horizon is not None and not 1 <= horizon <= codes.BRIEFING_HORIZON_DAYS:
+        return identity.denied(db, 422, "briefing.horizon_exceeded", user=user)
+    count = horizon or 1
     try:
-        end = contract.midnight(body.day + timedelta(days=1), body.timezone)
+        bounds = [
+            contract.midnight(body.day + timedelta(days=i), body.timezone) for i in range(count + 1)
+        ]
     except (OverflowError, ValueError):
         return identity.denied(db, 422, "briefing.invalid_day", user=user)
-    if end <= start:
+    if any(b <= a for a, b in itertools.pairwise(bounds)):
         return identity.denied(db, 422, "briefing.invalid_day", user=user)
+    start, end = bounds[0], bounds[-1]
     sources = list(
         db.scalars(
             select(CalendarSource)
@@ -356,42 +410,113 @@ def briefing(db, token, csrf, body):
     if identity.resolve(db, token, refresh_session=True) is None:
         return identity.denied(db, 401, "briefing.session_denied", user=user)
     checked = identity.now_utc()
+    checked = identity.now_utc()
+    states = calendar_view.sync_states(db, [s.id for s in sources[:25]])
     calendars, events = [], []
+    unreadable_total = 0
+    truncated_series = 0
+    omitted_series = 0
+    cancelled_total = 0
     for source in sources[:25]:
+        provider = states.get(source.id)
         snap = source.data["window"]
-        covers = bool(
-            snap
-            and contract.midnight(
-                datetime.fromisoformat(snap["start_date"]).date(), snap["timezone"]
-            )
-            <= start
-            and contract.midnight(datetime.fromisoformat(snap["end_date"]).date(), snap["timezone"])
-            >= end
-        )
-        stale = not snap or checked - datetime.fromisoformat(snap["fetched_at"]) > timedelta(
-            hours=24
-        )
-        calendars.append({**receipt(source, user, False), "covers_day": covers, "stale": stale})
-        if not snap:
-            continue
-        for event in snap["events"]:
-            a, b = contract.interval(event)
-            if event["status"] == "cancelled" or a >= end or b <= start:
+        unreadable = 0
+        found = []
+        if provider is not None:
+            window = rec.window_for_days(body.day, count, body.timezone)
+            found, info = calendar_view.expand_source(db, source, window, body.timezone)
+            unreadable += info["unreadable"]
+            truncated_series += len(info["truncated_series"])
+            omitted_series += info["omitted_at_least"]
+            cancelled_total += info["cancelled_count"]
+            covers = True
+            as_of = provider.last_success_at
+            stale = as_of is None or checked - identity.aware(as_of) > calendar_view.STALE_AFTER
+            label = source.data["label"]
+            availability = source.data["status"]  # the v1 field; ``state`` carries the evidence
+        else:
+            try:
+                covers = bool(
+                    snap
+                    and contract.midnight(
+                        datetime.fromisoformat(snap["start_date"]).date(), snap["timezone"]
+                    )
+                    <= start
+                    and contract.midnight(
+                        datetime.fromisoformat(snap["end_date"]).date(), snap["timezone"]
+                    )
+                    >= end
+                )
+            except (ValueError, KeyError, TypeError, OverflowError):
+                covers = False
+                unreadable += 1
+            as_of = datetime.fromisoformat(snap["fetched_at"]) if snap else None
+            stale = not snap or checked - as_of > timedelta(hours=24)
+            label = source.data["label"]
+            availability = source.data["status"]
+            found = list(snap["events"]) if snap else []
+        placed_events = []
+        for event in found:
+            if provider is None and not isinstance(event, dict):
+                unreadable += 1
                 continue
-            identifier = str(uuid5(source.id, json.dumps(contract.key(event), ensure_ascii=False)))
-            events.append(
+            try:
+                if event["status"] == "cancelled":
+                    continue
+                days = [
+                    (body.day + timedelta(days=i)).isoformat()
+                    for i in range(count)
+                    if contract.placed_on_day(
+                        event, body.day + timedelta(days=i), bounds[i], bounds[i + 1]
+                    )
+                ]
+                if not days:
+                    continue
+                key = contract.key(event)
+                contract.agenda_key({**event, "id": ""})
+            except (ValueError, KeyError, TypeError, OverflowError):
+                unreadable += 1  # kept visible as a count, never dropped silently
+                continue
+            identifier = str(uuid5(source.id, json.dumps(key, ensure_ascii=False)))
+            placed_events.append(
                 {
                     **event,
                     "id": identifier,
                     "source_id": str(source.id),
                     "source_revision": source.revision,
-                    "source_label": source.data["label"],
+                    "source_label": label,
                     "stale": stale,
-                    "availability": source.data["status"],
+                    "availability": availability,
                     "possible_conflict": False,
+                    **({"days": days, "continues": len(days) > 1} if horizon else {}),
                 }
             )
-    events.sort(key=lambda e: (*contract.interval(e), e["id"]))
+        if provider is not None:
+            state = calendar_view.provider_state(provider, checked, unreadable=unreadable)
+        else:
+            state = calendar_view.manual_state(
+                snap, source.data["status"], covers, checked, unreadable=unreadable
+            )
+        unreadable_total += unreadable
+        if horizon:
+            for placed in placed_events:
+                placed.update(source_state=state, as_of=stamp(as_of) if as_of else None)
+        events.extend(placed_events)
+        entry = {**receipt(source, user, False), "covers_day": covers, "stale": stale}
+        if horizon:
+            entry.update(
+                mode="provider" if provider is not None else "manual",
+                source_state=state,
+                as_of=stamp(as_of) if as_of else None,
+                unreadable=unreadable,
+            )
+            if provider is not None:
+                entry.update(
+                    blocked_reason=provider.blocked_reason,
+                    blocked_detail=provider.blocked_detail,
+                )
+        calendars.append(entry)
+    events.sort(key=contract.agenda_key)
     # A sweep marks overlapping intervals without a quadratic pair scan.
     latest_event, latest_end = None, None
     for event in events:
@@ -402,6 +527,8 @@ def briefing(db, token, csrf, body):
             event["possible_conflict"] = latest_event["possible_conflict"] = True
         if latest_end is None or b > latest_end:
             latest_event, latest_end = event, b
+    if horizon:
+        calendar_view.duplicate_notes(events)
     if identity.resolve(db, token, refresh_session=True) is None:
         return identity.denied(db, 401, "briefing.session_denied", user=user)
     checked = identity.now_utc()
@@ -418,40 +545,69 @@ def briefing(db, token, csrf, body):
         tasks=[{"id": str(r.id), "revision": r.revision} for r in tasks[:25]],
         memories=[{"id": str(r.id), "revision": r.revision} for r in memories[:10]],
     )
-    return identity.Result(
-        200,
-        {
-            "schema_version": 1,
-            "scope": body.scope,
-            "day": body.day.isoformat(),
-            "timezone": body.timezone,
-            "checked_at": stamp(checked),
-            "valid_until": stamp(
-                min(checked + timedelta(seconds=60), identity.aware(session.expires_at))
-            ),
-            "start_at": stamp(start),
-            "end_at": stamp(end),
-            "calendars": calendars,
-            "events": events[:100],
-            "tasks": [
-                {**manual_tasks.presented(r, user), "overdue": identity.aware(r.due_at) < start}
-                for r in tasks[:25]
-            ],
-            "memories": [
-                {
-                    "id": str(r.id),
-                    "revision": r.revision,
-                    "title": r.title,
-                    "source_reference": r.source_reference,
-                }
-                for r in memories[:10]
-            ],
-            "truncated": {
-                "calendars": len(sources) > 25,
-                "events": len(events) > 100,
-                "tasks": len(tasks) > 25,
-                "memories": len(memories) > 10,
-            },
-            "notice": "One-scope snapshot. Missing coverage is unknown; stale/offline events are last-known. Overlaps are possible conflicts. Undated tasks and other scopes are not included. Memory references are unranked, not inferred needs.",
+    over_events = max(0, len(events) - 100) + omitted_series
+    limits = {
+        "sources": _limit(min(len(sources), 25), len(sources) - 25),
+        "events": _limit(min(len(events), 100), over_events, truncated_series > 0),
+        "tasks": _limit(min(len(tasks), 25), len(tasks) - 25),
+        "memories": _limit(min(len(memories), 10), len(memories) - 10),
+        "unreadable_items": unreadable_total,
+    }
+    body_out = {
+        "schema_version": 2 if horizon else 1,
+        "scope": body.scope,
+        "day": body.day.isoformat(),
+        "timezone": body.timezone,
+        "checked_at": stamp(checked),
+        "valid_until": stamp(
+            min(checked + timedelta(seconds=60), identity.aware(session.expires_at))
+        ),
+        "start_at": stamp(start),
+        "end_at": stamp(end),
+        "calendars": calendars,
+        "events": events[:100],
+        "tasks": [
+            {**manual_tasks.presented(r, user), "overdue": identity.aware(r.due_at) < start}
+            for r in tasks[:25]
+        ],
+        "memories": [
+            {
+                "id": str(r.id),
+                "revision": r.revision,
+                "title": r.title,
+                "source_reference": r.source_reference,
+            }
+            for r in memories[:10]
+        ],
+        "truncated": {
+            "calendars": limits["sources"]["truncated"],
+            "events": limits["events"]["truncated"],
+            "tasks": limits["tasks"]["truncated"],
+            "memories": limits["memories"]["truncated"],
         },
-    )
+        "notice": "One-scope snapshot. Missing coverage is unknown; stale/offline events are last-known. Overlaps are possible conflicts. Undated tasks and other scopes are not included. Memory references are unranked, not inferred needs.",
+    }
+    if horizon:
+        # Version 1 keeps its exact key set; the counts exist from version 2 on.
+        body_out["limits"] = limits
+        body_out["horizon_days"] = horizon
+        body_out["days"] = [
+            {
+                "day": (body.day + timedelta(days=i)).isoformat(),
+                "start_at": stamp(bounds[i]),
+                "end_at": stamp(bounds[i + 1]),
+                "events": sum(
+                    1
+                    for e in events[:100]
+                    if (body.day + timedelta(days=i)).isoformat() in e["days"]
+                ),
+            }
+            for i in range(count)
+        ]
+        body_out["cancelled_count"] = cancelled_total
+    return identity.Result(200, body_out)
+
+
+def _limit(shown, omitted, forced=False):
+    omitted = max(0, omitted)
+    return {"shown": shown, "truncated": bool(omitted or forced), "omitted_at_least": omitted}

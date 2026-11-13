@@ -1,4 +1,4 @@
-# Synthetic invoice filing execution — spec 069 candidate
+# Synthetic invoice filing execution — spec 069
 
 An invoice [filing plan](INVOICE_FILING_PLANS.md) you approved can be carried out against a **synthetic destination**. This is development/test engineering that proves the safety rules before any real folder or NAS exists. Nothing is written to a disk, share or network. Approving a plan never starts anything: it still says `execution_authorized: false`. You start a filing with a separate request that names the exact document, source version and approved plan version.
 

@@ -99,6 +99,45 @@ def interval(event):
     )
 
 
+def all_day_dates(event):
+    """Calendar dates of a stored all-day occurrence; malformed data is refused, never guessed."""
+    try:
+        first = date.fromisoformat(event["start_date"])
+        last = date.fromisoformat(event["end_date"])
+    except (KeyError, TypeError, ValueError):
+        raise ValueError("Malformed all-day occurrence") from None
+    if not 1 <= (last - first).days <= 31:
+        raise ValueError("Malformed all-day occurrence")
+    return first, last
+
+
+def placed_on_day(event, day, start, end):
+    """Whether an occurrence belongs to the display day ``day`` (the instants ``start`` to ``end``).
+
+    An all-day occurrence is placed by its calendar dates alone (``start_date <= day < end_date``;
+    the end date is exclusive), never by instants, so neither zone matters. A timed occurrence is
+    placed by instant overlap, exactly as before. Any other kind is refused.
+    """
+    kind = event.get("kind") if isinstance(event, dict) else None
+    if kind == "all_day":
+        first, last = all_day_dates(event)
+        return first <= day < last
+    if kind == "timed":
+        a, b = interval(event)
+        return a < end and b > start
+    raise ValueError("Unknown occurrence kind")
+
+
+def agenda_key(event):
+    """Sort key: all-day before timed; all-day by dates, timed by instants; then stable id."""
+    kind = event.get("kind") if isinstance(event, dict) else None
+    if kind == "all_day":
+        return (0, *all_day_dates(event), event["id"])
+    if kind == "timed":
+        return (1, *interval(event), event["id"])
+    raise ValueError("Unknown occurrence kind")
+
+
 def key(event):
     return event["uid"], event["recurrence_id"]
 
@@ -191,10 +230,42 @@ class Export(History):
 
 class Query(Scoped):
     after: UUID | None = None
+    # Optional expansion of provider sources over a display range (at most 400 days, 8.4 and 9).
+    day: date | None = None
+    days: int | None = Field(default=None, strict=True)
+    timezone: str | None = Field(default=None, max_length=64)
+
+    @field_validator("timezone")
+    @classmethod
+    def valid_timezone(cls, value):
+        return value if value is None else zone(value)
+
+    @field_validator("day", mode="before")
+    @classmethod
+    def day_only(cls, value):
+        return value if value is None else date_only(value)
+
+    @model_validator(mode="after")
+    def range_is_complete(self):
+        if (self.day is None) != (self.days is None) or (self.day is None) != (
+            self.timezone is None
+        ):
+            raise ValueError("day, days and timezone are given together")
+        return self
 
 
 class Briefing(Scoped):
     day: date
     timezone: str = Field(max_length=64)
+    # 1 to 7 (checked by the route as 422 horizon_exceeded); omitted keeps the one-day v1 shape.
+    horizon_days: int | None = Field(default=None, strict=True)
     _zone = field_validator("timezone")(zone)
     _day = field_validator("day", mode="before")(date_only)
+
+
+class Provider(Scoped):
+    provider_ref: str = Field(pattern=r"^[a-z0-9_-]{1,64}$")
+
+
+class Sync(Scoped):
+    resync: bool = False

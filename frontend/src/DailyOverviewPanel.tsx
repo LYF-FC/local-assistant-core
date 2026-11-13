@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Session } from "./api";
 import { taskScopes, type TaskScope } from "./tasks-api";
-import { displayTimezone, documentAttention, loadOverview, localDay, OverviewDenied, type Destination, type Overview, type Selection } from "./daily-overview";
+import { displayTimezone, documentAttention, eventMarks, limitNotes, loadOverview, localDay, OverviewDenied, sourceNote, type Destination, type Overview, type Selection } from "./daily-overview";
 
 export default function DailyOverviewPanel({ session, onUnauthorized, onOpen }: { session: Session; onUnauthorized: () => void; onOpen: (destination: Destination) => void }) {
   const scopes = session.user.scopes.filter((scope): scope is TaskScope => Object.hasOwn(taskScopes, scope));
@@ -70,12 +70,12 @@ export default function DailyOverviewPanel({ session, onUnauthorized, onOpen }: 
       <div className="overview-grid"><section className="memory-detail" aria-label="Day agenda and tasks"><h3>Day agenda and tasks</h3>
         {!briefing ? <p>Agenda unavailable. No empty-day or task-count claim can be made.</p> : <>
           <p>{briefing.day} · {briefing.timezone}. {briefing.notice}</p>
-          {Object.values(briefing.truncated).some(Boolean) && <p>Some briefing sections are truncated. Open the source panels to inspect more records.</p>}
+          {limitNotes(briefing).map(note => <p key={note}>{note} Open the source panels to inspect more records.</p>)}
           {!briefing.calendars.length && <p>No calendar source is shown. This does not establish a free day.</p>}
-          <ul>{briefing.calendars.map(row => <li key={row.id}>{row.label}: {row.status}; {row.covers_day ? "covers selected day" : "selected day not covered"}{row.stale ? "; stale last-known snapshot" : ""}.</li>)}</ul>
+          <ul>{briefing.calendars.map(row => <li key={row.id}>{row.label}{row.mode === "provider" ? " (synchronized)" : ""}: {sourceNote(row)}</li>)}</ul>
           <h4>Calendar occurrences shown: {briefing.events.length}</h4>
           {!briefing.events.length && <p>No occurrences in this bounded response. Check source coverage and freshness.</p>}
-          <ul>{briefing.events.map(row => <li key={row.id}><strong>{row.title}</strong> · {row.kind === "timed" ? `${row.start}–${row.end}` : `${row.start_date}–${row.end_date} (end exclusive)`}. Source: {row.source_label}, revision {row.source_revision}. {row.status === "tentative" ? "Tentative. " : ""}{row.stale || row.availability !== "ready" ? `Last-known event: ${row.availability}, ${row.stale ? "stale" : "unverified"}. ` : "Snapshot only; not a live provider check. "}{row.possible_conflict ? "Possible calendar overlap." : ""}</li>)}</ul>
+          <ul>{briefing.events.map(row => <li key={row.id}><strong>{row.title}</strong> · {row.kind === "timed" ? `${row.start}–${row.end}` : `${row.start_date}–${row.end_date} (end exclusive)`}. Source: {row.source_label}, revision {row.source_revision}. {row.status === "tentative" ? "Tentative. " : ""}{(() => { const state = row.source_state, last = row.stale || (row.availability !== "ready" && row.availability !== "setup_required"), note = state && state !== "available" ? `Source ${state.replace("_", " ")}. ` : ""; return (last ? `Last-known event: ${row.availability}, ${row.stale ? "stale" : "unverified"}. ` : "") + note + (last || note ? "" : "Snapshot only; not a live provider check. "); })()}{row.possible_conflict ? "Possible calendar overlap. " : ""}{eventMarks(row)}</li>)}</ul>
           <h4>Open due tasks shown: {briefing.tasks.length}</h4><ul>{briefing.tasks.map(row => <li key={row.id}>{row.title} · {row.overdue ? "Overdue before this day" : "Due in this day"} · {row.due_at}. {row.assignee_id ? "Assigned to record owner." : "Assignment unknown."}</li>)}</ul>
           <p>Undated and later tasks are outside this day view. Memory details and job health are not aggregated here.</p>
         </>}

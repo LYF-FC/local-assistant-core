@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "snapshot": {
-    "date": "2026-11-10",
-    "main_sha": "267020dd1eebcd7b4700dcbe362995d009ffef6e",
-    "merged_through_pr": 22,
+    "date": "2026-11-12",
+    "main_sha": "84763205f335bf368399a95b5f4fa156e603518a",
+    "merged_through_pr": 27,
     "register_rows_sha256": "cd56d493c4f85ae4891e1329c40c7ef3a4f105fa13dc91adc1a1f0116ff0ae0f",
     "main_ci": {
-      "run_id": 42889642790,
+      "run_id": 43181878468,
       "state_at_check": "completed"
     }
   },
@@ -380,6 +380,24 @@
       "title": "PR #22 · Scoped task/document search",
       "description": "Bounded keyword search over existing task and document APIs with independent paging, current-source validation and source-view navigation; no status counts change and pending approvals, broader search and whole-MVP acceptance remain open.",
       "path": "pull/22",
+      "baseline": false
+    },
+    {
+      "title": "PR #24 · Synthetic notification path",
+      "description": "Durable delivery states, quiet hours, day budgets, per-cycle deduplication and bounded retry against a synthetic channel; no real provider, device push or whole-MVP acceptance.",
+      "path": "pull/24",
+      "baseline": false
+    },
+    {
+      "title": "PR #25 · Notification audit corrections",
+      "description": "Paused deliveries are parked and history snapshots are fully validated (audit of PR #24); no status count changes.",
+      "path": "pull/25",
+      "baseline": false
+    },
+    {
+      "title": "PR #26 · Synthetic invoice filing execution",
+      "description": "A separate single-use exact filing request, single claimant, reconcile-before-retry, no overwrite and scrub-on-forget against a synthetic destination only; no real adapter, original-byte copy or restart proof, and no status count changes.",
+      "path": "pull/26",
       "baseline": false
     }
   ],
