@@ -629,11 +629,11 @@ def test_database_error_between_write_and_finish_is_reconciled_never_resent(
     real_finish = filing_worker.finish
     failures = []
 
-    def broken(db, candidate, outcome):
+    def broken(db, candidate, outcome, fence):
         if not failures:
             failures.append(outcome)
             raise OperationalError("UPDATE", {}, Exception("synthetic connection loss"))
-        return real_finish(db, candidate, outcome)
+        return real_finish(db, candidate, outcome, fence)
 
     monkeypatch.setattr(filing_worker, "finish", broken)
     first = filing_worker.run_once(destination, auth_store)
@@ -652,3 +652,40 @@ def test_database_error_between_write_and_finish_is_reconciled_never_resent(
     (row,) = rows(auth_store)
     assert row.state == "filed" and destination.writes == 1 and list(destination.files) == [path]
     assert operations(auth_store) == ["requested", "attempted", "unknown", "reconciled"]
+
+
+def test_a_stale_worker_cannot_modify_a_newer_attempt_of_the_same_filing(
+    auth_client, auth_store, clock
+):
+    h = signin(auth_client)
+    doc, receipt, _ = plan_ready(auth_client, h)
+    filed(auth_client, h, doc, receipt)
+    destination = filing.SyntheticDestination()
+    with auth_store.begin() as db:
+        (candidate,) = filing_worker.candidates(db, 5)
+    with auth_store.begin() as db:
+        action, payload = filing_worker.claim(db, candidate)
+    assert action == "apply"
+    stale_fence = payload[-1]
+    # The first worker stalls; another reaps it, reconciles (absent) and claims attempt two.
+    clock["now"] += filing.IN_FLIGHT_DEADLINE + filing.RECONCILE_INTERVAL
+    assert filing_worker.process(auth_store, candidate, destination) == "unknown"
+    clock["now"] += filing.RECONCILE_INTERVAL
+    assert filing_worker.process(auth_store, candidate, destination) == "retried"
+    with auth_store.begin() as db:
+        action, payload = filing_worker.claim(db, candidate)
+    assert action == "apply" and payload[-1] != stale_fence
+    (before,) = rows(auth_store)
+    history = operations(auth_store)
+    assert before.state == "pending" and before.attempts == 2 and before.attempt_started_at
+    for outcome in filing.Outcome:
+        with auth_store.begin() as db:
+            assert filing_worker.finish(db, candidate, outcome, stale_fence) == "skipped"
+    # A stale reconciliation episode is rejected as well.
+    with auth_store.begin() as db:
+        assert filing_worker.reconcile(db, candidate, filing.Lookup.FILED, stale_fence) == "skipped"
+    (after,) = rows(auth_store)
+    assert (after.state, after.revision, after.attempts) == ("pending", before.revision, 2)
+    assert operations(auth_store) == history and destination.writes == 0
+    with auth_store.begin() as db:
+        assert filing_worker.finish(db, candidate, filing.Outcome.ACCEPTED, payload[-1]) == "filed"

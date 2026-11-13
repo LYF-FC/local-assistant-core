@@ -3,6 +3,15 @@
 The effect happens outside any database transaction. The attempt claim commits first, so a
 crash or timeout leaves an in-flight mark that is reconciled by lookup and never re-applied.
 Locks always run: owner, source and review (shared), then the filing row.
+
+Every attempt and every reconciliation episode owns the row revision its own claim produced. The
+outcome is applied only if the row still carries exactly that revision: the comparison is part of
+the locking read (``WHERE revision = :fence ... FOR UPDATE``), so it is decided by the database
+against the latest committed version and cannot race a concurrent change. Every transition
+increments the revision (the seal trigger enforces ``revision + 1``), hence a stale worker whose
+claim was reaped, reconciled, re-claimed, cancelled or scrubbed meets a different revision and is
+skipped without writing the row or its history. A stale but truthful result is discarded on
+purpose: the newer attempt, or the next lookup, resolves the filing.
 """
 
 import argparse
@@ -19,13 +28,12 @@ from app.models import InvoiceReview as Review
 from app.notification_worker import lock_owner
 
 
-def lock_row(db, execution_id):
-    return db.scalar(
-        select(FilingExecution)
-        .where(FilingExecution.id == execution_id)
-        .with_for_update()
-        .execution_options(populate_existing=True)
-    )
+def lock_row(db, execution_id, revision=None):
+    """Lock the filing row; with ``revision`` the lock only succeeds on exactly that revision."""
+    query = select(FilingExecution).where(FilingExecution.id == execution_id)
+    if revision is not None:
+        query = query.where(FilingExecution.revision == revision)
+    return db.scalar(query.with_for_update().execution_options(populate_existing=True))
 
 
 def candidates(db, limit):
@@ -128,7 +136,8 @@ def claim(db, candidate):
         )
         return "unknown", None
     if row.state == "unknown":
-        return "reconcile", str(row.id)
+        # The episode is identified by the revision that put the row into this unknown state.
+        return "reconcile", (str(row.id), row.revision)
     reason, effect = inspect(row, user, granted, source, review)
     if reason:
         filing.change(db, row, "cancelled", now, **filing.resolve("cancelled", now, reason))
@@ -144,12 +153,13 @@ def claim(db, candidate):
         authorization_consumed_at=row.authorization_consumed_at or now,
         reason=None,
     )
-    return "apply", (str(row.id), *effect)
+    # The attempt owns the revision its own claim just produced.
+    return "apply", (str(row.id), *effect, row.revision)
 
 
-def finish(db, candidate, outcome):
+def finish(db, candidate, outcome, fence):
     lock_owner(db, candidate.owner_id, candidate.scope_key)
-    row = lock_row(db, candidate.id)
+    row = lock_row(db, candidate.id, fence)
     if row is None or row.state != "pending" or row.attempt_started_at is None:
         return "skipped"
     now = identity.now_utc()
@@ -186,9 +196,9 @@ def finish(db, candidate, outcome):
     return "retried"
 
 
-def reconcile(db, candidate, found):
+def reconcile(db, candidate, found, fence):
     lock_owner(db, candidate.owner_id, candidate.scope_key)
-    row = lock_row(db, candidate.id)
+    row = lock_row(db, candidate.id, fence)
     if row is None or row.state != "unknown":
         return "skipped"
     now = identity.now_utc()
@@ -225,20 +235,21 @@ def process(maker, candidate, destination):
     with maker.begin() as db:
         action, payload = claim(db, candidate)
     if action == "apply":
-        key, path, sha256, size = payload
+        key, path, sha256, size, fence = payload
         try:
             outcome = destination.put(key, path, sha256, size)
         except Exception:  # noqa: BLE001 - an unknown destination failure is ambiguous
             outcome = filing.Outcome.TIMEOUT
         with maker.begin() as db:
-            return finish(db, candidate, outcome)
+            return finish(db, candidate, outcome, fence)
     if action == "reconcile":
+        key, fence = payload
         try:
-            found = destination.lookup(payload)
+            found = destination.lookup(key)
         except Exception:  # noqa: BLE001 - lookup failure keeps the ambiguity visible
             found = filing.Lookup.UNAVAILABLE
         with maker.begin() as db:
-            return reconcile(db, candidate, found)
+            return reconcile(db, candidate, found, fence)
     return action
 
 
