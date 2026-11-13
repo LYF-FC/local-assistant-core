@@ -77,8 +77,9 @@ PR index: #1 scope reconciliation (docs); #2 spec 050; #3 spec 051; #4 spec 052;
 ### Gate 2 — Private desktop/mobile entry (CORE-08/09, UI-01)
 - **Delivered (subset):** responsive UI over local HTTPS; scoped daily overview ([PR #17](https://github.com/LYF-FC/local-assistant-core/pull/17)); scoped task/document search ([PR #22](https://github.com/LYF-FC/local-assistant-core/pull/22)).
 - **Testing evidence:** frontend tests (`frontend`), `test_context_preview.py`. Browser scenarios run in CI.
-- **Outstanding:** private remote/mobile host acceptance; unified dashboard with pending approvals, failures and the remaining search gaps (all-library/semantic).
-- **Blockers:** host acceptance needs an actual private host (separate authorization). **Next:** unified attention inbox (priority 2).
+- **Branch engineering (spec 071, PR pending, not merged):** an explicit Inbox view composes tasks, reminders, documents needing review, filing failures and notification failures with evidence-only pending approvals (new read-only audited `approvals/query`) for one granted scope; see [ATTENTION_INBOX.md](docs/ATTENTION_INBOX.md). Merged delivery is recorded only after merge.
+- **Outstanding:** private remote/mobile host acceptance; the Gate 2 criterion ("Dashboard exposes agenda, pending approvals, reminders, failures and authorized search.") is not accepted by the owner and stays open; remaining search gaps (all-library/semantic); an approvals screen and infrastructure status.
+- **Blockers:** host acceptance needs an actual private host (separate authorization). **Next:** owner review of the spec 071 PR (priority 2).
 
 ### Gate 3 — Local conversation and cited answers (CORE-06/10)
 - **Delivered (subset):** reviewed lexical evidence retrieval, exact-quotation answers, strict citations, default-disabled local selector (spec 053, [PR #7](https://github.com/LYF-FC/local-assistant-core/pull/7)).
