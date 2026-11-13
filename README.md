@@ -6,7 +6,8 @@ Implemented engineering includes HTTPS identity/session controls, explicit scope
 
 ## Start here
 
-- [Feature overview and progress counts](docs/FEATURE_OVERVIEW.md), [critical review of all 149 references](docs/FEATURE_REVIEW.md), and [interactive dashboard HTML](docs/FEATURE_DASHBOARD.html).
+- [**Project master**](PROJECT_MASTER.md): the authoritative view of scope, MVP gates, what is delivered, what remains and what comes next. Read this first.
+- [Feature overview and progress counts](docs/FEATURE_OVERVIEW.md) (generated), [critical review of the 149-reference baseline](docs/FEATURE_REVIEW.md) (a dated snapshot; the register now holds 155 references) and [interactive dashboard HTML](docs/FEATURE_DASHBOARD.html) (generated).
 
 GitHub renders the Markdown overview directly. Download the HTML dashboard and open the saved file locally for interactive filters; repository HTML is shown as source on GitHub. No Pages hosting, application service or data collection is activated.
 

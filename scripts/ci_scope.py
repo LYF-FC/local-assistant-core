@@ -9,6 +9,7 @@ from pathlib import Path, PurePosixPath
 ROOT = Path(__file__).resolve().parents[1]
 JOBS = ("backend", "frontend", "postgres", "containers")
 ROOT_DOCS = {
+    "PROJECT_MASTER.md",
     "README.md",
     "CHANGELOG.md",
     "CONTEXT.md",

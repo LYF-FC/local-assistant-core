@@ -1,5 +1,7 @@
 # Validation status
 
+> **Dated evidence record.** This is the verified result for the imported baseline at the revision below, not the current state of `main`. Later PRs recorded their CI evidence in PR metadata only; the repository holds no exact-`main` verification record. Current status: [PROJECT_MASTER.md](../PROJECT_MASTER.md).
+
 ## Verified public baseline — 8 November 2026
 
 Public source revision: [`501d92ba739c57768caff130ce8a216056cbde5d`](https://github.com/LYF-FC/local-assistant-core/commit/501d92ba739c57768caff130ce8a216056cbde5d).

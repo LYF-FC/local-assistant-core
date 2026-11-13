@@ -1,5 +1,7 @@
 # Context
 
+> **Historical log.** PR-by-PR notes through PR #22, kept as written. They are not current status and do not cover PRs #24–#29. Current scope, gate status and priorities: [PROJECT_MASTER.md](PROJECT_MASTER.md). Where an entry below says "branch", that was true before its merge.
+
 Local Assistant Core is the primary generic software development repository for a local-first household/professional assistant. No tenant profile is embedded. Structured records own operational truth; replaceable models interpret or propose within current application permissions. Deterministic reminders, jobs, backups and failure state must work without inference.
 
 The retained product scope includes an everyday MVP and later household, care, connected-life, education/NOMAD, professional, creative, financial and governed platform capabilities. The [scope](docs/SCOPE.md), [complete register](docs/FEATURE_REGISTER.md) and [MVP contract](docs/MVP_ACCEPTANCE.md) preserve that breadth; the [roadmap](ROADMAP.md) orders dependencies without reducing scope.

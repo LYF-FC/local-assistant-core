@@ -1,5 +1,7 @@
 # MVP readiness — engineering and operational acceptance
 
+> Summary of demonstrated versus outstanding foundations. Gate-by-gate status and evidence: [PROJECT_MASTER.md](../PROJECT_MASTER.md); detailed acceptance: [MVP acceptance](MVP_ACCEPTANCE.md). If they differ, the master applies.
+
 The MVP has not been released or accepted. [Public baseline CI](VALIDATION.md) proves bounded synthetic engineering at a specific revision. Package version 0.1.0 and imported specs do not certify the complete everyday service.
 
 | Foundation | Demonstrated subset | Outstanding acceptance |

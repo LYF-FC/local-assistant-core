@@ -1,6 +1,6 @@
 # Feature overview
 
-Snapshot: **12 November 2026**, verified merged main [`8476320`](https://github.com/LYF-FC/local-assistant-core/commit/84763205f335bf368399a95b5f4fa156e603518a) through PR #27. This view does not query CI or certify exact-main/host/provider acceptance.
+Snapshot: **13 November 2026**, merged main [`5862bd1`](https://github.com/LYF-FC/local-assistant-core/commit/5862bd1c74622ae7de0ee154c3c5e7903d51f020) through PR #29. This view does not query CI or certify exact-main/host/provider acceptance.
 
 [Critical review of every feature](FEATURE_REVIEW.md) · [Interactive dashboard — download HTML](FEATURE_DASHBOARD.html) · [Source metadata](FEATURE_PROGRESS.json)
 
@@ -39,7 +39,7 @@ A feature is counted once at its first stage; later expansions remain retained. 
 
 ## Delivered building blocks
 
-18 public feature batches have merged after the imported engineering foundation. Documentation PRs are not feature deliveries; building blocks are not added to the original-feature denominator.
+20 public feature batches have merged after the imported engineering foundation. Documentation PRs are not feature deliveries; building blocks are not added to the original-feature denominator.
 
 | Evidence | Working engineering subset |
 |---|---|
@@ -62,6 +62,8 @@ A feature is counted once at its first stage; later expansions remain retained. 
 | [PR #24 · Synthetic notification path](https://github.com/LYF-FC/local-assistant-core/pull/24) | Durable delivery states, quiet hours, day budgets, per-cycle deduplication and bounded retry against a synthetic channel; no real provider, device push or whole-MVP acceptance. |
 | [PR #25 · Notification audit corrections](https://github.com/LYF-FC/local-assistant-core/pull/25) | Paused deliveries are parked and history snapshots are fully validated (audit of PR #24); no status count changes. |
 | [PR #26 · Synthetic invoice filing execution](https://github.com/LYF-FC/local-assistant-core/pull/26) | A separate single-use exact filing request, single claimant, reconcile-before-retry, no overwrite and scrub-on-forget against a synthetic destination only; no real adapter, original-byte copy or restart proof, and no status count changes. |
+| [PR #28 · Calendar recurrence and briefing v2](https://github.com/LYF-FC/local-assistant-core/pull/28) | Bounded recurring series and overrides, a cursor-based sync against a synthetic read-only provider and a 1 to 7 day briefing; no real provider, no calendar writes and no whole-MVP acceptance. |
+| [PR #29 · Filing revision fence and synthetic journey](https://github.com/LYF-FC/local-assistant-core/pull/29) | Revision-fenced filing attempts and reconciliations, PostgreSQL stale-worker tests, a synthetic email-to-filing journey and in-process crash/recovery tests; MVP-03 stays incomplete (no process-level restart proof, live inbox or real destination). |
 
 ## All original named features
 
@@ -276,8 +278,8 @@ These overlap product features and remain fully retained, including INSTALL and 
 
 ## Counting and maintenance contract
 
-The register owns retained requirements/evidence; FEATURE_PROGRESS.json records verified snapshot and first-stage mappings; FEATURE_REVIEW.md owns separately labelled recommendations. All IDs must match, and every reference has exactly one review. No review candidate is automatically added to scope.
+PROJECT_MASTER.md owns stage and gate status, acceptance status and priorities; this overview is a derived view and adds no facts of its own. The register owns retained requirements/evidence; FEATURE_PROGRESS.json is a hand-curated input, not a generated file: it records the snapshot metadata (main revision, last merged PR, CI run, register-row fingerprint), first-stage mappings and merged-capability list, and its snapshot revision must equal the revision recorded in PROJECT_MASTER.md; FEATURE_REVIEW.md owns separately labelled recommendations. All IDs must match, and every reference has exactly one review. No review candidate is automatically added to scope.
 
-After a verified feature merge or approved scope/status/milestone change, reconcile the register/roadmap and metadata, including the register-row fingerprint. Run `python3 scripts/build_feature_overview.py` and review generated counters, links and first-stage assignments. `--check` verifies reproducibility without writes; `--export-dir PATH` additionally exports standalone HTML/Markdown/JSON outside the repository when requested. Repository policy rejects stale/tampered output, missing/duplicate IDs or unknown completion claims. No CI/network query is performed by generation. Record hosted CI evidence in PR metadata; do not push source solely to add CI proof or refresh a snapshot after a documentation-only merge.
+After a confirmed feature merge (PR number and merge commit) or approved scope/status/milestone change, reconcile PROJECT_MASTER.md, the register/roadmap and metadata, including the register-row fingerprint. Run `python3 scripts/build_feature_overview.py` and review generated counters, links and first-stage assignments. `--check` verifies reproducibility without writes; `--export-dir PATH` additionally exports standalone HTML/Markdown/JSON outside the repository when requested. Repository policy rejects stale/tampered output, missing/duplicate IDs or unknown completion claims. No CI/network query is performed by generation. Record hosted CI evidence in PR metadata; do not push source solely to add CI proof or refresh a snapshot after a documentation-only merge.
 
 Changing the generator, template or CI policy remains full CI. Only the exact validated dashboard/metadata paths can join Markdown in documentation-only selection; other new HTML/JSON is unknown/full. Never use green open PRs as merged evidence or turn full retained-scope completion into a prerequisite for every earlier bounded MVP. Private history/profile values remain outside Git.
