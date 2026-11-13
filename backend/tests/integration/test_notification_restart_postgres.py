@@ -112,6 +112,24 @@ def snap(admin, row):
         }
 
 
+def retire(admin, ids):
+    """Leave no claimable rows behind: the database is shared with other tests' bounded passes."""
+    with admin.begin() as db:
+        db.execute(
+            text("ALTER TABLE notification_deliveries DISABLE TRIGGER butler_notification_guard")
+        )
+        for identifier in ids:
+            state = db.get(NotificationDelivery, identifier)
+            if state is not None and state.state in {"pending", "unknown"}:
+                state.state, state.reason = "cancelled", "owner_unavailable"
+                state.attempt_started_at = state.next_attempt_at = None
+                state.resolved_at = state.updated_at
+        db.flush()
+        db.execute(
+            text("ALTER TABLE notification_deliveries ENABLE TRIGGER butler_notification_guard")
+        )
+
+
 @pytest.fixture
 def procs():
     started = []
@@ -121,9 +139,18 @@ def procs():
 
 
 @pytest.fixture
-def env(scenario, runtime_engine, monkeypatch, tmp_path, procs):
+def leftovers():
+    rows = []  # (admin engine, delivery id)
+    yield rows
+    for admin, identifier in rows:
+        retire(admin, [identifier])
+
+
+@pytest.fixture
+def env(scenario, runtime_engine, monkeypatch, tmp_path, procs, leftovers):
     clock = identity.now_utc
     maker, admin, _, _, delivery = enqueued(runtime_engine, scenario, monkeypatch)
+    leftovers.append((admin, delivery.id))
     real_time(monkeypatch, admin, delivery, clock)
     ledger = Ledger(tmp_path / "channel")
     url = runtime_engine.url.render_as_string(hide_password=False)
@@ -295,10 +322,11 @@ def test_a_delivered_cycle_is_never_enqueued_or_sent_again(env):
 
 
 def test_a_reconciled_delivery_counts_against_the_daily_budget_in_a_fresh_process(
-    scenario, runtime_engine, monkeypatch, tmp_path, procs
+    scenario, runtime_engine, monkeypatch, tmp_path, procs, leftovers
 ):
     clock = identity.now_utc
     maker, admin, _, _, first = enqueued(runtime_engine, scenario, monkeypatch, limit=1)
+    leftovers.append((admin, first.id))
     real_time(monkeypatch, admin, first, clock)
     ledger = Ledger(tmp_path / "channel")
     url = runtime_engine.url.render_as_string(hide_password=False)
@@ -312,6 +340,7 @@ def test_a_reconciled_delivery_counts_against_the_daily_budget_in_a_fresh_proces
     assert run_to_completion("notification", url, ledger, first.id) == "delivered"
     # A second delivery for the same owner on the same day meets the budget the recovery consumed.
     second = another_delivery(scenario, runtime_engine, monkeypatch, maker, admin, clock)
+    leftovers.append((admin, second.id))
     assert run_to_completion("notification", url, ledger, second.id) == "deferred"
     state = snap(admin, second)
     assert state["state"] == "pending" and state["reason"] == "daily_limit"

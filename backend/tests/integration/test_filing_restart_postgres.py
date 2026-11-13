@@ -12,8 +12,11 @@ real destination, a live inbox, real authorization or cross-store reconciliation
 
 import pytest
 from restart_support import FileDestination, Ledger, Worker, run_to_completion
+from sqlalchemy import text
 from test_filing_fence_postgres import FULL_HISTORY, age, due, snap
 from test_filing_postgres import forget_owned_test_sources, requested  # noqa: F401
+
+from app.models import FilingExecution
 
 pytestmark = pytest.mark.integration
 
@@ -27,8 +30,30 @@ def procs():
 
 
 @pytest.fixture
-def env(scenario, runtime_engine, tmp_path, procs):
+def leftovers():
+    rows = []  # (admin engine, filing id)
+    yield rows
+    for admin, identifier in rows:
+        retire(admin, identifier)
+
+
+def retire(admin, identifier):
+    """Leave no claimable row behind: the database is shared with other tests' bounded passes."""
+    with admin.begin() as db:
+        db.execute(text("ALTER TABLE filing_executions DISABLE TRIGGER butler_filing_guard"))
+        state = db.get(FilingExecution, identifier)
+        if state is not None and state.state in {"pending", "unknown"}:
+            state.state, state.reason = "cancelled", "owner_unavailable"
+            state.attempt_started_at = state.next_attempt_at = None
+            state.resolved_at = state.updated_at
+        db.flush()
+        db.execute(text("ALTER TABLE filing_executions ENABLE TRIGGER butler_filing_guard"))
+
+
+@pytest.fixture
+def env(scenario, runtime_engine, tmp_path, procs, leftovers):
     maker, admin, doc, _receipt, path, row = requested(scenario, runtime_engine)
+    leftovers.append((admin, row.id))
     ledger = Ledger(tmp_path / "destination")
     url = runtime_engine.url.render_as_string(hide_password=False)
 
