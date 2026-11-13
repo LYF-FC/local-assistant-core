@@ -8,7 +8,7 @@ Checking a box below records only that the named work was done on the implementa
 - [ ] Owner review of spec, plan and tasks; owner confirms the slice is ready to implement. (Does not approve the five-priority order.)
 - [x] Checklist: acceptance scenarios A–S in the spec were reviewed against this task list before implementation; none required a change to authority, scope, acceptance criteria, an approvals screen or an unapproved field.
 
-Review follow-up (PR #34) done on the branch: section-specific more-records wording, in-inbox approvals paging, revision-tie fix, real-stack e2e. **Blocked, pending owner decision:** record-level navigation for filing and notification cards is not implemented (scope-level links remain, labelled as an unaccepted deviation); see convergence finding 2. The owner-review box above stays unchecked.
+Review follow-up (PR #34) done on the branch: section-specific more-records wording, in-inbox approvals paging, revision-tie fix, real-stack e2e, and the owner-approved record-level navigation (filing failure → related document by identity, notification failure → related reminder via a verified `task_id`; convergence finding 2). Implemented and run locally except the real-stack browser spec, which is verified only by hosted CI. The owner-review box above stays unchecked.
 
 Implementation (one coherent batch, one grouped push). Items marked done were completed and run locally on the branch; the compose container e2e and hosted CI have not run:
 
