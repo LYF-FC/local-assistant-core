@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "snapshot": {
-    "date": "2026-11-12",
-    "main_sha": "84763205f335bf368399a95b5f4fa156e603518a",
-    "merged_through_pr": 27,
+    "date": "2026-11-13",
+    "main_sha": "5862bd1c74622ae7de0ee154c3c5e7903d51f020",
+    "merged_through_pr": 29,
     "register_rows_sha256": "93ccc806d34651c0d474295205d489549e604e561f19af9b290aa2d732bf76b4",
     "main_ci": {
-      "run_id": 43181878468,
+      "run_id": 43414296005,
       "state_at_check": "completed"
     }
   },
@@ -398,6 +398,18 @@
       "title": "PR #26 · Synthetic invoice filing execution",
       "description": "A separate single-use exact filing request, single claimant, reconcile-before-retry, no overwrite and scrub-on-forget against a synthetic destination only; no real adapter, original-byte copy or restart proof, and no status count changes.",
       "path": "pull/26",
+      "baseline": false
+    },
+    {
+      "title": "PR #28 · Calendar recurrence and briefing v2",
+      "description": "Bounded recurring series and overrides, a cursor-based sync against a synthetic read-only provider and a 1 to 7 day briefing; no real provider, no calendar writes and no whole-MVP acceptance.",
+      "path": "pull/28",
+      "baseline": false
+    },
+    {
+      "title": "PR #29 · Filing revision fence and synthetic journey",
+      "description": "Revision-fenced filing attempts and reconciliations, PostgreSQL stale-worker tests, a synthetic email-to-filing journey and in-process crash/recovery tests; MVP-03 stays incomplete (no process-level restart proof, live inbox or real destination).",
+      "path": "pull/29",
       "baseline": false
     }
   ],

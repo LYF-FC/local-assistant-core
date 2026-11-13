@@ -1,10 +1,43 @@
 """Offline repository invariants. Not a substitute for a full secret scanner."""
+import json
 import re
 from pathlib import Path
 
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+MASTER = "PROJECT_MASTER.md"
+LINK = re.compile(r"\]\(([^)\s#]+)(?:#[^)]*)?\)")
+
+
+def check_master(root: Path) -> list[str]:
+    """High-value, reliable checks of the authoritative master against its inputs."""
+    from build_feature_overview import ID
+
+    errors = []
+    master = root / MASTER
+    if not master.is_file():
+        return [f"{MASTER}: authoritative project master is missing"]
+    text = master.read_text()
+    found = re.search(r"revision `([a-f0-9]{40})`", text)
+    snapshot = json.loads((root / "docs/FEATURE_PROGRESS.json").read_text())["snapshot"]["main_sha"]
+    if not found or found.group(1) != snapshot:
+        errors.append(f"{MASTER}: verified revision must equal docs/FEATURE_PROGRESS.json snapshot main_sha")
+    register = (root / "docs/FEATURE_REGISTER.md").read_text()
+    known = set(re.findall(rf"^\| ({ID}) \|", register, re.M))
+    cited = set(re.findall(rf"\b{ID}\b", text))
+    for identifier in sorted(cited - known):
+        errors.append(f"{MASTER}: {identifier} is not a register identifier")
+    for identifier in (f"MVP-0{n}" for n in range(1, 6)):
+        if identifier not in cited:
+            errors.append(f"{MASTER}: acceptance gate {identifier} is not mapped")
+    for name in (MASTER, "ROADMAP.md"):
+        for target in LINK.findall((root / name).read_text()):
+            if not target.startswith(("http://", "https://", "mailto:")) and not (root / name).parent.joinpath(target).exists():
+                errors.append(f"{name}: broken relative link {target}")
+    return errors
 
 
 def check(root: Path = ROOT) -> list[str]:
@@ -66,6 +99,7 @@ def check(root: Path = ROOT) -> list[str]:
         errors.extend(compare_outputs(root, outputs))
     except (OSError, ValueError, KeyError, TypeError) as exc:
         errors.append(f"Feature overview: {exc}")
+    errors.extend(check_master(root))
     return errors
 
 

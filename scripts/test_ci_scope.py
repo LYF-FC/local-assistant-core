@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import build_feature_overview as overview
+import check_repository
 import ci_gate
 import ci_scope
 import yaml
@@ -352,6 +353,42 @@ class EconomyTests(unittest.TestCase):
             if step.get("uses", "").startswith("actions/upload-artifact@")
         )
         self.assertEqual(artifact["with"]["retention-days"], 1)
+
+
+class MasterTests(unittest.TestCase):
+    SHA = "a" * 40
+
+    def tree(self, master=None, sha=None, register=None, roadmap="[ok](PROJECT_MASTER.md)"):
+        root = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: __import__("shutil").rmtree(root, ignore_errors=True))
+        (root / "docs").mkdir()
+        gates = " ".join(f"MVP-0{n}" for n in range(1, 6))
+        master = master if master is not None else f"revision `{self.SHA}` {gates} CORE-01 [register](docs/FEATURE_REGISTER.md)"
+        (root / "PROJECT_MASTER.md").write_text(master)
+        (root / "ROADMAP.md").write_text(roadmap)
+        rows = register or "".join(f"| {i} | x |\n" for i in ("CORE-01", *gates.split()))
+        (root / "docs/FEATURE_REGISTER.md").write_text(rows)
+        (root / "docs/FEATURE_PROGRESS.json").write_text('{"snapshot": {"main_sha": "%s"}}' % (sha or self.SHA))
+        return root
+
+    def test_consistent_master_passes(self):
+        self.assertEqual(check_repository.check_master(self.tree()), [])
+
+    def test_master_is_documentation_only_for_ci_selection(self):
+        self.assertEqual({j for j in ci_scope.JOBS if ci_scope.classify(["PROJECT_MASTER.md"])[j]}, set())
+
+    def test_missing_master_snapshot_mismatch_unknown_id_unmapped_gate_and_broken_link_fail(self):
+        gates = " ".join(f"MVP-0{n}" for n in range(1, 6))
+        missing = self.tree()
+        (missing / "PROJECT_MASTER.md").unlink()
+        self.assertIn("missing", check_repository.check_master(missing)[0])
+        self.assertTrue(any("snapshot" in e for e in check_repository.check_master(self.tree(sha="b" * 40))))
+        unknown = self.tree(master=f"revision `{self.SHA}` {gates} CORE-99")
+        self.assertTrue(any("CORE-99" in e for e in check_repository.check_master(unknown)))
+        unmapped = self.tree(master=f"revision `{self.SHA}` MVP-01 MVP-02 MVP-03 MVP-04")
+        self.assertTrue(any("MVP-05" in e for e in check_repository.check_master(unmapped)))
+        broken = self.tree(roadmap="[x](docs/NOPE.md)")
+        self.assertTrue(any("broken relative link" in e for e in check_repository.check_master(broken)))
 
 
 if __name__ == "__main__":
