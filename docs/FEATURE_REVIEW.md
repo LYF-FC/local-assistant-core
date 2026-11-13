@@ -1,5 +1,7 @@
 # Critical feature and product review
 
+> **Dated review snapshot** (merged `main` at PR #13). Its counts and recommendations describe that revision; later delivery is not reflected here. Current scope, gate status and priorities: [PROJECT_MASTER.md](../PROJECT_MASTER.md).
+
 **Current decision — 9 November 2026:** all recommendations below, including former candidates A–F, are owner-approved for [a deferred improvement/refactoring programme](DEFERRED_REVIEW_PROGRAMME.md) after the existing agreed scope and its later stages. This supersedes the review's earlier pending-approval status and suggested priority changes. Current register 155 = original149 + six mapped supporting references; the original 99 cohort is unchanged. The analysis below retains its PR13 evidence date; approval is not implementation or activation.
 
 Review of all **99 original product features and 50 supporting references**, based on merged main `33a3b91679066b788e23cc5df2f61ae6c34ab1db` (PR #13). This is a product/scope/dependency review, not certification of every implementation or a new security/code audit. The [register](FEATURE_REGISTER.md), [detailed reconciliation](SCOPE_RECONCILIATION.md) and [MVP acceptance](MVP_ACCEPTANCE.md) remain authoritative. Private household values/history stay outside Git.

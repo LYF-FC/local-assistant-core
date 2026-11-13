@@ -1,5 +1,7 @@
 # Decisions
 
+> Decision log: design and scope decisions. Delivery status of what was decided is owned by [PROJECT_MASTER.md](PROJECT_MASTER.md), not recorded here.
+
 Local structured authority, explicit current permissions, transactional minimal audit, restricted roles and deterministic workflows are foundational. Production and external integrations remain gated. Small document BYTEA staging is temporary; durable archive remains separate. See [architecture](ARCHITECTURE.md), [security](SECURITY.md) and [CI](docs/CI_COMPUTE.md).
 
 ## Scope and delivery reconciliation

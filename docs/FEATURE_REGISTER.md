@@ -8,7 +8,7 @@ For a quick counted projection, see the [feature overview](FEATURE_OVERVIEW.md) 
 
 ## Status and acceptance policy
 
-Partial = an implemented bounded subset with remaining work. Planned = full acceptance not evidenced; inspect before claiming absent or complete. Every row stays open until its complete specification, negative permission tests, provenance/export/recovery behavior, required exact-head CI and relevant real-host/provider gates are satisfied. No row here is certified production complete.
+Partial = an implemented bounded subset with remaining work. Planned = full acceptance not evidenced; inspect before claiming absent or complete. The status column labels a reference's bounded evidence only; it is not the project, stage or MVP-gate status, which [PROJECT_MASTER.md](../PROJECT_MASTER.md) owns (including the separate implementation, integration, testing, verification and acceptance facts). Every row stays open until its complete specification, negative permission tests, provenance/export/recovery behavior, required exact-head CI and relevant real-host/provider gates are satisfied. No row here is certified production complete.
 
 Before implementing a row, add measurable acceptance to its feature spec and preserve all applicable constitution/security constraints. Keep data local, unknowns explicit, originals/provenance intact, approvals payload-bound and side effects authorized. A title or generated suggestion never grants authority.
 
@@ -187,18 +187,18 @@ Owner-approved 9 November 2026, after implementation of the full pre-review 149-
 | REV-06 | Cross-feature attention/resource budgets: Shared declared storage/inference/job/notification limits, observable priorities/pauses/resumption and deterministic-service availability under competing load. | After existing agreed scope, including later stages | planned; owner-approved deferred bundle; no implementation claimed | PLATFORM-02, RND and AI budget contracts; measured limits and competing-load/refusal/failure evidence without surprise spending or remote fallback. [Programme and candidate mapping](DEFERRED_REVIEW_PROGRAMME.md). |
 
 
-Spec062 branch engineering targets existing CORE-08/09, UI-01 and ORG-02 through [a bounded daily overview and review entry](DAILY_OVERVIEW.md). No register status, count, milestone or approved deferred ordering changes before verified feature merge. All155 references and original99 named outcomes remain; full dashboard/approval/search/operations/live acceptance is open.
+Spec062 (merged in PR #17) targets existing CORE-08/09, UI-01 and ORG-02 through [a bounded daily overview and review entry](DAILY_OVERVIEW.md). No register status, count, milestone or approved deferred ordering changed beyond the merged evidence. All155 references and original99 named outcomes remain; full dashboard/approval/search/operations/live acceptance is open.
 
 
 Spec063 [manual financial capture contract](FINANCIAL_CAPTURE.md) defines the remaining basic FIN-06 implementation/acceptance boundary. Planning is not delivery: FIN-06 remains planned, all155 status/requirement/milestone rows and original99 cohort remain unchanged. Full later finance and approved deferred programme stay retained.
 
 
-Spec064 branch [financial storage/API](FINANCIAL_REGISTER_API.md) advances the existing basic FIN-06 implementation boundary without claiming full delivery. Typed server data/history/plan review/export/forget are implemented; financial UI and full retained finance/MVP acceptance stay open. No status/count/milestone or deferred ordering is promoted before merge. All155 original references remain.
+Spec064 (merged in PR #19) [financial storage/API](FINANCIAL_REGISTER_API.md) advances the existing basic FIN-06 implementation boundary without claiming full delivery. Typed server data/history/plan review/export/forget are implemented; financial UI and full retained finance/MVP acceptance stay open. No status/count/milestone or deferred ordering was promoted beyond the merged evidence. All155 original references remain.
 
 Spec065 [financial UI](FINANCIAL_UI.md) merged in PR20 over PR19; this is engineering delivery, not full FIN-06 acceptance. All155 references, original99 cohort/milestones and deferred review ordering remain intact.
 
 
-Spec066 [operations overview](OPERATIONS_OVERVIEW.md) is current branch engineering for existing OPS-09/RND-01 foundations. OPS-10 audit/reporting stays open; no new feature reference, original scope reduction or current-branch count promotion.
+Spec066 [operations overview](OPERATIONS_OVERVIEW.md) is merged engineering (PR #21) for existing OPS-09/RND-01 foundations. OPS-10 audit/reporting stays open; no new feature reference or original scope reduction.
 
 
 Spec068 [synthetic notification path](NOTIFICATIONS.md) is merged engineering for existing CORE-11 (and the delivery semantics later reused by CORE-13/ORG-03/REM-01). A synthetic channel, delivery states, quiet/day-budget reuse, per-cycle deduplication, bounded retry and ambiguity reconciliation are not a real provider, device push, email, summary, recurrence or whole-MVP acceptance. No promotion or retained scope reduction. Spec068 merged in [PR #24](https://github.com/LYF-FC/local-assistant-core/pull/24) with corrections in [PR #25](https://github.com/LYF-FC/local-assistant-core/pull/25).
@@ -207,4 +207,4 @@ Spec069 [synthetic filing execution](FILING_EXECUTION.md), merged in [PR #26](ht
 
 Spec070 [calendar recurrence, provider-mode sync and briefing v2](../specs/070-calendar-recurrence-briefing/spec.md) is merged ([PR #28](https://github.com/LYF-FC/local-assistant-core/pull/28)) engineering for existing ORG-01/02, CORE-08/09, UI-01 and MVP-02: bounded recurring series, a synthetic read-only provider in development and test, at-least-once fetch with idempotent apply, and a 1 to 7 day briefing with per-source states and explicit limits. It is not a live account read, external write or scheduling feature. ORG-01 and MVP-02 stay partial; merging promoted no status.
 
-Spec067 [scoped task/document search](SCOPED_RECORD_SEARCH.md) is current branch engineering for existing CORE-08/UI-01. Two bounded libraries and current-source navigation are not all-library/semantic search, pending approvals or whole-MVP acceptance. No current branch promotion or retained scope reduction.
+Spec067 [scoped task/document search](SCOPED_RECORD_SEARCH.md) is merged engineering (PR #22) for existing CORE-08/UI-01. Two bounded libraries and current-source navigation are not all-library/semantic search, pending approvals or whole-MVP acceptance. No retained scope reduction.

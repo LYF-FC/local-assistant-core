@@ -4,11 +4,12 @@ Local Assistant Core is a local-first assistant for private/shared household and
 
 ## Reading and authority
 
+- [**Project master**](../PROJECT_MASTER.md): authoritative scope summary, MVP gates, delivery status, outstanding work and priorities.
 - [Complete feature register](FEATURE_REGISTER.md): all 155 current references (the 149-reference baseline plus six approved deferred supporting bundles), bounded evidence and remaining acceptance.
 - [Dependencies](FEATURE_DEPENDENCIES.md): prerequisites for every register ID.
 - [MVP acceptance](MVP_ACCEPTANCE.md): measurable everyday outcomes and release gates.
 - [Reconciliation](SCOPE_RECONCILIATION.md): overlaps, supersessions, alternatives and unresolved decisions.
-- [Roadmap and delivery Kanban](../ROADMAP.md): dependency-aware batches and later stages.
+- [Roadmap](../ROADMAP.md): dependency-aware batches and later stages (a sequencing view; status is in the master).
 - [Validation](VALIDATION.md) and [readiness](V0_1_READINESS.md): demonstrated engineering versus outstanding operational acceptance.
 
 The [constitution](../.specify/memory/constitution.md) and current explicit decisions govern conflicts. Feature specs refine these requirements; they cannot silently discard them. Before affected work, reconcile the detailed contract, preserve acceptance and record any duplicate, superseded proposal, private configuration or required owner decision. Personal requirements and historical evidence remain privately retained; they are not shipped as defaults. The public register is a generic projection, not proof of sentence-by-sentence semantic deduplication.
