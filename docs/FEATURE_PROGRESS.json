@@ -4,7 +4,7 @@
     "date": "2026-11-12",
     "main_sha": "84763205f335bf368399a95b5f4fa156e603518a",
     "merged_through_pr": 27,
-    "register_rows_sha256": "cd56d493c4f85ae4891e1329c40c7ef3a4f105fa13dc91adc1a1f0116ff0ae0f",
+    "register_rows_sha256": "93ccc806d34651c0d474295205d489549e604e561f19af9b290aa2d732bf76b4",
     "main_ci": {
       "run_id": 43181878468,
       "state_at_check": "completed"

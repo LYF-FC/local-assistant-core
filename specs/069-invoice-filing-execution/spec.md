@@ -11,6 +11,7 @@ Stated precisely, because "exactly once" is not achievable unconditionally:
 3. **Conditional on the destination.** (2) holds only for a destination that honours the key on write and answers lookup by key. A destination that cannot is documented as *at-most-once with a visible unknown state*, never exactly-once. The in-process double is not durable: across a real worker restart its ledger is empty, so a lookup would answer "absent". Restart behaviour is therefore **not** proven by this spec.
 4. **No overwrite.** A path already owned by another key is a refusal (`collision`, terminal `failed`), never a replacement. Collision is decided on the canonical path (below), so case or Unicode variants collide.
 5. **An effect applied before forgetting cannot be recalled.** Only the records about it are scrubbed.
+6. **Late results never touch a newer revision.** An attempt, and a lookup of an unknown filing, each own the revision their own claim produced and apply their result only to that exact revision (a locking read `WHERE revision = fence`; every transition increments the revision and the seal trigger enforces `revision + 1`). A stale worker or reconciler is skipped with no change to the row or history, and its truthful result is discarded in favour of the newer attempt or the next lookup. This holds regardless of destination idempotency and removes the false `failed` that a stalled first worker could otherwise cause after attempt three.
 
 ## Authorization
 
@@ -49,7 +50,7 @@ The `document_id` foreign key remains on the current row, pointing at the docume
 - Bounded retry reused from spec 068: three attempts, backoff 1/5/15 minutes, reconcile interval one minute.
 - Sealed metadata history and a system audit event per change; no invoice field, filename, path or source text enters history or audit. Owner-only `POST /api/v1/filing/request|cancel|query|history`.
 - Restricted worker `python -m app.filing_worker --once|--loop`: development/test with restricted runtime credentials, bounded passes of at most 100, synthetic destination only, not started by default.
-- Migration 0034 (after 0033, spec 068 corrections).
+- Migration 0034 (after 0033, spec 068 corrections). **Its downgrade is destructive by design:** it drops both filing tables and both seal functions, deleting every execution and its sealed history, including the consumed-request evidence; `audit_events` metadata remains and nothing is recalled from a destination. After a re-upgrade the same approved plan revision can be requested again, and only the destination's no-overwrite rule then stands against a second write. It does not refuse a downgrade when rows exist (a separate design decision, not authorized). Back up first, stop the worker and roll forward; downgrade is not a production rollback strategy.
 
 ## Out of scope
 
