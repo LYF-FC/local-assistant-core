@@ -1,6 +1,6 @@
 # Feature overview
 
-Snapshot: **13 November 2026**, merged main [`5862bd1`](https://github.com/LYF-FC/local-assistant-core/commit/5862bd1c74622ae7de0ee154c3c5e7903d51f020) through PR #29. This view does not query CI or certify exact-main/host/provider acceptance.
+Snapshot: **13 November 2026**, merged main [`5096134`](https://github.com/LYF-FC/local-assistant-core/commit/5096134687fd1c03805977a1681b415395a046f0) through PR #31. This view does not query CI or certify exact-main/host/provider acceptance.
 
 [Critical review of every feature](FEATURE_REVIEW.md) · [Interactive dashboard — download HTML](FEATURE_DASHBOARD.html) · [Source metadata](FEATURE_PROGRESS.json)
 
@@ -39,7 +39,7 @@ A feature is counted once at its first stage; later expansions remain retained. 
 
 ## Delivered building blocks
 
-20 public feature batches have merged after the imported engineering foundation. Documentation PRs are not feature deliveries; building blocks are not added to the original-feature denominator.
+21 public feature batches have merged after the imported engineering foundation. Documentation PRs are not feature deliveries; building blocks are not added to the original-feature denominator.
 
 | Evidence | Working engineering subset |
 |---|---|
@@ -64,6 +64,7 @@ A feature is counted once at its first stage; later expansions remain retained. 
 | [PR #26 · Synthetic invoice filing execution](https://github.com/LYF-FC/local-assistant-core/pull/26) | A separate single-use exact filing request, single claimant, reconcile-before-retry, no overwrite and scrub-on-forget against a synthetic destination only; no real adapter, original-byte copy or restart proof, and no status count changes. |
 | [PR #28 · Calendar recurrence and briefing v2](https://github.com/LYF-FC/local-assistant-core/pull/28) | Bounded recurring series and overrides, a cursor-based sync against a synthetic read-only provider and a 1 to 7 day briefing; no real provider, no calendar writes and no whole-MVP acceptance. |
 | [PR #29 · Filing revision fence and synthetic journey](https://github.com/LYF-FC/local-assistant-core/pull/29) | Revision-fenced filing attempts and reconciliations, PostgreSQL stale-worker tests, a synthetic email-to-filing journey and in-process crash/recovery tests; MVP-03 stays incomplete (no process-level restart proof, live inbox or real destination). |
+| [PR #31 · Process-restart recovery evidence (synthetic)](https://github.com/LYF-FC/local-assistant-core/pull/31) | Real worker subprocesses killed with SIGKILL and recovered by fresh processes against PostgreSQL and a durable synthetic destination/delivery ledger; ambiguous outcomes reconciled by lookup, stale workers fenced (fence added to the notification worker) and migration 0036 for notification rechecks. Testing evidence for Gates 5 and 7 against synthetic collaborators only: no real provider, destination or inbox, not exactly-once, no status count changes and no gate accepted. |
 
 ## All original named features
 

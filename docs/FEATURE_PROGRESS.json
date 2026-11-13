@@ -2,16 +2,16 @@
   "schema_version": 1,
   "snapshot": {
     "date": "2026-11-13",
-    "main_sha": "5862bd1c74622ae7de0ee154c3c5e7903d51f020",
-    "merged_through_pr": 29,
-    "register_rows_sha256": "93ccc806d34651c0d474295205d489549e604e561f19af9b290aa2d732bf76b4",
+    "main_sha": "5096134687fd1c03805977a1681b415395a046f0",
+    "merged_through_pr": 31,
+    "register_rows_sha256": "977ac2cd45c4b06983f87f2152c4a2bed2e744b4d6db1fc44cf349e0435bb8ad",
     "ci_evidence": {
-      "run_id": 43414296005,
+      "run_id": 43493750600,
       "event": "push",
       "branch": "main",
-      "head_sha": "5862bd1c74622ae7de0ee154c3c5e7903d51f020",
+      "head_sha": "5096134687fd1c03805977a1681b415395a046f0",
       "conclusion": "success",
-      "note": "Hosted CI run for the push to main at the snapshot revision; all six jobs succeeded. Recorded as CI evidence only: it is not reviewer-signed verification of any gate and not owner acceptance."
+      "note": "Hosted CI run for the push to main at the snapshot revision. Attempt 1 failed in the postgres job on a lock timeout in an unrelated work-adapter test (test_work_source_checkpoint_postgres, LockNotAvailable on work_workspaces); rerunning the failed jobs (attempt 2) succeeded, so all six jobs succeeded only after that rerun. Recorded as CI evidence only: it is not reviewer-signed verification of any gate and not owner acceptance."
     }
   },
   "stages": {
@@ -414,6 +414,12 @@
       "title": "PR #29 · Filing revision fence and synthetic journey",
       "description": "Revision-fenced filing attempts and reconciliations, PostgreSQL stale-worker tests, a synthetic email-to-filing journey and in-process crash/recovery tests; MVP-03 stays incomplete (no process-level restart proof, live inbox or real destination).",
       "path": "pull/29",
+      "baseline": false
+    },
+    {
+      "title": "PR #31 · Process-restart recovery evidence (synthetic)",
+      "description": "Real worker subprocesses killed with SIGKILL and recovered by fresh processes against PostgreSQL and a durable synthetic destination/delivery ledger; ambiguous outcomes reconciled by lookup, stale workers fenced (fence added to the notification worker) and migration 0036 for notification rechecks. Testing evidence for Gates 5 and 7 against synthetic collaborators only: no real provider, destination or inbox, not exactly-once, no status count changes and no gate accepted.",
+      "path": "pull/31",
       "baseline": false
     }
   ],
