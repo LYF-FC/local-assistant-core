@@ -5,9 +5,13 @@
     "main_sha": "5862bd1c74622ae7de0ee154c3c5e7903d51f020",
     "merged_through_pr": 29,
     "register_rows_sha256": "93ccc806d34651c0d474295205d489549e604e561f19af9b290aa2d732bf76b4",
-    "main_ci": {
+    "ci_evidence": {
       "run_id": 43414296005,
-      "state_at_check": "completed"
+      "event": "push",
+      "branch": "main",
+      "head_sha": "5862bd1c74622ae7de0ee154c3c5e7903d51f020",
+      "conclusion": "success",
+      "note": "Hosted CI run for the push to main at the snapshot revision; all six jobs succeeded. Recorded as CI evidence only: it is not reviewer-signed verification of any gate and not owner acceptance."
     }
   },
   "stages": {

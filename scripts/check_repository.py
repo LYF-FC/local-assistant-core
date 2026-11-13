@@ -24,7 +24,7 @@ def check_master(root: Path) -> list[str]:
     found = re.search(r"revision `([a-f0-9]{40})`", text)
     snapshot = json.loads((root / "docs/FEATURE_PROGRESS.json").read_text())["snapshot"]["main_sha"]
     if not found or found.group(1) != snapshot:
-        errors.append(f"{MASTER}: verified revision must equal docs/FEATURE_PROGRESS.json snapshot main_sha")
+        errors.append(f"{MASTER}: snapshot revision must equal docs/FEATURE_PROGRESS.json snapshot main_sha")
     register = (root / "docs/FEATURE_REGISTER.md").read_text()
     known = set(re.findall(rf"^\| ({ID}) \|", register, re.M))
     cited = set(re.findall(rf"\b{ID}\b", text))

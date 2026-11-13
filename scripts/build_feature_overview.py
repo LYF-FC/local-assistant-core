@@ -112,7 +112,7 @@ def build_data(register, review, manifest):
         raise ValueError("Unknown progress metadata schema")
     snapshot = manifest["snapshot"]
     if not re.fullmatch(r"[a-f0-9]{40}", snapshot["main_sha"]):
-        raise ValueError("Invalid verified snapshot SHA")
+        raise ValueError("Invalid snapshot SHA")
     date.fromisoformat(snapshot["date"])
     if snapshot["register_rows_sha256"] != fingerprint(register):
         raise ValueError("Snapshot/register fingerprint mismatch; reconcile merged evidence")
@@ -190,7 +190,7 @@ def render_markdown(data):
     lines = [
         "# Feature overview",
         "",
-        f"Snapshot: **{snapshot_date(data)}**, verified merged main [`{data['base'][:7]}`]({REPOSITORY}/commit/{data['base']}) through PR #{data['snapshot']['merged_through_pr']}. This view does not query CI or certify exact-main/host/provider acceptance.",
+        f"Snapshot: **{snapshot_date(data)}**, merged main [`{data['base'][:7]}`]({REPOSITORY}/commit/{data['base']}) through PR #{data['snapshot']['merged_through_pr']}. This view does not query CI or certify exact-main/host/provider acceptance.",
         "",
         "[Critical review of every feature](FEATURE_REVIEW.md) · [Interactive dashboard — download HTML](FEATURE_DASHBOARD.html) · [Source metadata](FEATURE_PROGRESS.json)",
         "",

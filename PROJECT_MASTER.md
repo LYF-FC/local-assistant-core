@@ -1,8 +1,8 @@
 # Butler — project master
 
-**Status verified against `main` revision `5862bd1c74622ae7de0ee154c3c5e7903d51f020` (merge of [PR #29](https://github.com/LYF-FC/local-assistant-core/pull/29), 13 November 2026).**
+**Project status snapshot reconciled against `main` revision `5862bd1c74622ae7de0ee154c3c5e7903d51f020` (merge of [PR #29](https://github.com/LYF-FC/local-assistant-core/pull/29), 13 November 2026).** Reconciliation means the documents were checked against what is merged at that revision. It is not independent verification: no gate is verified at this or any exact `main` revision (see sections 3, 4 and 6).
 
-This is the authoritative document for Butler's product scope, the Everyday MVP definition, stage/gate progress, what is delivered, what is outstanding, implementation order and current priorities. Where another document disagrees on those subjects, this one wins; fix the other document. It points to — and does not copy — the detailed contracts. The [constitution](.specify/memory/constitution.md) governs principles and wins over this file on them.
+This is the authoritative document for Butler's product scope, the Everyday MVP definition, stage/gate progress, what is delivered, what is outstanding, implementation order and current priorities. It points to — and does not copy — the detailed contracts. **Precedence**, highest first: (1) the [constitution](.specify/memory/constitution.md): foundational principles and constraints; (2) explicit owner-approved decisions (recorded in [DECISIONS.md](DECISIONS.md) and the approving PRs): authorized changes to scope or direction, which must be reflected in this file and prevail over it until they are; (3) this file: consolidated current scope, MVP definition, gates, status, priorities and sequencing; (4) the [register](docs/FEATURE_REGISTER.md): requirement identifiers, retained requirement text and evidence pointers; (5) [docs/MVP_ACCEPTANCE.md](docs/MVP_ACCEPTANCE.md): acceptance criteria and procedures; (6) specs and feature contracts: detailed technical requirements and behavior. Architecture ([ARCHITECTURE.md](ARCHITECTURE.md)) and operational procedures keep authority over their own subjects. Where a lower-ranked document disagrees on a subject owned here, correct it.
 
 It is a status and navigation document. It adds no scope and no acceptance criteria: gates are defined by [docs/MVP_ACCEPTANCE.md](docs/MVP_ACCEPTANCE.md), requirements by the [register](docs/FEATURE_REGISTER.md).
 
@@ -23,13 +23,14 @@ Five separate facts. None implies another, and "complete" is never derived from 
 | Dimension | Values | Evidence that supports it |
 |---|---|---|
 | Implementation | Planned / Implemented | Code at the stated scope and a limits statement (what is synthetic, in-process or real) |
-| Integration | Not merged / Merged | PR number and merge commit on `main` |
+| Integration | Not merged / Merged (PR) / Imported baseline | PR number and merge commit on `main`; the imported baseline has no PR (see below) |
 | Testing | Not tested / Tested | Named automated tests covering the contract's positive and negative paths; CI result on the PR head |
 | Verification | Not verified / Verified / Regressed | Independent re-check at an exact `main` revision with full (not scope-reduced) coverage; reviewer sign-off; for restart and recovery items an executed procedure record |
 | Acceptance | Not accepted / Accepted (environment, scope) | **Owner decision** against the gate's repeatable scenario, recording date, revision, environment and result |
 
 Rules:
 
+- **Imported baseline.** The repository began as a clean source snapshot. Capabilities from it have no PR or merge commit here, so they are never labelled Merged. Their provenance is "Imported baseline", with its evidence and limits in [docs/VALIDATION.md](docs/VALIDATION.md) (CI at `501d92b`, 8 November 2026; historical, bounded to synthetic engineering).
 - A merged PR does not mean the complete feature is implemented. Implemented does not mean tested; tested does not mean verified; verified does not mean accepted.
 - Acceptance names its environment and scope: "Accepted (synthetic)" is not acceptance against a real integration.
 - A synthetic implementation is never presented as a real integration. In-process tests are not process-level restart durability. Persistent job state is not persistence of an external effect. Tested is not proven in production. A design proposal is not an implemented feature.
@@ -37,27 +38,27 @@ Rules:
 - Unknown evidence stays **unknown** in this document. Nothing is promoted without evidence; a lost status is recorded as Regressed, not silently overwritten.
 - The register's free-text status column (for example "partial; full contract remains open") is a per-reference label, not a status in this model: "partial" there means a bounded subset is implemented and merged, and nothing about testing beyond what its evidence column states, verification or acceptance.
 
-**Authoritative homes.** Gate and stage status: this file. Requirement text and evidence pointers: the register. Acceptance procedure: `docs/MVP_ACCEPTANCE.md`. Behavior and limits: specs and feature contracts. Counts and dashboards: generated (section 8).
+**Authoritative homes** (full precedence in the introduction and section 8). Gate and stage status: this file. Requirement text and evidence pointers: the register. Acceptance procedure: `docs/MVP_ACCEPTANCE.md`. Behavior and limits: specs and feature contracts. Counts and dashboards: generated (section 8).
 
 ## 4. Where things stand (summary)
 
-State on `main` `5862bd1`: **0 of 11 gates accepted; 0 verified at an exact `main` revision.** Every gate has a bounded subset merged; all merged capability is synthetic or manually driven. No live provider, mailbox, real filing destination, device push or activated real local model is used; the only real-filesystem adapter is the optional, opt-in local original archive (spec 050). 155 register references: 0 accepted, 40 with a partial bounded subset, 115 planned (generated figures: [overview](docs/FEATURE_OVERVIEW.md)).
+State on `main` `5862bd1`: **0 of 11 gates accepted; 0 verified at an exact `main` revision.** Every gate has a bounded subset delivered, either merged through the PRs listed in section 5 or present in the imported baseline. External-provider integrations are synthetic (notification channel, calendar provider, filing destination) or absent; several capabilities are operated manually by a person (tasks, memory review, finance capture). One real local-filesystem capability exists and is optional and opt-in: the spec 050 original archive on a private local directory. There is no real NAS/Synology destination, live mailbox, real calendar or notification provider, device push or activated real local model. 155 register references: 0 accepted, 40 with a partial bounded subset, 115 planned (generated figures: [overview](docs/FEATURE_OVERVIEW.md)).
 
 | # | Gate | Register IDs | Implementation | Integration | Testing | Verification | Acceptance | Stage state |
 |---|---|---|---|---|---|---|---|---|
-| 1 | Identity, memory, portability | CORE-02/03/04/05 | Subset | Merged (imported baseline) | Tested (test files, see §5) | Not verified (imported baseline CI at `501d92b` is historical) | Not accepted | Partially done |
-| 2 | Private desktop/mobile entry | CORE-08/09, UI-01 | Subset | Merged | Tested | Not verified | Not accepted | Partially done |
-| 3 | Local conversation and cited answers | CORE-06/10 | Subset (lexical, exact quotation) | Merged | Tested | Not verified | Not accepted | Partially done |
-| 4 | Calendar and briefing (MVP-02) | ORG-01/02, MVP-02 | Subset (synthetic) | Merged | Tested | Not verified | Not accepted | Partially done |
-| 5 | Tasks, recurrence, delivery | ORG-03, CORE-11/13, REM-01 | Subset (synthetic channel) | Merged | Tested | Not verified | Not accepted | Partially done |
-| 6 | Originals, PDF/OCR, retrieval | DOC-X01/02, DOC-02, CORE-03/10 | Subset | Merged | Tested | Not verified | Not accepted | Partially done |
-| 7 | Forwarded invoice (MVP-03) | DOC-01/02/03, MVP-03 | Subset (synthetic destination, in-process) | Merged | Tested (in-process) | Not verified | Not accepted | Partially done; restart evidence missing |
-| 8 | Offline and model failure (MVP-04) | MVP-04 | Local deterministic subsets | Merged | Subsets only | Not verified | Not accepted | Partially done; whole scenario not run |
-| 9 | Basic financial capture | FIN-06 | Subset (manual, restricted) | Merged | Tested | Not verified | Not accepted | Partially done |
-| 10 | Operations and restart | OPS-09/10, RND-01, PLATFORM-01/02 | Subset (observations only) | Merged | Tested | Not verified | Not accepted | Partially done; OPS-10 not started |
-| 11 | Clean-host recovery (MVP-05) | MVP-05, PLATFORM-03 | Synthetic logical restore only | Merged | Tested (synthetic) | Not verified | Not accepted | Barely started |
+| 1 | Identity, memory, portability | CORE-02/03/04/05 | Subset | Imported baseline (no PR) | Tested (test files, see §5) | Not verified (imported baseline CI at `501d92b` is historical) | Not accepted | Partially done |
+| 2 | Private desktop/mobile entry | CORE-08/09, UI-01 | Subset | Merged: #17, #22 (UI foundations from imported baseline) | Tested | Not verified | Not accepted | Partially done |
+| 3 | Local conversation and cited answers | CORE-06/10 | Subset (lexical, exact quotation) | Merged: #7 | Tested | Not verified | Not accepted | Partially done |
+| 4 | Calendar and briefing (MVP-02) | ORG-01/02, MVP-02 | Subset (synthetic) | Merged: #8, #28 | Tested | Not verified | Not accepted | Partially done |
+| 5 | Tasks, recurrence, delivery | ORG-03, CORE-11/13, REM-01 | Subset (synthetic channel) | Merged: #9, #24, #25 (manual tasks and reminders from imported baseline) | Tested | Not verified | Not accepted | Partially done |
+| 6 | Originals, PDF/OCR, retrieval | DOC-X01/02, DOC-02, CORE-03/10 | Subset | Merged: #2, #3, #4, #11 (text/Markdown library from imported baseline) | Tested | Not verified | Not accepted | Partially done |
+| 7 | Forwarded invoice (MVP-03) | DOC-01/02/03, MVP-03 | Subset (synthetic destination, in-process) | Merged: #11, #12, #13, #26, #29 | Tested (in-process) | Not verified | Not accepted | Partially done; restart evidence missing |
+| 8 | Offline and model failure (MVP-04) | MVP-04 | Local deterministic subsets | Imported baseline (no PR) | Subsets only | Not verified | Not accepted | Partially done; whole scenario not run |
+| 9 | Basic financial capture | FIN-06 | Subset (manual, restricted) | Merged: #18 (design), #19, #20 | Tested | Not verified | Not accepted | Partially done |
+| 10 | Operations and restart | OPS-09/10, RND-01, PLATFORM-01/02 | Subset (observations only) | Merged: #21 (jobs foundation from imported baseline) | Tested | Not verified | Not accepted | Partially done; OPS-10 not started |
+| 11 | Clean-host recovery (MVP-05) | MVP-05, PLATFORM-03 | Synthetic logical restore only | Imported baseline (no PR) | Tested (synthetic) | Not verified | Not accepted | Barely started |
 | — | Whole-journey composite (MVP-01) | MVP-01 | Not implemented | — | Not tested | Not verified | Not accepted | **Not started** |
-| — | Installation adoption gate (INSTALL-01–12) | INSTALL-01/02/03/06/08 | Foundations only | Merged | Tested | Not verified | Not accepted | Partially done |
+| — | Installation adoption gate (INSTALL-01–12) | INSTALL-01/02/03/06/08 | Foundations only | Merged: #15 | Tested | Not verified | Not accepted | Partially done |
 
 "Tested" means test files for the merged work exist in `backend/tests` or `frontend` and CI passed on each PR head per that PR's metadata; this document did not re-run them, and PR CI results are not recorded in the repository (see §6, evidence gaps).
 
@@ -158,7 +159,7 @@ PR index: #1 scope reconciliation (docs); #2 spec 050; #3 spec 051; #4 spec 052;
 ## 6. Missing acceptance evidence
 
 1. **No gate has an acceptance record** (date, revision, environment, result). None can be marked Accepted.
-2. **No exact-`main` verification record** is kept in the repository; CI results live in PR metadata. [docs/VALIDATION.md](docs/VALIDATION.md) records only the imported baseline at `501d92b`.
+2. **No gate has reviewer-signed verification.** The repository records one exact-`main` CI result (run 43414296005, a push to `main` at `5862bd1`, all six jobs succeeded; in `docs/FEATURE_PROGRESS.json` `ci_evidence`). That is hosted CI evidence, not verification of any gate and not owner acceptance. Other PRs' CI results live in PR metadata; [docs/VALIDATION.md](docs/VALIDATION.md) covers only the imported baseline at `501d92b`.
 3. **MVP-03:** process-level restart evidence, live inbox, real destination (Gate 7).
 4. **Notification worker (spec 068):** process-level restart evidence (Gate 5).
 5. **MVP-01, MVP-04, MVP-05:** whole-scenario tests and procedures do not exist.
@@ -169,7 +170,7 @@ PR index: #1 scope reconciliation (docs); #2 spec 050; #3 spec 051; #4 spec 052;
 
 Dependencies, from the existing roadmap and gate text: restart/recovery evidence (priorities 1 and 3) precedes any claim of exactly-once or durability; connector spikes need separately approved sandbox accounts and come after the synthetic gates they inform (calendar and notification first, because their schemas are sealed and costly to change; mail intake and local model after); the unified inbox depends on the merged approvals, search and notification paths; whole-MVP acceptance tests depend on all of them.
 
-Current priorities, in order (carried from the roadmap's proposed order and the backlog's tracked item; **the owner confirms or changes this order**):
+Current priorities, in order. **Owner-approved: the owner confirmed this order on 13 November 2026.** It derives from the roadmap's earlier proposed order and the backlog's tracked item; changing it needs a new owner decision:
 
 1. **Process-level restart evidence for Gate 7 and the notification worker (Gate 5).** The only way to turn in-process evidence into restart evidence without a real adapter; unblocks the open half of MVP-03. Needs an agreed host-level kill/restart procedure.
 2. **Unified attention inbox** (pending approvals and remaining search gaps; Gate 2).
@@ -180,6 +181,8 @@ Current priorities, in order (carried from the roadmap's proposed order and the 
 The next implementation task should be selected from priority 1 unless the owner decides otherwise. No feature work is part of the governance PR that introduced this file.
 
 ## 8. Documentation map and update rules
+
+Precedence between documents is stated in the introduction; the table gives the authoritative home of each kind of information.
 
 | Information | Authoritative home | Other documents |
 |---|---|---|
@@ -192,6 +195,6 @@ The next implementation task should be selected from priority 1 unless the owner
 | Sequencing view | [ROADMAP.md](ROADMAP.md) (reflects this file; no independent status) | |
 | History | [CHANGELOG.md](CHANGELOG.md), [CONTEXT.md](CONTEXT.md), [docs/BACKLOG_STATUS.md](docs/BACKLOG_STATUS.md), [docs/FEATURE_REVIEW.md](docs/FEATURE_REVIEW.md), [docs/VALIDATION.md](docs/VALIDATION.md) | Dated records, not current status |
 | Counts, overview, dashboard | Generated: [docs/FEATURE_OVERVIEW.md](docs/FEATURE_OVERVIEW.md), [docs/FEATURE_DASHBOARD.html](docs/FEATURE_DASHBOARD.html) | Never edit by hand |
-| Snapshot input to the generator | [docs/FEATURE_PROGRESS.json](docs/FEATURE_PROGRESS.json): hand-curated; its snapshot revision must equal the revision at the top of this file | |
+| Snapshot input to the generator | [docs/FEATURE_PROGRESS.json](docs/FEATURE_PROGRESS.json): hand-curated, not generated; its snapshot revision must equal the revision at the top of this file; `ci_evidence` records one hosted CI run only (not verification, not acceptance) | |
 
 **Update rule.** Update the authoritative source, then regenerate derived views (`python3 scripts/build_feature_overview.py`). Every PR that changes delivered behavior updates this file's gate entry (and the register row it affects) in the same PR, citing evidence for any status change. Mark a PR as merged only after the merge, with its number and merge commit; because a PR cannot cite its own merge, record it in a follow-up documentation update. Repository policy (`scripts/check_repository.py`) checks that the revision above equals the snapshot revision, that every gate maps to register IDs that exist, and that relative links in this file resolve.

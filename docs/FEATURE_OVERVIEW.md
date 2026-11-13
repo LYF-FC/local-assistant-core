@@ -1,6 +1,6 @@
 # Feature overview
 
-Snapshot: **13 November 2026**, verified merged main [`5862bd1`](https://github.com/LYF-FC/local-assistant-core/commit/5862bd1c74622ae7de0ee154c3c5e7903d51f020) through PR #29. This view does not query CI or certify exact-main/host/provider acceptance.
+Snapshot: **13 November 2026**, merged main [`5862bd1`](https://github.com/LYF-FC/local-assistant-core/commit/5862bd1c74622ae7de0ee154c3c5e7903d51f020) through PR #29. This view does not query CI or certify exact-main/host/provider acceptance.
 
 [Critical review of every feature](FEATURE_REVIEW.md) · [Interactive dashboard — download HTML](FEATURE_DASHBOARD.html) · [Source metadata](FEATURE_PROGRESS.json)
 

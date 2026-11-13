@@ -12,7 +12,7 @@ Local Assistant Core is a local-first assistant for private/shared household and
 - [Roadmap](../ROADMAP.md): dependency-aware batches and later stages (a sequencing view; status is in the master).
 - [Validation](VALIDATION.md) and [readiness](V0_1_READINESS.md): demonstrated engineering versus outstanding operational acceptance.
 
-The [constitution](../.specify/memory/constitution.md) and current explicit decisions govern conflicts. Feature specs refine these requirements; they cannot silently discard them. Before affected work, reconcile the detailed contract, preserve acceptance and record any duplicate, superseded proposal, private configuration or required owner decision. Personal requirements and historical evidence remain privately retained; they are not shipped as defaults. The public register is a generic projection, not proof of sentence-by-sentence semantic deduplication.
+Precedence, highest first: the [constitution](../.specify/memory/constitution.md); explicit owner-approved decisions (which must be reflected in the [project master](../PROJECT_MASTER.md)); the project master; the register; MVP acceptance; then specs and feature contracts. Architecture and operational procedures keep authority over their own subjects (full statement in the master's introduction). Feature specs refine these requirements; they cannot silently discard them. Before affected work, reconcile the detailed contract, preserve acceptance and record any duplicate, superseded proposal, private configuration or required owner decision. Personal requirements and historical evidence remain privately retained; they are not shipped as defaults. The public register is a generic projection, not proof of sentence-by-sentence semantic deduplication.
 
 ## Everyday MVP
 
