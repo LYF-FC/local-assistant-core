@@ -1,0 +1,197 @@
+# Butler — project master
+
+**Status verified against `main` revision `5862bd1c74622ae7de0ee154c3c5e7903d51f020` (merge of [PR #29](https://github.com/LYF-FC/local-assistant-core/pull/29), 13 November 2026).**
+
+This is the authoritative document for Butler's product scope, the Everyday MVP definition, stage/gate progress, what is delivered, what is outstanding, implementation order and current priorities. Where another document disagrees on those subjects, this one wins; fix the other document. It points to — and does not copy — the detailed contracts. The [constitution](.specify/memory/constitution.md) governs principles and wins over this file on them.
+
+It is a status and navigation document. It adds no scope and no acceptance criteria: gates are defined by [docs/MVP_ACCEPTANCE.md](docs/MVP_ACCEPTANCE.md), requirements by the [register](docs/FEATURE_REGISTER.md).
+
+## 1. What we are building
+
+Butler (Local Assistant Core) is a local-first assistant for private and shared household and professional records. It remembers confirmed context, coordinates routines, retrieves evidence and proposes or executes only bounded, authorized actions. Structured records stay authoritative; model output never grants authority. Full product scope: [docs/SCOPE.md](docs/SCOPE.md) (155 register references: the 149-reference baseline plus six approved deferred review bundles REV-01–06). Later stages (household/food through measured scale) remain retained in the [roadmap](ROADMAP.md); they are not part of the Everyday MVP.
+
+## 2. What the Everyday MVP requires
+
+The Everyday MVP is the set of **eleven end-to-end gates** in [docs/MVP_ACCEPTANCE.md](docs/MVP_ACCEPTANCE.md), plus the [reusable-installation adoption gate](docs/MVP_ACCEPTANCE.md#reusable-installation-adoption-gate) before any reusable release or private-data adoption. Register IDs MVP-01…05 name five of those outcomes (MVP-01 is the whole-journey composite); the table in section 5 maps every gate to its register IDs. Gates are accepted on their own actual evidence: batch completion is not MVP acceptance, and distant later-stage expansion is not an implicit blocker. Candidate additions and reordering remain owner decisions.
+
+Delivery strategy (agreed 10 November 2026): finish the MVP with synthetic data and synthetic adapters first; then run short, separately approved connector spikes with sandbox accounts and invented content; real private data last, behind separate authorization.
+
+## 3. Status model
+
+Five separate facts. None implies another, and "complete" is never derived from them automatically.
+
+| Dimension | Values | Evidence that supports it |
+|---|---|---|
+| Implementation | Planned / Implemented | Code at the stated scope and a limits statement (what is synthetic, in-process or real) |
+| Integration | Not merged / Merged | PR number and merge commit on `main` |
+| Testing | Not tested / Tested | Named automated tests covering the contract's positive and negative paths; CI result on the PR head |
+| Verification | Not verified / Verified / Regressed | Independent re-check at an exact `main` revision with full (not scope-reduced) coverage; reviewer sign-off; for restart and recovery items an executed procedure record |
+| Acceptance | Not accepted / Accepted (environment, scope) | **Owner decision** against the gate's repeatable scenario, recording date, revision, environment and result |
+
+Rules:
+
+- A merged PR does not mean the complete feature is implemented. Implemented does not mean tested; tested does not mean verified; verified does not mean accepted.
+- Acceptance names its environment and scope: "Accepted (synthetic)" is not acceptance against a real integration.
+- A synthetic implementation is never presented as a real integration. In-process tests are not process-level restart durability. Persistent job state is not persistence of an external effect. Tested is not proven in production. A design proposal is not an implemented feature.
+- A stage or gate is complete only when its own acceptance scenario is accepted by the owner. Counting merged PRs never completes one.
+- Unknown evidence stays **unknown** in this document. Nothing is promoted without evidence; a lost status is recorded as Regressed, not silently overwritten.
+- The register's free-text status column (for example "partial; full contract remains open") is a per-reference label, not a status in this model: "partial" there means a bounded subset is implemented and merged, and nothing about testing beyond what its evidence column states, verification or acceptance.
+
+**Authoritative homes.** Gate and stage status: this file. Requirement text and evidence pointers: the register. Acceptance procedure: `docs/MVP_ACCEPTANCE.md`. Behavior and limits: specs and feature contracts. Counts and dashboards: generated (section 8).
+
+## 4. Where things stand (summary)
+
+State on `main` `5862bd1`: **0 of 11 gates accepted; 0 verified at an exact `main` revision.** Every gate has a bounded subset merged; all merged capability is synthetic or manually driven. No live provider, mailbox, real filing destination, device push or activated real local model is used; the only real-filesystem adapter is the optional, opt-in local original archive (spec 050). 155 register references: 0 accepted, 40 with a partial bounded subset, 115 planned (generated figures: [overview](docs/FEATURE_OVERVIEW.md)).
+
+| # | Gate | Register IDs | Implementation | Integration | Testing | Verification | Acceptance | Stage state |
+|---|---|---|---|---|---|---|---|---|
+| 1 | Identity, memory, portability | CORE-02/03/04/05 | Subset | Merged (imported baseline) | Tested (test files, see §5) | Not verified (imported baseline CI at `501d92b` is historical) | Not accepted | Partially done |
+| 2 | Private desktop/mobile entry | CORE-08/09, UI-01 | Subset | Merged | Tested | Not verified | Not accepted | Partially done |
+| 3 | Local conversation and cited answers | CORE-06/10 | Subset (lexical, exact quotation) | Merged | Tested | Not verified | Not accepted | Partially done |
+| 4 | Calendar and briefing (MVP-02) | ORG-01/02, MVP-02 | Subset (synthetic) | Merged | Tested | Not verified | Not accepted | Partially done |
+| 5 | Tasks, recurrence, delivery | ORG-03, CORE-11/13, REM-01 | Subset (synthetic channel) | Merged | Tested | Not verified | Not accepted | Partially done |
+| 6 | Originals, PDF/OCR, retrieval | DOC-X01/02, DOC-02, CORE-03/10 | Subset | Merged | Tested | Not verified | Not accepted | Partially done |
+| 7 | Forwarded invoice (MVP-03) | DOC-01/02/03, MVP-03 | Subset (synthetic destination, in-process) | Merged | Tested (in-process) | Not verified | Not accepted | Partially done; restart evidence missing |
+| 8 | Offline and model failure (MVP-04) | MVP-04 | Local deterministic subsets | Merged | Subsets only | Not verified | Not accepted | Partially done; whole scenario not run |
+| 9 | Basic financial capture | FIN-06 | Subset (manual, restricted) | Merged | Tested | Not verified | Not accepted | Partially done |
+| 10 | Operations and restart | OPS-09/10, RND-01, PLATFORM-01/02 | Subset (observations only) | Merged | Tested | Not verified | Not accepted | Partially done; OPS-10 not started |
+| 11 | Clean-host recovery (MVP-05) | MVP-05, PLATFORM-03 | Synthetic logical restore only | Merged | Tested (synthetic) | Not verified | Not accepted | Barely started |
+| — | Whole-journey composite (MVP-01) | MVP-01 | Not implemented | — | Not tested | Not verified | Not accepted | **Not started** |
+| — | Installation adoption gate (INSTALL-01–12) | INSTALL-01/02/03/06/08 | Foundations only | Merged | Tested | Not verified | Not accepted | Partially done |
+
+"Tested" means test files for the merged work exist in `backend/tests` or `frontend` and CI passed on each PR head per that PR's metadata; this document did not re-run them, and PR CI results are not recorded in the repository (see §6, evidence gaps).
+
+## 5. Stage and gate progress
+
+For each gate: capabilities delivered, merged PRs, test evidence, verification, acceptance, what is outstanding, blockers, and what must happen next. Detailed acceptance wording and procedures are in `docs/MVP_ACCEPTANCE.md`; do not restate them here. Verification is **Not verified** and Acceptance is **Not accepted** for every gate unless stated; the "Testing evidence" lines name test files that exist and do not claim a current run.
+
+PR index: #1 scope reconciliation (docs); #2 spec 050; #3 spec 051; #4 spec 052; #7 spec 053; #8 spec 054; #9 spec 055; #11 spec 056; #12 spec 057; #13 spec 058; #14 spec 059; #15 spec 060 (and the PR #16 spec 061 programme reconciliation); #17 spec 062; #18 spec 063 (design); #19 spec 064; #20 spec 065; #21 spec 066; #22 spec 067; #24 spec 068; #25 spec 068 corrections; #26 spec 069; #27 Batch 3 **design proposal only**; #28 spec 070 (Batch 3 implementation); #29 spec 069 follow-up. PRs #5, #6, #10 and #23 are documentation-only.
+
+### Gate 1 — Identity, memory and portability (CORE-02/03/04/05)
+- **Delivered (subset):** local accounts/sessions, current grants, HTTPS/Host/Origin/CSRF, restricted DB role, protected audit, memory with history, bounded export. Specs 001, 003, 006–009 and related.
+- **Testing evidence:** `test_identity.py`, `test_memory.py`, `test_approvals.py`, `test_boundary.py` and `integration/test_identity_postgres.py`, `test_memory_postgres.py`, `test_approval_postgres.py`.
+- **Outstanding:** domain profiles, whole-MVP leakage tests (IDs, counts, search, answers, citations, exports, history), complete original/history portability.
+- **Blockers:** none beyond the whole-MVP test suite itself. **Next:** include in the whole-MVP acceptance suite (priority 5).
+
+### Gate 2 — Private desktop/mobile entry (CORE-08/09, UI-01)
+- **Delivered (subset):** responsive UI over local HTTPS; scoped daily overview ([PR #17](https://github.com/LYF-FC/local-assistant-core/pull/17)); scoped task/document search ([PR #22](https://github.com/LYF-FC/local-assistant-core/pull/22)).
+- **Testing evidence:** frontend tests (`frontend`), `test_context_preview.py`. Browser scenarios run in CI.
+- **Outstanding:** private remote/mobile host acceptance; unified dashboard with pending approvals, failures and the remaining search gaps (all-library/semantic).
+- **Blockers:** host acceptance needs an actual private host (separate authorization). **Next:** unified attention inbox (priority 2).
+
+### Gate 3 — Local conversation and cited answers (CORE-06/10)
+- **Delivered (subset):** reviewed lexical evidence retrieval, exact-quotation answers, strict citations, default-disabled local selector (spec 053, [PR #7](https://github.com/LYF-FC/local-assistant-core/pull/7)).
+- **Testing evidence:** `test_document_answers.py`, `test_answer_adapter.py`, `integration/test_document_answers_postgres.py`.
+- **Outstanding:** real-model FR/ES/EN quality and activation, semantic retrieval, free-form conversation/synthesis, no-egress evidence for a real model.
+- **Blockers:** needs an approved local model and its licensing/resource review (RND-04/05 research is open). **Next:** after the synthetic MVP gates; time-boxed local-model spike (see §7).
+
+### Gate 4 — Calendar and briefing (MVP-02)
+- **Delivered (subset, synthetic):** bounded normalized snapshot reconciliation and day briefing (spec 054, [PR #8](https://github.com/LYF-FC/local-assistant-core/pull/8)); recurrence expansion, a synthetic cursor-based provider-mode sync and a 1–7 day briefing (spec 070, [PR #28](https://github.com/LYF-FC/local-assistant-core/pull/28), merge `b0a5a67`).
+- **Testing evidence:** `test_calendar_*.py`, `test_calendars.py`, `test_calendar_briefing_v2.py`, `integration/test_calendars_postgres.py`, `test_calendar_sync_postgres.py`, `test_calendar_provider_schema_postgres.py`.
+- **Outstanding:** a real sandbox provider (live read adapter) and provider acceptance; writes need authority, ownership, conflict and ambiguous-write tests first; unified briefing dashboard.
+- **Blockers:** real provider requires a separately approved sandbox account and data-flow declaration. **Next:** calendar connector spike (first spike, see §7).
+
+### Gate 5 — Tasks, recurrence and delivery (ORG-03, CORE-11/13, REM-01)
+- **Delivered (subset):** manual tasks and private in-app reminders (specs 046/047); finite daily/weekly routines (spec 055, [PR #9](https://github.com/LYF-FC/local-assistant-core/pull/9)); synthetic-channel notification path with delivery states, quiet hours, day budgets, deduplication, bounded retry and unknown-outcome reconciliation (spec 068, [PR #24](https://github.com/LYF-FC/local-assistant-core/pull/24), corrections [PR #25](https://github.com/LYF-FC/local-assistant-core/pull/25)). **Synthetic channel only — not a real provider.**
+- **Testing evidence:** `test_manual_tasks.py`, `test_task_reminders.py`, `test_routines.py`, `test_notifications.py` and their `integration/*_postgres.py` counterparts.
+- **Outstanding:** one authorized real external channel with recipient identity; process-level restart evidence for the notification worker (its in-process synthetic double does not survive a restart); full recurrence/calendar coupling; revocation-prevents-delivery on a real channel.
+- **Blockers:** real channel requires separate activation authority. **Next:** process-restart procedure (priority 1), then notification connector spike.
+
+### Gate 6 — Originals, PDF/OCR and retrieval (DOC-X01/02, DOC-02, CORE-03/10)
+- **Delivered (subset):** exact-byte originals with optional local archive (spec 050, [PR #2](https://github.com/LYF-FC/local-assistant-core/pull/2)); bounded isolated PDF text extraction (spec 051, [PR #3](https://github.com/LYF-FC/local-assistant-core/pull/3)); explicit bounded OCR (spec 052, [PR #4](https://github.com/LYF-FC/local-assistant-core/pull/4)); scoped duplicate hints and invoice fields (spec 056, [PR #11](https://github.com/LYF-FC/local-assistant-core/pull/11)).
+- **Testing evidence:** `test_document_archive.py`, `test_documents.py`, `test_pdf_ingestion.py`, `test_pdf_ocr*.py` and `integration/test_document*_postgres.py`, `test_pdf_*_postgres.py`.
+- **Outstanding:** live NAS/durable archive, full index/archive/key and older-backup suppression acceptance (DOC-X02), PDF/OCR acceptance on the gate's full fixture set.
+- **Blockers:** real NAS access is not authorized; key/older-backup acceptance depends on Gate 11. **Next:** covered by the operations/recovery batch (priority 3).
+
+### Gate 7 — Forwarded invoice (MVP-03) — **partially done; not complete**
+- **Delivered (subset):** reviewed invoice candidates with human confirmed/unknown decisions and duplicate hints (spec 056, [PR #11](https://github.com/LYF-FC/local-assistant-core/pull/11)); reviewed logical filing plans, non-executable (spec 057, [PR #12](https://github.com/LYF-FC/local-assistant-core/pull/12)); bounded offline email and single-attachment lineage with exact replay (spec 058, [PR #13](https://github.com/LYF-FC/local-assistant-core/pull/13)); **synthetic** filing execution: separate exact single-use request, single claimant, reconcile-before-retry, no-overwrite, scrub-on-forget (spec 069, [PR #26](https://github.com/LYF-FC/local-assistant-core/pull/26)); revision-fenced attempts and reconciliations, a PostgreSQL journey from a twice-forwarded offline email to a filed synthetic destination entry, crash points modelled in-process, and migration 0034 downgrade evidence ([PR #29](https://github.com/LYF-FC/local-assistant-core/pull/29)).
+- **Testing evidence:** `test_invoice_review.py`, `test_invoice_filing.py`, `test_email_intake.py`, `test_filing.py`; `integration/test_filing_postgres.py`, `test_filing_fence_postgres.py`, `test_mvp03_journey_postgres.py`, `test_filing_downgrade_postgres.py`. This evidence is **in-process and synthetic**: it proves claim/reconcile semantics against an in-memory destination, not durability of a destination effect.
+- **Outstanding:** process-level kill/restart evidence (the in-memory destination cannot survive a restart: needs a host procedure or a real-adapter acceptance); live restricted inbox and source rules; destination authorization for a real root, filing adapters and cross-store reconciliation against a real destination. The guarantee is conditional on the destination, not unconditional exactly-once. [PR #29](https://github.com/LYF-FC/local-assistant-core/pull/29) does **not** complete MVP-03.
+- **Blockers:** real destination/inbox need separate authorization; the restart procedure needs an agreed host-level method. **Next:** priority 1.
+
+### Gate 8 — Offline and model failure (MVP-04)
+- **Delivered (subset):** deterministic local tasks, reminders, documents and records that do not depend on inference (specs 046–048).
+- **Testing evidence:** subsets only; no whole-scenario test exists.
+- **Outstanding:** internet-disconnect and inference-stopped scenarios end to end, queued external work, capacity-exhaustion behavior of filing.
+- **Blockers:** depends on Gates 5 and 7 for queued external work. **Next:** whole-MVP acceptance tests (priority 5).
+
+### Gate 9 — Basic financial capture (FIN-06)
+- **Delivered (subset):** design ([PR #18](https://github.com/LYF-FC/local-assistant-core/pull/18)); typed owner-private server storage and lifecycle (spec 064, [PR #19](https://github.com/LYF-FC/local-assistant-core/pull/19)); capture/correction UI (spec 065, [PR #20](https://github.com/LYF-FC/local-assistant-core/pull/20)); export/forget and synthetic recovery.
+- **Testing evidence:** `test_finance.py`, `integration/test_finance_postgres.py`, frontend tests.
+- **Outstanding:** full MVP and host acceptance; no provider, import or funds movement is in scope; later modelling is a later stage.
+- **Blockers:** host acceptance. **Next:** include in the whole-MVP acceptance suite.
+
+### Gate 10 — Operations and restart (OPS-09/10, RND-01, PLATFORM-01/02)
+- **Delivered (subset):** explicit API/database observations, runtime package versions, bounded own technical job status (spec 066, [PR #21](https://github.com/LYF-FC/local-assistant-core/pull/21)).
+- **Testing evidence:** `test_operations.py`, `integration/test_operations_postgres.py`, `test_jobs.py`, `integration/test_jobs_postgres.py`.
+- **Outstanding:** full service/worker/capacity/backup/certificate observation; OPS-10 audit/reporting (not started); host startup/unlock, resource budgets, independent alerting, restart verification of durable progress and leases on a real host.
+- **Blockers:** an independent observer and a host to test on. **Next:** operations and recovery batch (priority 3).
+
+### Gate 11 — Clean-host recovery (MVP-05)
+- **Delivered (subset):** synthetic logical DB backup/restore, session and pending-intent quarantine, Work source/checkpoint/suppression procedures ([docs/BACKUP_RESTORE.md](docs/BACKUP_RESTORE.md), [docs/RECOVERY_ASSESSMENT.md](docs/RECOVERY_ASSESSMENT.md)).
+- **Testing evidence:** `test_recovery_assessment.py`, `test_restore_*.py` and `integration/test_restore_*_postgres.py`.
+- **Outstanding:** restore on an independent clean host including originals, configuration, keys and migration/model manifests; measured RPO/RTO; failed/missing/tampered input tests; actual-host acceptance.
+- **Blockers:** an independent clean compatible host; key recovery design. **Next:** operations and recovery batch (priority 3).
+
+### Whole-journey composite (MVP-01) and installation gate
+- **MVP-01:** no whole-journey test exists (private access, agenda, authorized answer, reminder and reviewed filing surviving restart). **Not started.**
+- **Installation adoption gate (INSTALL-01–12):** only INSTALL-01/02/03/06/08 have partial foundations (spec 060, [PR #15](https://github.com/LYF-FC/local-assistant-core/pull/15)); dynamic members, activation controls and rehearsed conversion remain open.
+
+### Spec ↔ PR ↔ gate map
+
+| Spec | PR | Gates |
+|---|---|---|
+| 050 / 051 / 052 | #2 / #3 / #4 | 6 |
+| 053 | #7 | 3 |
+| 054 / 070 | #8 / #28 (#27 was design only) | 4 |
+| 055 | #9 | 5 |
+| 056 / 057 / 058 | #11 / #12 / #13 | 6, 7 |
+| 059 / 061 | #14 / #16 | none (review and programme documentation) |
+| 060 | #15 | installation gate |
+| 062 | #17 | 2 |
+| 063 / 064 / 065 | #18 / #19 / #20 | 9 |
+| 066 | #21 | 10 |
+| 067 | #22 | 2 |
+| 068 | #24, #25 | 5 |
+| 069 | #26, #29 | 7 |
+
+## 6. Missing acceptance evidence
+
+1. **No gate has an acceptance record** (date, revision, environment, result). None can be marked Accepted.
+2. **No exact-`main` verification record** is kept in the repository; CI results live in PR metadata. [docs/VALIDATION.md](docs/VALIDATION.md) records only the imported baseline at `501d92b`.
+3. **MVP-03:** process-level restart evidence, live inbox, real destination (Gate 7).
+4. **Notification worker (spec 068):** process-level restart evidence (Gate 5).
+5. **MVP-01, MVP-04, MVP-05:** whole-scenario tests and procedures do not exist.
+6. **Numerical thresholds** that specs must define before implementation are not collected centrally; which remain undefined is **unknown**.
+7. **Specs 068–070** have no `convergence.md`, unlike specs 050–067.
+
+## 7. Dependencies, order and priorities
+
+Dependencies, from the existing roadmap and gate text: restart/recovery evidence (priorities 1 and 3) precedes any claim of exactly-once or durability; connector spikes need separately approved sandbox accounts and come after the synthetic gates they inform (calendar and notification first, because their schemas are sealed and costly to change; mail intake and local model after); the unified inbox depends on the merged approvals, search and notification paths; whole-MVP acceptance tests depend on all of them.
+
+Current priorities, in order (carried from the roadmap's proposed order and the backlog's tracked item; **the owner confirms or changes this order**):
+
+1. **Process-level restart evidence for Gate 7 and the notification worker (Gate 5).** The only way to turn in-process evidence into restart evidence without a real adapter; unblocks the open half of MVP-03. Needs an agreed host-level kill/restart procedure.
+2. **Unified attention inbox** (pending approvals and remaining search gaps; Gate 2).
+3. **Operations and recovery** (worker/backup/capacity observation; clean-host restore including originals; Gates 10, 11, and the DOC-X02 half of Gate 6).
+4. **Time-boxed connector spikes** with sandbox accounts, calendar and notification first (Gates 4, 5); mail intake and local model after (Gates 7, 3). Each needs its own approval and data-flow statement.
+5. **Whole-MVP acceptance tests:** cross-user leakage, offline/model-failure and restart journeys (Gates 1, 8, MVP-01).
+
+The next implementation task should be selected from priority 1 unless the owner decides otherwise. No feature work is part of the governance PR that introduced this file.
+
+## 8. Documentation map and update rules
+
+| Information | Authoritative home | Other documents |
+|---|---|---|
+| Scope, MVP definition, gate and stage status, priorities, order | **This file** | Link here; do not restate |
+| Requirement text, feature IDs, evidence pointers | [docs/FEATURE_REGISTER.md](docs/FEATURE_REGISTER.md) | Dependencies in [docs/FEATURE_DEPENDENCIES.md](docs/FEATURE_DEPENDENCIES.md) |
+| Acceptance criteria and procedures | [docs/MVP_ACCEPTANCE.md](docs/MVP_ACCEPTANCE.md) | No progress narrative there |
+| Behavior, requirements, limits per feature | `specs/` and `docs/<FEATURE>.md` | |
+| Design decisions and architecture | [DECISIONS.md](DECISIONS.md), [ARCHITECTURE.md](ARCHITECTURE.md) | |
+| Operating procedures | [OPERATIONS.md](OPERATIONS.md), [SETUP.md](SETUP.md), [docs/BACKUP_RESTORE.md](docs/BACKUP_RESTORE.md), [SECURITY.md](SECURITY.md) | |
+| Sequencing view | [ROADMAP.md](ROADMAP.md) (reflects this file; no independent status) | |
+| History | [CHANGELOG.md](CHANGELOG.md), [CONTEXT.md](CONTEXT.md), [docs/BACKLOG_STATUS.md](docs/BACKLOG_STATUS.md), [docs/FEATURE_REVIEW.md](docs/FEATURE_REVIEW.md), [docs/VALIDATION.md](docs/VALIDATION.md) | Dated records, not current status |
+| Counts, overview, dashboard | Generated: [docs/FEATURE_OVERVIEW.md](docs/FEATURE_OVERVIEW.md), [docs/FEATURE_DASHBOARD.html](docs/FEATURE_DASHBOARD.html) | Never edit by hand |
+| Snapshot input to the generator | [docs/FEATURE_PROGRESS.json](docs/FEATURE_PROGRESS.json): hand-curated; its snapshot revision must equal the revision at the top of this file | |
+
+**Update rule.** Update the authoritative source, then regenerate derived views (`python3 scripts/build_feature_overview.py`). Every PR that changes delivered behavior updates this file's gate entry (and the register row it affects) in the same PR, citing evidence for any status change. Mark a PR as merged only after the merge, with its number and merge commit; because a PR cannot cite its own merge, record it in a follow-up documentation update. Repository policy (`scripts/check_repository.py`) checks that the revision above equals the snapshot revision, that every gate maps to register IDs that exist, and that relative links in this file resolve.
