@@ -2,6 +2,13 @@
 
 The send happens outside any database transaction. A claim commits first, so a crash or timeout
 leaves the row marked in flight and it is reconciled by lookup, never blindly resent.
+
+Every send and every reconciliation episode owns the row revision its own claim produced, exactly
+as in the filing worker. The outcome is applied only if the row still carries that revision: the
+comparison is part of the locking read (``WHERE revision = :fence ... FOR UPDATE``), so a stale
+worker whose claim was reaped, reconciled or re-claimed meets a different revision and is skipped
+without writing the row or its history. A stale but truthful result is discarded on purpose; the
+newer attempt, or the next lookup, resolves the delivery.
 """
 
 import argparse
@@ -51,13 +58,12 @@ def lock_owner(db, owner_id, scope):
     return user, bool(granted)
 
 
-def lock_row(db, delivery_id):
-    return db.scalar(
-        select(NotificationDelivery)
-        .where(NotificationDelivery.id == delivery_id)
-        .with_for_update()
-        .execution_options(populate_existing=True)
-    )
+def lock_row(db, delivery_id, revision=None):
+    """Lock the delivery row; with ``revision`` the lock only succeeds on exactly that revision."""
+    query = select(NotificationDelivery).where(NotificationDelivery.id == delivery_id)
+    if revision is not None:
+        query = query.where(NotificationDelivery.revision == revision)
+    return db.scalar(query.with_for_update().execution_options(populate_existing=True))
 
 
 def enqueue_pass(db, limit):
@@ -217,11 +223,11 @@ def claim(db, candidate):
     return "send", row
 
 
-def finish_send(db, candidate, outcome):
+def finish_send(db, candidate, outcome, fence):
     # Same order as claim (recipient, then delivery): the event insert needs a key-share on the
     # user, so locking the row first would deadlock against a concurrent claim.
     lock_owner(db, candidate.owner_id, candidate.scope_key)
-    row = lock_row(db, candidate.id)
+    row = lock_row(db, candidate.id, fence)
     if row is None or row.state != "pending" or row.attempt_started_at is None:
         return "skipped"
     now = identity.now_utc()
@@ -259,9 +265,9 @@ def finish_send(db, candidate, outcome):
     return "retried"
 
 
-def reconcile(db, candidate, found):
+def reconcile(db, candidate, found, fence):
     lock_owner(db, candidate.owner_id, candidate.scope_key)
-    row = lock_row(db, candidate.id)
+    row = lock_row(db, candidate.id, fence)
     if row is None or row.state != "unknown":
         return "skipped"
     now = identity.now_utc()
@@ -302,20 +308,22 @@ def process(maker, candidate, channel):
         action, row = claim(db, candidate)
         key = str(row.id) if row else None
         recipient = row.recipient_ref if row else None
+        # The attempt or reconciliation episode owns the revision its own claim produced.
+        fence = row.revision if row else None
     if action == "send":
         try:
             outcome = channel.send(key, recipient)
         except Exception:  # noqa: BLE001 - unknown channel failure is an ambiguous outcome
             outcome = notes.Outcome.TIMEOUT
         with maker.begin() as db:
-            return finish_send(db, candidate, outcome)
+            return finish_send(db, candidate, outcome, fence)
     if action == "reconcile":
         try:
             found = channel.lookup(key)
         except Exception:  # noqa: BLE001 - lookup failure keeps the ambiguity
             found = notes.Lookup.UNAVAILABLE
         with maker.begin() as db:
-            return reconcile(db, candidate, found)
+            return reconcile(db, candidate, found, fence)
     return action
 
 
