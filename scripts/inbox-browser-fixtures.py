@@ -43,16 +43,18 @@ def uid(name):
 
 phase = sys.argv[1] if len(sys.argv) == 2 else "seed"
 assert phase in {"seed", "check", "fresh-login-budget"}
+if phase == "fresh-login-budget":
+    # The default browser run uses the whole per-source login window (30 attempts per 15 minutes).
+    # Like the other fresh-account phases, give this phase its own budget in the disposable test
+    # database. The application limiter is unchanged and still enforced during the run. The delete
+    # must commit, so it finishes its own transaction before the script exits.
+    with SessionLocal.begin() as reset:
+        deleted = reset.execute(delete(AuthRateWindow)).rowcount
+    print(f"Cleared {deleted} disposable login-window rows for the inbox browser phase")
+    sys.exit(0)
 with SessionLocal.begin() as db:
     owner = db.scalar(select(User).where(User.slug == "browser-inbox-flow"))
     assert owner, "browser-fixtures.py seed must run first"
-    if phase == "fresh-login-budget":
-        # The default browser run uses the whole per-source login window (30 attempts per 15 minutes).
-        # Like the other fresh-account phases, give this phase its own budget in the disposable test
-        # database. The application limiter is unchanged and still enforced during the run.
-        deleted = db.execute(delete(AuthRateWindow)).rowcount
-        print(f"Cleared {deleted} disposable login-window rows for the inbox browser phase")
-        raise SystemExit(0)
     if phase == "check":
         rows = list(
             db.scalars(
