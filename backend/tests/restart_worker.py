@@ -47,6 +47,7 @@ def main():
         process, collaborator = notification_worker.process, FileChannel(args["ledger"], hook)
     with maker() as db:
         candidate = db.execute(select(*columns).where(model.id == target)).one()
+    hook("start")  # lets the parent release several workers at the same moment
     print(f"RESULT {process(maker, candidate, collaborator)}", flush=True)
 
 

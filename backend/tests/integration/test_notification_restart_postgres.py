@@ -147,7 +147,7 @@ def leftovers():
 
 
 @pytest.fixture
-def env(scenario, runtime_engine, monkeypatch, tmp_path, procs, leftovers):
+def env(scenario, runtime_engine, monkeypatch, tmp_path, leftovers, procs):
     clock = identity.now_utc
     maker, admin, _, _, delivery = enqueued(runtime_engine, scenario, monkeypatch)
     leftovers.append((admin, delivery.id))
@@ -285,7 +285,10 @@ def test_a_competing_recovery_worker_cannot_advance_a_claim_it_does_not_hold(env
 
 
 def test_simultaneous_fresh_workers_deliver_once(env):
-    first, second = env.spawn(), env.spawn()
+    first, second = env.spawn("start"), env.spawn("start")
+    assert (first.wait_reached(), second.wait_reached()) == ("start", "start")
+    first.release()  # both are alive and past candidate selection before either may claim
+    second.release()
     assert sorted([first.finish(), second.finish()]) == ["delivered", "skipped"]
     assert len(env.ledger.effects()) == 1 and len(env.ledger.calls()) == 1
     assert snap(env.admin, env.row)["operations"] == ["enqueued", "attempted", "delivered"]
@@ -322,7 +325,7 @@ def test_a_delivered_cycle_is_never_enqueued_or_sent_again(env):
 
 
 def test_a_reconciled_delivery_counts_against_the_daily_budget_in_a_fresh_process(
-    scenario, runtime_engine, monkeypatch, tmp_path, procs, leftovers
+    scenario, runtime_engine, monkeypatch, tmp_path, leftovers, procs
 ):
     clock = identity.now_utc
     maker, admin, _, _, first = enqueued(runtime_engine, scenario, monkeypatch, limit=1)
@@ -367,4 +370,60 @@ def test_recovery_after_a_crash_still_honours_quiet_hours(env):
     assert env.fresh() == "deferred"
     state = snap(env.admin, env.row)
     assert state["state"] == "pending" and state["reason"] == "quiet_hours"
+    assert len(env.ledger.calls()) == 1 and env.ledger.effects() == []
+
+
+def test_a_stalled_worker_cannot_finish_a_newer_in_flight_claim(env):
+    stalled = env.spawn("before_effect")  # attempt 1: claimed, no effect, then stalls
+    assert stalled.wait_reached() == "before_effect"
+    age(env.admin, env.row)
+    assert env.fresh() == "unknown"
+    due(env.admin, env.row)
+    assert env.fresh() == "retried"
+    newer = env.spawn("before_effect")  # attempt 2 holds the current claim
+    assert newer.wait_reached() == "before_effect"
+    held = snap(env.admin, env.row)
+    assert held["state"] == "pending" and held["in_flight"] and held["attempts"] == 2
+    # The stale worker resumes and performs its (idempotent) effect, but its fence is obsolete:
+    # it must not complete, fail or alter the claim that attempt 2 holds.
+    stalled.release()
+    assert stalled.finish() == "skipped"
+    assert snap(env.admin, env.row) == held
+    newer.release()
+    assert newer.finish() == "delivered"
+    assert len(env.ledger.effects()) == 1
+    assert snap(env.admin, env.row)["state"] == "delivered"
+
+
+def test_a_crashing_lookup_keeps_the_outcome_unknown_and_never_resends(env):
+    crash_at(env, "after_effect")
+    age(env.admin, env.row)
+    assert env.fresh() == "unknown"
+    env.ledger.break_lookup()  # the lookup raises inside the worker process
+    due(env.admin, env.row)
+    assert env.fresh() == "unknown"
+    state = snap(env.admin, env.row)
+    assert state["state"] == "unknown" and state["reason"] == "ambiguous_outcome"
+    assert len(env.ledger.calls()) == 1 and len(env.ledger.effects()) == 1
+    env.ledger.repair_lookup()
+    due(env.admin, env.row)
+    assert env.fresh() == "delivered"
+    assert len(env.ledger.calls()) == 1 and len(env.ledger.effects()) == 1
+
+
+def test_recovery_re_checks_the_owner_and_never_applies_for_an_unavailable_owner(env):
+    crash_at(env, "before_effect")
+    age(env.admin, env.row)
+    assert env.fresh() == "unknown"
+    due(env.admin, env.row)
+    assert env.fresh() == "retried"
+    owner = env.row.owner_id
+    with env.admin.begin() as db:
+        db.execute(text("UPDATE users SET is_active=false WHERE id=:i"), {"i": owner})
+    try:
+        assert env.fresh() == "cancelled"
+    finally:
+        with env.admin.begin() as db:
+            db.execute(text("UPDATE users SET is_active=true WHERE id=:i"), {"i": owner})
+    assert snap(env.admin, env.row)["state"] == "cancelled"
     assert len(env.ledger.calls()) == 1 and env.ledger.effects() == []

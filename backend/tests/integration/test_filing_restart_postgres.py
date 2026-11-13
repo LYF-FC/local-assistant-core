@@ -51,7 +51,7 @@ def retire(admin, identifier):
 
 
 @pytest.fixture
-def env(scenario, runtime_engine, tmp_path, procs, leftovers):
+def env(scenario, runtime_engine, tmp_path, leftovers, procs):
     maker, admin, doc, _receipt, path, row = requested(scenario, runtime_engine)
     leftovers.append((admin, row.id))
     ledger = Ledger(tmp_path / "destination")
@@ -201,7 +201,10 @@ def test_a_competing_recovery_worker_cannot_advance_a_claim_it_does_not_hold(env
 
 
 def test_simultaneous_fresh_workers_create_one_effect(env):
-    first, second = env.spawn(), env.spawn()
+    first, second = env.spawn("start"), env.spawn("start")
+    assert (first.wait_reached(), second.wait_reached()) == ("start", "start")
+    first.release()  # both are alive and past candidate selection before either may claim
+    second.release()
     outcomes = sorted([first.finish(), second.finish()])
     assert outcomes == ["filed", "skipped"]
     assert len(env.ledger.effects()) == 1 and len(env.ledger.calls()) == 1
@@ -254,3 +257,84 @@ def test_a_cancelled_request_has_no_effect_in_any_process(env):
     assert cancelled.status_code == 200
     assert env.fresh() == "skipped"
     assert env.ledger.calls() == [] and env.ledger.objects() == []
+
+
+def test_a_stalled_worker_cannot_finish_a_newer_in_flight_claim(env):
+    stalled = env.spawn("before_effect")  # attempt 1: claimed, no effect, then stalls
+    assert stalled.wait_reached() == "before_effect"
+    age(env.admin, env.row)
+    assert env.fresh() == "unknown"
+    due(env.admin, env.row)
+    assert env.fresh() == "retried"
+    newer = env.spawn("before_effect")  # attempt 2 holds the current claim
+    assert newer.wait_reached() == "before_effect"
+    held = snap(env.admin, env.row)
+    assert held["state"] == "pending" and held["in_flight"] and held["attempts"] == 2
+    # The stale worker resumes and performs its (idempotent) effect, but its fence is obsolete:
+    # it must not complete, fail or alter the claim that attempt 2 holds.
+    stalled.release()
+    assert stalled.finish() == "skipped"
+    assert snap(env.admin, env.row) == held
+    newer.release()
+    assert newer.finish() == "filed"
+    assert len(env.ledger.effects()) == 1
+    assert snap(env.admin, env.row)["state"] == "filed"
+
+
+def test_a_crashing_lookup_keeps_the_outcome_unknown_and_never_resends(env):
+    crash_at(env, "after_effect")
+    age(env.admin, env.row)
+    assert env.fresh() == "unknown"
+    env.ledger.break_lookup()  # the lookup raises inside the worker process
+    due(env.admin, env.row)
+    assert env.fresh() == "unknown"
+    state = snap(env.admin, env.row)
+    assert state["state"] == "unknown" and state["reason"] == "ambiguous_outcome"
+    assert len(env.ledger.calls()) == 1 and len(env.ledger.effects()) == 1
+    env.ledger.repair_lookup()
+    due(env.admin, env.row)
+    assert env.fresh() == "filed"
+    assert len(env.ledger.calls()) == 1 and len(env.ledger.effects()) == 1
+
+
+def test_recovery_re_checks_the_owner_and_never_applies_for_an_unavailable_owner(env):
+    crash_at(env, "before_effect")
+    age(env.admin, env.row)
+    assert env.fresh() == "unknown"
+    due(env.admin, env.row)
+    assert env.fresh() == "retried"
+    owner = env.row.owner_id
+    with env.admin.begin() as db:
+        db.execute(text("UPDATE users SET is_active=false WHERE id=:i"), {"i": owner})
+    try:
+        assert env.fresh() == "cancelled"
+    finally:
+        with env.admin.begin() as db:
+            db.execute(text("UPDATE users SET is_active=true WHERE id=:i"), {"i": owner})
+    assert snap(env.admin, env.row)["state"] == "cancelled"
+    assert len(env.ledger.calls()) == 1 and env.ledger.effects() == []
+
+
+def test_an_owner_cannot_cancel_a_claim_that_may_already_have_an_effect(env):
+    crash_at(env, "after_effect")
+    client, headers = env.scenario[0], env.scenario[1]
+
+    def refusals():
+        with env.admin() as db:
+            return db.execute(
+                text("SELECT count(*) FROM audit_events WHERE event_type='filing.not_cancellable'")
+            ).scalar_one()
+
+    before = refusals()
+    response = client.post(
+        "/api/v1/filing/cancel",
+        headers=headers,
+        json={"scope": env.doc["scope"], "execution_id": env.key, "expected_revision": 2},
+    )
+    # in-flight work must be reconciled, not abandoned; the refusal is for that rule
+    assert response.status_code == 409 and refusals() == before + 1
+    age(env.admin, env.row)
+    assert env.fresh() == "unknown"
+    due(env.admin, env.row)
+    assert env.fresh() == "filed"
+    assert len(env.ledger.calls()) == 1 and len(env.ledger.effects()) == 1

@@ -83,6 +83,17 @@ class Ledger:
     def lookup_blocked(self):
         return (self.root / "lookup_unavailable").exists()
 
+    @property
+    def lookup_raises(self):
+        return (self.root / "lookup_raises").exists()
+
+    def break_lookup(self):
+        """Lookups raise (a crashing provider client) instead of answering 'unavailable'."""
+        (self.root / "lookup_raises").write_text("1")
+
+    def repair_lookup(self):
+        (self.root / "lookup_raises").unlink(missing_ok=True)
+
     def block_lookup(self):
         (self.root / "lookup_unavailable").write_text("1")
 
@@ -133,6 +144,8 @@ class FileDestination(filing.SyntheticDestination):
 
     def lookup(self, key):
         self.ledger.log("lookups.log", key)
+        if self.ledger.lookup_raises:
+            raise ConnectionError("synthetic lookup failure")
         if self.ledger.lookup_blocked:
             return filing.Lookup.UNAVAILABLE
         found = any(item["key"] == key for item in self.ledger.objects())
@@ -159,6 +172,8 @@ class FileChannel(notes.SyntheticChannel):
 
     def lookup(self, key):
         self.ledger.log("lookups.log", key)
+        if self.ledger.lookup_raises:
+            raise ConnectionError("synthetic lookup failure")
         if self.ledger.lookup_blocked:
             return notes.Lookup.UNAVAILABLE
         return notes.Lookup.DELIVERED if self.ledger.read(key) else notes.Lookup.ABSENT
