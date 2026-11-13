@@ -54,7 +54,7 @@ State on `main` `5862bd1`: **0 of 11 gates accepted; 0 verified at an exact `mai
 | 6 | Originals, PDF/OCR, retrieval | DOC-X01/02, DOC-02, CORE-03/10 | Subset | Merged: #2, #3, #4, #11 (text/Markdown library from imported baseline) | Tested | Not verified | Not accepted | Partially done |
 | 7 | Forwarded invoice (MVP-03) | DOC-01/02/03, MVP-03 | Subset (synthetic destination, in-process) | Merged: #11, #12, #13, #26, #29 | Tested (in-process) | Not verified | Not accepted | Partially done; restart evidence missing |
 | 8 | Offline and model failure (MVP-04) | MVP-04 | Local deterministic subsets | Imported baseline (no PR) | Subsets only | Not verified | Not accepted | Partially done; whole scenario not run |
-| 9 | Basic financial capture | FIN-06 | Subset (manual, restricted) | Merged: #18 (design), #19, #20 | Tested | Not verified | Not accepted | Partially done |
+| 9 | Basic financial capture | FIN-06 | Subset (manual, restricted) | Merged: #19, #20 (implementation); #18 was design-only and is not implementation integration | Tested | Not verified | Not accepted | Partially done |
 | 10 | Operations and restart | OPS-09/10, RND-01, PLATFORM-01/02 | Subset (observations only) | Merged: #21 (jobs foundation from imported baseline) | Tested | Not verified | Not accepted | Partially done; OPS-10 not started |
 | 11 | Clean-host recovery (MVP-05) | MVP-05, PLATFORM-03 | Synthetic logical restore only | Imported baseline (no PR) | Tested (synthetic) | Not verified | Not accepted | Barely started |
 | — | Whole-journey composite (MVP-01) | MVP-01 | Not implemented | — | Not tested | Not verified | Not accepted | **Not started** |
@@ -172,7 +172,7 @@ Dependencies, from the existing roadmap and gate text: restart/recovery evidence
 
 Current priorities, in order. **Owner-approved: the owner confirmed this order on 13 November 2026.** It derives from the roadmap's earlier proposed order and the backlog's tracked item; changing it needs a new owner decision:
 
-1. **Process-level restart evidence for Gate 7 and the notification worker (Gate 5).** The only way to turn in-process evidence into restart evidence without a real adapter; unblocks the open half of MVP-03. Needs an agreed host-level kill/restart procedure.
+1. **Process-level restart evidence for Gate 7 and the notification worker (Gate 5).** The only way to turn in-process evidence into restart evidence without a real adapter; unblocks the open half of MVP-03. Needs an agreed host-level kill/restart procedure. *Proposed implementation method (not a claim that MVP-03 is complete):* use a persistent synthetic destination that survives worker-process termination, and test (a) termination before the effect, (b) termination after the effect but before the outcome is recorded, (c) reconciliation by a fresh process, and (d) prevention of a duplicate effect.
 2. **Unified attention inbox** (pending approvals and remaining search gaps; Gate 2).
 3. **Operations and recovery** (worker/backup/capacity observation; clean-host restore including originals; Gates 10, 11, and the DOC-X02 half of Gate 6).
 4. **Time-boxed connector spikes** with sandbox accounts, calendar and notification first (Gates 4, 5); mail intake and local model after (Gates 7, 3). Each needs its own approval and data-flow statement.
