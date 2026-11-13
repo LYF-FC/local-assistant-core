@@ -76,11 +76,14 @@ if [[ "${BUTLER_BROWSER_TESTS:-0}" == 1 ]]; then
   if compose --profile reminders run --rm -T --no-deps reminder_worker python - check < scripts/reminder-browser-fixtures.py >/dev/null 2>&1; then
     echo 'Runtime account unexpectedly accepted the privileged synthetic fixture' >&2; exit 1
   fi
-  # Attention inbox (spec 071): synthetic failed/unknown records and pending approvals, seeded through the
-  # privileged migration container only. The default browser run below executes e2e/inbox.spec.ts, then the
-  # same container proves the real run changed no approval, filing, notification, reminder or document row.
-  compose run --rm -T migrate python - seed < scripts/inbox-browser-fixtures.py
   bash scripts/test-ci-browser.sh
+  # Attention inbox (spec 071): synthetic failed/unknown records and pending approvals are seeded through
+  # the privileged migration container only. The default run above skips e2e/inbox.spec.ts, which runs in its
+  # own phase with a fresh disposable login budget (the default run uses the whole per-source window); the
+  # same container then proves the real run changed no approval, filing, notification, reminder or document row.
+  compose run --rm -T migrate python - seed < scripts/inbox-browser-fixtures.py
+  compose run --rm -T migrate python - fresh-login-budget < scripts/inbox-browser-fixtures.py
+  BUTLER_INBOX_BROWSER_TESTS=1 bash scripts/test-ci-browser.sh inbox.spec.ts
   compose run --rm -T migrate python - check < scripts/inbox-browser-fixtures.py
   # Separate opt-in archive phase, with a fresh bounded synthetic identity budget.
   compose down --volumes --remove-orphans

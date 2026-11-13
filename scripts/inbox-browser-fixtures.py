@@ -11,7 +11,7 @@ import sys
 from datetime import timedelta
 from uuid import NAMESPACE_URL, uuid5
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 
 from app import identity
 from app.config import settings
@@ -19,6 +19,7 @@ from app.db import SessionLocal
 from app.models import (
     Approval,
     AuditEvent,
+    AuthRateWindow,
     DocumentRecord,
     FilingExecution,
     InvoiceReview,
@@ -41,10 +42,17 @@ def uid(name):
 
 
 phase = sys.argv[1] if len(sys.argv) == 2 else "seed"
-assert phase in {"seed", "check"}
+assert phase in {"seed", "check", "fresh-login-budget"}
 with SessionLocal.begin() as db:
     owner = db.scalar(select(User).where(User.slug == "browser-inbox-flow"))
     assert owner, "browser-fixtures.py seed must run first"
+    if phase == "fresh-login-budget":
+        # The default browser run uses the whole per-source login window (30 attempts per 15 minutes).
+        # Like the other fresh-account phases, give this phase its own budget in the disposable test
+        # database. The application limiter is unchanged and still enforced during the run.
+        deleted = db.execute(delete(AuthRateWindow)).rowcount
+        print(f"Cleared {deleted} disposable login-window rows for the inbox browser phase")
+        raise SystemExit(0)
     if phase == "check":
         rows = list(
             db.scalars(

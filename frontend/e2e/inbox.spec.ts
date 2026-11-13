@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import type { BrowserContext, Page } from "@playwright/test";
+test.skip(process.env.BUTLER_INBOX_BROWSER_TESTS !== "1", "Requires the inbox fixture phase with a fresh login budget");
 
 // Real stack: built UI, API under the restricted runtime role and PostgreSQL, a real login session
 // and the synthetic records from scripts/inbox-browser-fixtures.py. The only injected fault is the
