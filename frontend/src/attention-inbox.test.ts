@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AttentionError, parseApprovalPage, parseFilingPage, parseNotificationPage } from "./attention-api";
-import { deadline, documentLabels, EMPTY_TEXT, emptyState, expired, groups, InboxDenied, LINK_NOTE, loadInbox, merge, MORE_TEXT, moreApprovals, retrySource, SOURCES, VIEW_LIFETIME_MS, type Card, type Inbox } from "./attention-inbox";
+import { deadline, documentLabels, EMPTY_TEXT, emptyState, expired, groups, InboxDenied, loadInbox, merge, MORE_TEXT, moreApprovals, retrySource, SOURCES, VIEW_LIFETIME_MS, type Card, type Inbox } from "./attention-inbox";
 import { task } from "./test-support/tasks";
 import { approval, approvalPage, doc, documentPage, filingPage, filingRow, me, notificationPage, notificationRow, now, other, reminderPage, reminderRow, scope, SECRET, session, soon, stamp, taskPage, uid } from "./test-support/attention";
 
@@ -206,15 +206,16 @@ describe("cards, navigation and duplicates", () => {
     expect(documentCard.open).toEqual({ type: "source", target: { kind: "document", id: uid(50), owner_id: me, scope, revision: 3, created_at: stamp } });
     expect(JSON.stringify(inbox)).not.toContain(SECRET);
   });
-  it("links failures to existing scope-level views, and drops the link for a scrubbed filing", async () => {
-    mock({ "/api/v1/filing/query:failed": () => new Response(JSON.stringify(filingPage("failed", [filingRow(1, "failed"), filingRow(2, "failed", { scrubbed: true, document_id: null })]))), "/api/v1/notifications/query:unknown": () => new Response(JSON.stringify(notificationPage("unknown", [notificationRow(3, "unknown")]))) });
+  it("links failures to the related document and reminder by identity, and drops the link when it is gone", async () => {
+    mock({ "/api/v1/filing/query:failed": () => new Response(JSON.stringify(filingPage("failed", [filingRow(1, "failed"), filingRow(2, "failed", { scrubbed: true, document_id: null, source_revision: null })]))), "/api/v1/notifications/query:unknown": () => new Response(JSON.stringify(notificationPage("unknown", [notificationRow(3, "unknown")]))) });
     const all = groups(await loadInbox(session, scope, signal()));
     const [linked, scrubbed] = all.find(g => g.id === "filing")!.cards;
-    expect(linked.open).toEqual({ type: "destination", destination: { view: "documents", scope } });
+    expect(linked.open).toEqual({ type: "document", target: { id: uid(901), owner_id: me, scope, min_revision: 1 } });
+    expect(JSON.stringify(linked.open)).not.toMatch(/created_at/);
     expect(scrubbed.open).toBeNull();
     expect(scrubbed.openNote).toMatch(/no longer linked/);
     const [notification] = all.find(g => g.id === "notifications")!.cards;
-    expect(notification.open).toEqual({ type: "destination", destination: { view: "reminders", scope } });
+    expect(notification.open).toEqual({ type: "reminder", scope, task_id: uid(703) });
     expect(notification.uncertainty.join(" ")).toMatch(/not confirmed/);
     expect(all.find(g => g.id === "filing")!.notices[0]).toMatch(/Synthetic destination only/);
   });
@@ -269,6 +270,13 @@ describe("strict parsers", () => {
     expect(parseNotificationPage(notificationPage("unknown", [notificationRow(1, "unknown")]), scope, "unknown", session).items[0]).not.toHaveProperty("owner_id");
     expect(() => parseFilingPage(filingPage("failed", [filingRow(1, "unknown")]), scope, "failed", session)).toThrow();
     expect(() => parseFilingPage(filingPage("failed", [filingRow(1, "failed", { scrubbed: true })]), scope, "failed", session)).toThrow();
+    expect(() => parseFilingPage(filingPage("failed", [filingRow(1, "failed", { source_revision: null })]), scope, "failed", session)).toThrow();
+    expect(() => parseFilingPage(filingPage("failed", [filingRow(1, "failed", { source_revision: 0 })]), scope, "failed", session)).toThrow();
+    expect(parseNotificationPage(notificationPage("failed", [notificationRow(1, "failed", { task_id: null })]), scope, "failed", session).items[0].task_id).toBeNull();
+    expect(() => parseNotificationPage(notificationPage("failed", [notificationRow(1, "failed", { task_id: "not-a-uuid" })]), scope, "failed", session)).toThrow();
+    const { task_id: _t, ...withoutTask } = notificationRow(1, "failed");
+    expect(() => parseNotificationPage(notificationPage("failed", [withoutTask]), scope, "failed", session)).toThrow();
+    expect(() => parseNotificationPage(notificationPage("failed", [notificationRow(1, "failed", { task_title: "x" })]), scope, "failed", session)).toThrow();
     expect(() => parseNotificationPage({ ...notificationPage("failed"), owner_id: other }, scope, "failed", session)).toThrow();
   });
 });
@@ -341,8 +349,6 @@ describe("approvals paging and honest section wording", () => {
     expect(MORE_TEXT.filing).toMatch(/cannot be viewed from here/);
     expect(MORE_TEXT.notifications).toMatch(/cannot be viewed from here/);
     expect(MORE_TEXT.filing).not.toMatch(/open the source/i);
-    expect(LINK_NOTE.filing).toMatch(/does not show this filing request/);
-    expect(LINK_NOTE.notification).toMatch(/does not show this delivery record/);
   });
   it("an unavailable approvals source is never described as empty or paged", async () => {
     mock({ "/api/v1/approvals/query": () => new Response("{}", { status: 500 }) });

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Session } from "./api";
-import { EMPTY_TEXT, emptyState, expired, groups, InboxDenied, LINK_NOTE, loadInbox, MORE_TEXT, moreApprovals, retrySource, type Card, type Inbox, type Open, type SourceKey } from "./attention-inbox";
+import { EMPTY_TEXT, emptyState, expired, groups, InboxDenied, loadInbox, MORE_TEXT, moreApprovals, retrySource, type Card, type Inbox, type Open, type SourceKey } from "./attention-inbox";
 import { taskScopes, type TaskScope } from "./tasks-api";
 
 const SOURCE_NAME: Record<SourceKey, string> = {
@@ -8,7 +8,7 @@ const SOURCE_NAME: Record<SourceKey, string> = {
   notifications_failed: "failed notifications", notifications_unknown: "notifications with unconfirmed delivery",
   documents: "documents needing review", reminders: "delivered reminders", tasks: "overdue open tasks",
 };
-const LINK_LABEL: Partial<Record<Card["kind"], string>> = { filing: "Go to Documents (this scope)", notification: "Go to Reminders (this scope)" };
+const LINK_LABEL: Partial<Record<Card["kind"], string>> = { filing: "Open related document", notification: "Open related reminder" };
 const IDLE = "Choose a scope, then refresh the inbox. Nothing is read until you do.";
 
 export default function AttentionInboxPanel({ session, onUnauthorized, onOpen, onSearch }: { session: Session; onUnauthorized: () => void; onOpen: (open: Open) => void; onSearch: () => void }) {
@@ -126,6 +126,6 @@ function Item({ item, onOpen }: { item: Card; onOpen: (open: Open) => void }) {
     <br />{item.evidence.join(" · ")} · Read {item.readAt}.
     {item.uncertainty.map(note => <span key={note}><br />{note}</span>)}
     {item.changedDuringRefresh && <><br />Changed while this inbox was loading.</>}
-    {item.open ? <>{LINK_NOTE[item.kind] && <><br /><em>{LINK_NOTE[item.kind]}</em></>} <button onClick={() => onOpen(item.open!)}>{LINK_LABEL[item.kind] ?? `Open ${item.kind}: ${item.title}`}</button></> : item.openNote ? <><br /><em>{item.openNote}</em></> : null}
+    {item.open ? <><button onClick={() => onOpen(item.open!)}>{LINK_LABEL[item.kind] ?? `Open ${item.kind}: ${item.title}`}</button></> : item.openNote ? <><br /><em>{item.openNote}</em></> : null}
   </li>;
 }

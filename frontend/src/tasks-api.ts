@@ -49,6 +49,13 @@ export async function createTask(values: TaskValues, scope: TaskScope, csrf: str
   if (result.scope !== scope || result.state !== "active" || !result.can_edit || result.status !== "open" || result.revision !== 1) invalid();
   return result;
 }
+// Identity-only navigation read for the selected-reminder entry: only the id and scope are sent.
+export async function readTaskByIdentity(target: { id: string; scope: TaskScope }, actorId: string, csrf: string, signal: AbortSignal): Promise<Task> {
+  if (!uuid(target.id) || !Object.hasOwn(taskScopes, target.scope)) invalid();
+  const result = parseTask(await request(`/${target.id}/read`, { scope: target.scope }, csrf, signal));
+  if (result.id !== target.id || result.scope !== target.scope || result.owner_id !== actorId) invalid();
+  return result;
+}
 export async function taskAction(task: ActiveTask, operation: "read" | "correct" | "transition" | "forget", csrf: string, signal: AbortSignal, values?: TaskValues | { status: TaskStatus }): Promise<Task> {
   const result = parseTask(await request(`/${task.id}/${operation}`, { scope: task.scope, ...(operation === "read" ? {} : { expected_revision: task.revision }), ...values }, csrf, signal));
   if (result.id !== task.id || result.scope !== task.scope || result.owner_id !== task.owner_id || (operation !== "read" && result.revision !== task.revision + 1) || (operation === "forget" ? result.state !== "forgotten" : result.state !== "active")) invalid();

@@ -109,29 +109,33 @@ test("a failed source is shown as unavailable, never empty, and retries alone", 
   expect(requests).toEqual(["/api/v1/documents/query"]);
 });
 
-test("supported destinations open the real record, and filing and notification links say what they do not show", async ({ page }) => {
+test("task, document, reminder, filing and notification cards open the real related record", async ({ page }) => {
   await login(page);
+  const seen = record(page);
   await openInbox(page);
   await refresh(page);
   await expect(panel(page)).toContainText("Inbox loaded.");
-  await expect(section(page, "Failures: filing")).toContainText("Opens the Documents view for this scope. It does not show this filing request");
-  await expect(section(page, "Failures: notifications")).toContainText("Opens the Reminders view for this scope. It does not show this delivery record");
+  await expect(panel(page)).not.toContainText("does not show this");
+  await expect(panel(page)).not.toContainText("(this scope)");
+  const back = async () => { await page.getByRole("navigation", { name: "Local records" }).getByRole("button", { name: "Attention inbox", exact: true }).click(); await openInbox(page); await refresh(page); await expect(panel(page)).toContainText("Inbox loaded."); };
   await section(page, "Overdue open tasks").getByRole("button", { name: /^Open task: Synthetic overdue inbox task/ }).click();
   await expect(page.getByRole("article", { name: "Selected task", exact: true })).toContainText("Synthetic overdue inbox task");
-  await page.getByRole("navigation", { name: "Local records" }).getByRole("button", { name: "Attention inbox", exact: true }).click();
-  await expect(panel(page)).toContainText("Nothing is read until you do.");
-  await openInbox(page);
-  await refresh(page);
+  await back();
   await section(page, "Documents needing review").getByRole("button", { name: /^Open document: Synthetic inbox unreviewed document/ }).click();
   await expect(page.getByRole("article", { name: "Selected document", exact: true })).toContainText("Synthetic inbox unreviewed document");
-  await page.getByRole("navigation", { name: "Local records" }).getByRole("button", { name: "Attention inbox", exact: true }).click();
-  await openInbox(page);
-  await refresh(page);
-  await section(page, "Failures: notifications").getByRole("button", { name: "Go to Reminders (this scope)", exact: true }).click();
-  await expect(page.getByRole("region", { name: "Private reminder inbox", exact: true })).toBeVisible();
-  await page.getByRole("navigation", { name: "Local records" }).getByRole("button", { name: "Attention inbox", exact: true }).click();
-  await openInbox(page);
-  await refresh(page);
-  await section(page, "Failures: filing").getByRole("button", { name: "Go to Documents (this scope)", exact: true }).click();
-  await expect(page.getByRole("region", { name: "Documents", exact: true })).toBeVisible();
+  await back();
+  // Filing failure: the related document is reread only after the click, under current authorization.
+  const beforeFiling = seen.length;
+  await expect(section(page, "Failures: filing").getByRole("button", { name: "Open related document", exact: true })).toBeVisible();
+  expect(seen.length).toBe(beforeFiling);
+  await section(page, "Failures: filing").getByRole("button", { name: "Open related document", exact: true }).click();
+  await expect(page.getByRole("article", { name: "Selected document", exact: true })).toContainText("Synthetic inbox filed document");
+  await back();
+  // Notification failure: the related reminder's task is reread, then the existing reminder read shows it.
+  await section(page, "Failures: notifications").getByRole("button", { name: "Open related reminder", exact: true }).click();
+  await expect(page.getByRole("article", { name: "Selected private reminder", exact: true })).toContainText("Synthetic inbox delivered reminder");
+  await expect(page.getByRole("region", { name: "Private task reminder", exact: true })).toBeVisible();
+  const sinceInbox = seen.slice(beforeFiling).map(r => `${r.method} ${r.path}`);
+  expect(sinceInbox.some(r => /approvals\/[0-9a-f-]+|\/decide|\/cancel|\/consume|\/retry|\/acknowledge|reminders\/action|reminders\/schedule/.test(r))).toBe(false);
 });
+

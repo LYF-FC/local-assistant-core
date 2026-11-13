@@ -4,7 +4,7 @@
 import type { Session } from "./api";
 import { AttentionError, listApprovals, type ApprovalPage, listFiling, listNotifications, type FailureState } from "./attention-api";
 import type { Destination } from "./daily-overview";
-import { DocumentError, list as listDocuments, type Document } from "./documents-api";
+import { DocumentError, list as listDocuments, type Document, type DocumentIdentity } from "./documents-api";
 import type { SourceTarget } from "./record-search";
 import { listReminders, ReminderError } from "./reminders-api";
 import { listTasks, TaskError, taskScopes, type TaskScope } from "./tasks-api";
@@ -12,7 +12,7 @@ import { listTasks, TaskError, taskScopes, type TaskScope } from "./tasks-api";
 export const SOURCES = ["approvals", "filing_failed", "filing_unknown", "notifications_failed", "notifications_unknown", "documents", "reminders", "tasks"] as const;
 export type SourceKey = (typeof SOURCES)[number];
 export type Kind = "approval" | "filing" | "notification" | "document" | "reminder" | "task";
-export type Open = { type: "source"; target: SourceTarget } | { type: "destination"; destination: Destination };
+export type Open = { type: "source"; target: SourceTarget } | { type: "destination"; destination: Destination } | { type: "document"; target: DocumentIdentity } | { type: "reminder"; scope: TaskScope; task_id: string };
 export type Card = {
   key: string; kind: Kind; id: string; scope: TaskScope; revision: number;
   title: string; status: string; labels: string[]; evidence: string[]; uncertainty: string[];
@@ -59,7 +59,7 @@ async function read(key: SourceKey, session: Session, scope: TaskScope, signal: 
         kind: "filing", id: row.id, scope, revision: row.revision, title: "Filing request", status: state === "failed" ? "Filing failed" : "Outcome not confirmed", readAt: page.checked_at,
         evidence: [`${row.attempts} attempt${row.attempts === 1 ? "" : "s"}`, `Updated ${row.updated_at}`, ...(row.reason ? [`Reason: ${words(row.reason)}`] : [])],
         uncertainty: state === "unknown" ? ["The filing outcome was not confirmed. Check the document before repeating anything."] : [],
-        open: row.document_id ? { type: "destination", destination: { view: "documents", scope } } : null,
+        open: row.document_id && row.owner_id ? { type: "document", target: { id: row.document_id, owner_id: row.owner_id, scope, min_revision: row.source_revision! } } : null,
         openNote: row.document_id ? null : "The related document is no longer linked.",
       })) };
     }
@@ -70,7 +70,8 @@ async function read(key: SourceKey, session: Session, scope: TaskScope, signal: 
         kind: "notification", id: row.id, scope, revision: row.revision, title: `Reminder notification (${row.channel})`, status: state === "failed" ? "Delivery failed" : "Delivery not confirmed", readAt: page.checked_at,
         evidence: [`${row.attempts} attempt${row.attempts === 1 ? "" : "s"}`, `Updated ${row.updated_at}`, ...(row.reason ? [`Reason: ${words(row.reason)}`] : [])],
         uncertainty: state === "unknown" ? ["Delivery was not confirmed; the reminder may or may not have been shown."] : [],
-        open: { type: "destination", destination: { view: "reminders", scope } },
+        open: row.task_id ? { type: "reminder", scope, task_id: row.task_id } : null,
+        openNote: row.task_id ? null : "The related reminder is not available to open.",
       })) };
     }
     case "documents": {
@@ -209,11 +210,6 @@ export const MORE_TEXT: Record<Group["id"], string> = {
   reminders: "More delivered reminders exist than this first page shows. The Reminders view lists reminders for this scope.",
   tasks: "More overdue tasks may exist than this first page shows. The Tasks view lists tasks for this scope.",
 };
-export const LINK_NOTE: Partial<Record<Kind, string>> = {
-  filing: "Opens the Documents view for this scope. It does not show this filing request or confirm its outcome.",
-  notification: "Opens the Reminders view for this scope. It does not show this delivery record or confirm delivery.",
-};
-
 export function emptyState(inbox: Inbox): "none" | "unavailable" | null {
   const all = SOURCES.map(key => inbox.sources[key]);
   const unavailable = all.some(source => source.state === "unavailable");

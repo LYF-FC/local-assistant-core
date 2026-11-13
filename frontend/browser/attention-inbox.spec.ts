@@ -77,6 +77,24 @@ test("is usable on a phone and by keyboard", async ({ page }, testInfo) => {
   await expect(page.getByLabel("Navigation record")).toHaveAttribute("data-opened", /"kind":"task"/);
 });
 
+test("filing and notification cards open the related record by identity only, with no request and no prefetch", async ({ page }) => {
+  const { calls, other } = await mock(page);
+  await open(page);
+  await refresh(page);
+  const before = calls.length;
+  expect(calls.every(call => call.path.endsWith("/query"))).toBe(true);
+  await panel(page).getByRole("button", { name: "Open related document", exact: true }).click();
+  await panel(page).getByRole("button", { name: "Open related reminder", exact: true }).click();
+  expect(calls.length).toBe(before);
+  expect(other).toEqual([]);
+  await expect(panel(page)).not.toContainText("Go to Documents");
+  await expect(panel(page)).not.toContainText("does not show this");
+  const opened = JSON.parse((await page.getByLabel("Navigation record").getAttribute("data-opened"))!);
+  expect(opened[0]).toEqual({ type: "document", target: { id: uid(911), owner_id: "22222222-2222-4222-8222-222222222222", scope, min_revision: 1 } });
+  expect(opened[1]).toEqual({ type: "reminder", scope, task_id: uid(721) });
+  expect(JSON.stringify(opened)).not.toMatch(/created_at|title|content_text|payload|reason/);
+});
+
 test("opens records with only minimal coordinates", async ({ page }) => {
   await mock(page);
   await open(page);

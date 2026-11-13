@@ -53,7 +53,7 @@ export async function listApprovals(scope: TaskScope, session: Session, signal: 
 }
 
 export type FailureState = "failed" | "unknown";
-export type FilingItem = { id: string; document_id: string | null; state: FailureState; revision: number; attempts: number; reason: string | null; updated_at: string; scrubbed: boolean };
+export type FilingItem = { id: string; document_id: string | null; owner_id: string; source_revision: number | null; state: FailureState; revision: number; attempts: number; reason: string | null; updated_at: string; scrubbed: boolean };
 export type FilingPage = { checked_at: string; state: FailureState; items: FilingItem[]; next_cursor: string | null; notice: string };
 const FILING_KEYS = ["id", "document_id", "owner_id", "scope", "destination", "state", "revision", "plan_revision", "source_revision", "attempts", "next_attempt_at", "resolved_at", "reason", "created_at", "updated_at", "scrubbed"];
 export function parseFilingPage(v: unknown, scope: TaskScope, state: FailureState, session: Session): FilingPage {
@@ -62,8 +62,8 @@ export function parseFilingPage(v: unknown, scope: TaskScope, state: FailureStat
   const items = (page.items as unknown[]).map((row): FilingItem => {
     if (!object(row)) invalid();
     exactKeys(row, FILING_KEYS);
-    if (!uuid(row.id) || row.owner_id !== session.user.id || row.scope !== scope || row.state !== state || !count(row.revision, 1) || !count(row.attempts) || !nullableDate(row.next_attempt_at) || !nullableDate(row.resolved_at) || !(row.reason === null || word(row.reason, 256)) || !date(row.created_at) || !date(row.updated_at) || typeof row.scrubbed !== "boolean" || !(row.document_id === null ? row.scrubbed : uuid(row.document_id) && !row.scrubbed)) invalid();
-    return { id: row.id, document_id: row.document_id as string | null, state, revision: row.revision, attempts: row.attempts, reason: row.reason as string | null, updated_at: row.updated_at, scrubbed: row.scrubbed };
+    if (!uuid(row.id) || row.owner_id !== session.user.id || row.scope !== scope || row.state !== state || !count(row.revision, 1) || !count(row.attempts) || !nullableDate(row.next_attempt_at) || !nullableDate(row.resolved_at) || !(row.reason === null || word(row.reason, 256)) || !date(row.created_at) || !date(row.updated_at) || typeof row.scrubbed !== "boolean" || !(row.document_id === null ? row.scrubbed && row.source_revision === null : uuid(row.document_id) && !row.scrubbed && count(row.source_revision, 1))) invalid();
+    return { id: row.id, document_id: row.document_id as string | null, owner_id: row.owner_id, source_revision: row.document_id === null ? null : row.source_revision as number, state, revision: row.revision, attempts: row.attempts, reason: row.reason as string | null, updated_at: row.updated_at, scrubbed: row.scrubbed };
   });
   ordered(items.map(row => row.id), null, page.next_cursor);
   return { checked_at: page.checked_at as string, state, items, next_cursor: page.next_cursor as string | null, notice: page.notice as string };
@@ -72,17 +72,17 @@ export async function listFiling(scope: TaskScope, state: FailureState, session:
   return parseFilingPage(await post("/api/v1/filing/query", { scope, state, document_id: null, after: null }, session, signal), scope, state, session);
 }
 
-export type NotificationItem = { id: string; reminder_id: string; channel: string; state: FailureState; revision: number; attempts: number; reason: string | null; updated_at: string };
+export type NotificationItem = { id: string; reminder_id: string; task_id: string | null; channel: string; state: FailureState; revision: number; attempts: number; reason: string | null; updated_at: string };
 export type NotificationPage = { checked_at: string; state: FailureState; items: NotificationItem[]; next_cursor: string | null };
-const NOTIFICATION_KEYS = ["id", "reminder_id", "owner_id", "scope", "channel", "state", "revision", "cycle", "attempts", "next_attempt_at", "resolved_at", "reason", "created_at", "updated_at"];
+const NOTIFICATION_KEYS = ["id", "reminder_id", "owner_id", "scope", "channel", "state", "revision", "cycle", "attempts", "next_attempt_at", "resolved_at", "reason", "created_at", "updated_at", "task_id"];
 export function parseNotificationPage(v: unknown, scope: TaskScope, state: FailureState, session: Session): NotificationPage {
   const page = envelope(v, scope, ["schema_version", "checked_at", "owner_id", "scope", "state", "items", "next_cursor"]);
   if (page.owner_id !== session.user.id || page.scope !== scope || page.state !== state) invalid();
   const items = (page.items as unknown[]).map((row): NotificationItem => {
     if (!object(row)) invalid();
     exactKeys(row, NOTIFICATION_KEYS);
-    if (!uuid(row.id) || !uuid(row.reminder_id) || row.owner_id !== session.user.id || row.scope !== scope || !word(row.channel, 64) || row.state !== state || !count(row.revision, 1) || !count(row.cycle, 1) || !count(row.attempts) || !nullableDate(row.next_attempt_at) || !nullableDate(row.resolved_at) || !(row.reason === null || word(row.reason, 256)) || !date(row.created_at) || !date(row.updated_at)) invalid();
-    return { id: row.id, reminder_id: row.reminder_id, channel: row.channel, state, revision: row.revision, attempts: row.attempts, reason: row.reason as string | null, updated_at: row.updated_at };
+    if (!uuid(row.id) || !uuid(row.reminder_id) || row.owner_id !== session.user.id || row.scope !== scope || !word(row.channel, 64) || row.state !== state || !count(row.revision, 1) || !count(row.cycle, 1) || !count(row.attempts) || !nullableDate(row.next_attempt_at) || !nullableDate(row.resolved_at) || !(row.reason === null || word(row.reason, 256)) || !date(row.created_at) || !date(row.updated_at) || !(row.task_id === null || uuid(row.task_id))) invalid();
+    return { id: row.id, reminder_id: row.reminder_id, task_id: row.task_id as string | null, channel: row.channel, state, revision: row.revision, attempts: row.attempts, reason: row.reason as string | null, updated_at: row.updated_at };
   });
   ordered(items.map(row => row.id), null, page.next_cursor);
   return { checked_at: page.checked_at as string, state, items, next_cursor: page.next_cursor as string | null };
