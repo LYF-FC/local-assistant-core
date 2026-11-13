@@ -1,6 +1,6 @@
 # Butler — project master
 
-**Project status snapshot reconciled against `main` revision `5862bd1c74622ae7de0ee154c3c5e7903d51f020` (merge of [PR #29](https://github.com/LYF-FC/local-assistant-core/pull/29), 13 November 2026).** Reconciliation means the documents were checked against what is merged at that revision. It is not independent verification: no gate is verified at this or any exact `main` revision (see sections 3, 4 and 6).
+**Project status snapshot reconciled against `main` revision `5096134687fd1c03805977a1681b415395a046f0` (merge of [PR #31](https://github.com/LYF-FC/local-assistant-core/pull/31), 13 November 2026).** Reconciliation means the documents were checked against what is merged at that revision. It is not independent verification: no gate is verified at this or any exact `main` revision (see sections 3, 4 and 6).
 
 This is the authoritative document for Butler's product scope, the Everyday MVP definition, stage/gate progress, what is delivered, what is outstanding, implementation order and current priorities. It points to — and does not copy — the detailed contracts. **Precedence**, highest first: (1) the [constitution](.specify/memory/constitution.md): foundational principles and constraints; (2) explicit owner-approved decisions (recorded in [DECISIONS.md](DECISIONS.md) and the approving PRs): authorized changes to scope or direction, which must be reflected in this file and prevail over it until they are; (3) this file: consolidated current scope, MVP definition, gates, status, priorities and sequencing; (4) the [register](docs/FEATURE_REGISTER.md): requirement identifiers, retained requirement text and evidence pointers; (5) [docs/MVP_ACCEPTANCE.md](docs/MVP_ACCEPTANCE.md): acceptance criteria and procedures; (6) specs and feature contracts: detailed technical requirements and behavior. Architecture ([ARCHITECTURE.md](ARCHITECTURE.md)) and operational procedures keep authority over their own subjects. Where a lower-ranked document disagrees on a subject owned here, correct it.
 
@@ -42,7 +42,7 @@ Rules:
 
 ## 4. Where things stand (summary)
 
-State on `main` `5862bd1`: **0 of 11 gates accepted; 0 verified at an exact `main` revision.** Every gate has a bounded subset delivered, either merged through the PRs listed in section 5 or present in the imported baseline. External-provider integrations are synthetic (notification channel, calendar provider, filing destination) or absent; several capabilities are operated manually by a person (tasks, memory review, finance capture). One real local-filesystem capability exists and is optional and opt-in: the spec 050 original archive on a private local directory. There is no real NAS/Synology destination, live mailbox, real calendar or notification provider, device push or activated real local model. 155 register references: 0 accepted, 40 with a partial bounded subset, 115 planned (generated figures: [overview](docs/FEATURE_OVERVIEW.md)).
+State on `main` `5096134`: **0 of 11 gates accepted; 0 verified at an exact `main` revision.** Every gate has a bounded subset delivered, either merged through the PRs listed in section 5 or present in the imported baseline. External-provider integrations are synthetic (notification channel, calendar provider, filing destination) or absent; several capabilities are operated manually by a person (tasks, memory review, finance capture). One real local-filesystem capability exists and is optional and opt-in: the spec 050 original archive on a private local directory. There is no real NAS/Synology destination, live mailbox, real calendar or notification provider, device push or activated real local model. 155 register references: 0 accepted, 40 with a partial bounded subset, 115 planned (generated figures: [overview](docs/FEATURE_OVERVIEW.md)).
 
 | # | Gate | Register IDs | Implementation | Integration | Testing | Verification | Acceptance | Stage state |
 |---|---|---|---|---|---|---|---|---|
@@ -50,9 +50,9 @@ State on `main` `5862bd1`: **0 of 11 gates accepted; 0 verified at an exact `mai
 | 2 | Private desktop/mobile entry | CORE-08/09, UI-01 | Subset | Merged: #17, #22 (UI foundations from imported baseline) | Tested | Not verified | Not accepted | Partially done |
 | 3 | Local conversation and cited answers | CORE-06/10 | Subset (lexical, exact quotation) | Merged: #7 | Tested | Not verified | Not accepted | Partially done |
 | 4 | Calendar and briefing (MVP-02) | ORG-01/02, MVP-02 | Subset (synthetic) | Merged: #8, #28 | Tested | Not verified | Not accepted | Partially done |
-| 5 | Tasks, recurrence, delivery | ORG-03, CORE-11/13, REM-01 | Subset (synthetic channel) | Merged: #9, #24, #25 (manual tasks and reminders from imported baseline) | Tested | Not verified | Not accepted | Partially done |
+| 5 | Tasks, recurrence, delivery | ORG-03, CORE-11/13, REM-01 | Subset (synthetic channel) | Merged: #9, #24, #25, #31 (manual tasks and reminders from imported baseline) | Tested (process-restart evidence, synthetic channel only: #31) | Not verified | Not accepted | Partially done |
 | 6 | Originals, PDF/OCR, retrieval | DOC-X01/02, DOC-02, CORE-03/10 | Subset | Merged: #2, #3, #4, #11 (text/Markdown library from imported baseline) | Tested | Not verified | Not accepted | Partially done |
-| 7 | Forwarded invoice (MVP-03) | DOC-01/02/03, MVP-03 | Subset (synthetic destination, in-process) | Merged: #11, #12, #13, #26, #29 | Tested (in-process; process-restart, synthetic destination) | Not verified | Not accepted | Partially done; real-destination and live-inbox evidence missing |
+| 7 | Forwarded invoice (MVP-03) | DOC-01/02/03, MVP-03 | Subset (synthetic destination, in-process) | Merged: #11, #12, #13, #26, #29, #31 | Tested (in-process; process-restart, synthetic destination) | Not verified | Not accepted | Partially done; real-destination and live-inbox evidence missing |
 | 8 | Offline and model failure (MVP-04) | MVP-04 | Local deterministic subsets | Imported baseline (no PR) | Subsets only | Not verified | Not accepted | Partially done; whole scenario not run |
 | 9 | Basic financial capture | FIN-06 | Subset (manual, restricted) | Merged: #19, #20 (implementation); #18 was design-only and is not implementation integration | Tested | Not verified | Not accepted | Partially done |
 | 10 | Operations and restart | OPS-09/10, RND-01, PLATFORM-01/02 | Subset (observations only) | Merged: #21 (jobs foundation from imported baseline) | Tested | Not verified | Not accepted | Partially done; OPS-10 not started |
@@ -66,7 +66,7 @@ State on `main` `5862bd1`: **0 of 11 gates accepted; 0 verified at an exact `mai
 
 For each gate: capabilities delivered, merged PRs, test evidence, verification, acceptance, what is outstanding, blockers, and what must happen next. Detailed acceptance wording and procedures are in `docs/MVP_ACCEPTANCE.md`; do not restate them here. Verification is **Not verified** and Acceptance is **Not accepted** for every gate unless stated; the "Testing evidence" lines name test files that exist and do not claim a current run.
 
-PR index: #1 scope reconciliation (docs); #2 spec 050; #3 spec 051; #4 spec 052; #7 spec 053; #8 spec 054; #9 spec 055; #11 spec 056; #12 spec 057; #13 spec 058; #14 spec 059; #15 spec 060 (and the PR #16 spec 061 programme reconciliation); #17 spec 062; #18 spec 063 (design); #19 spec 064; #20 spec 065; #21 spec 066; #22 spec 067; #24 spec 068; #25 spec 068 corrections; #26 spec 069; #27 Batch 3 **design proposal only**; #28 spec 070 (Batch 3 implementation); #29 spec 069 follow-up. PRs #5, #6, #10 and #23 are documentation-only.
+PR index: #1 scope reconciliation (docs); #2 spec 050; #3 spec 051; #4 spec 052; #7 spec 053; #8 spec 054; #9 spec 055; #11 spec 056; #12 spec 057; #13 spec 058; #14 spec 059; #15 spec 060 (and the PR #16 spec 061 programme reconciliation); #17 spec 062; #18 spec 063 (design); #19 spec 064; #20 spec 065; #21 spec 066; #22 spec 067; #24 spec 068; #25 spec 068 corrections; #26 spec 069; #27 Batch 3 **design proposal only**; #28 spec 070 (Batch 3 implementation); #29 spec 069 follow-up; #30 project master and documentation governance (docs); #31 Batch 4 process-restart evidence for specs 068/069 (synthetic only, migration 0036). PRs #5, #6, #10 and #23 are documentation-only.
 
 ### Gate 1 — Identity, memory and portability (CORE-02/03/04/05)
 - **Delivered (subset):** local accounts/sessions, current grants, HTTPS/Host/Origin/CSRF, restricted DB role, protected audit, memory with history, bounded export. Specs 001, 003, 006–009 and related.
@@ -153,13 +153,13 @@ PR index: #1 scope reconciliation (docs); #2 spec 050; #3 spec 051; #4 spec 052;
 | 063 / 064 / 065 | #18 / #19 / #20 | 9 |
 | 066 | #21 | 10 |
 | 067 | #22 | 2 |
-| 068 | #24, #25 | 5 |
-| 069 | #26, #29 | 7 |
+| 068 | #24, #25, #31 | 5 |
+| 069 | #26, #29, #31 | 7 |
 
 ## 6. Missing acceptance evidence
 
 1. **No gate has an acceptance record** (date, revision, environment, result). None can be marked Accepted.
-2. **No gate has reviewer-signed verification.** The repository records one exact-`main` CI result (run 43414296005, a push to `main` at `5862bd1`, all six jobs succeeded; in `docs/FEATURE_PROGRESS.json` `ci_evidence`). That is hosted CI evidence, not verification of any gate and not owner acceptance. Other PRs' CI results live in PR metadata; [docs/VALIDATION.md](docs/VALIDATION.md) covers only the imported baseline at `501d92b`.
+2. **No gate has reviewer-signed verification.** The repository records one exact-`main` CI result (run 43493750600, a push to `main` at `5096134`; attempt 1 failed in the `postgres` job on a lock timeout in an unrelated work-adapter test and the rerun of the failed jobs succeeded, so all six jobs succeeded only after that rerun; in `docs/FEATURE_PROGRESS.json` `ci_evidence`). That is hosted CI evidence, not verification of any gate and not owner acceptance. Other PRs' CI results live in PR metadata; [docs/VALIDATION.md](docs/VALIDATION.md) covers only the imported baseline at `501d92b`.
 3. **MVP-03:** live inbox and real destination (Gate 7). Process-restart evidence now exists for a synthetic destination only (Batch 4); it is not verification and does not cover a real destination.
 4. **Notification worker (spec 068):** process-restart evidence now exists for a synthetic channel only (Batch 4); evidence against a real provider is absent (Gate 5).
 5. **MVP-01, MVP-04, MVP-05:** whole-scenario tests and procedures do not exist.
