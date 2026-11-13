@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, JsonValue
 from sqlalchemy.orm import Session
 
 from app import approvals, identity
+from app import manual_tasks as tasks
 from app.auth_routes import get_db, run
 
 router = APIRouter(prefix="/api/v1/approvals", tags=["approvals"])
@@ -25,6 +26,12 @@ class BindingRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     payload_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
     policy_version: str = Field(min_length=1, max_length=64)
+
+
+class QueryRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    scope: tasks.Scope
+    after: UUID | None = None
 
 
 class DecisionRequest(BindingRequest):
@@ -50,6 +57,12 @@ def create(body: CreateRequest, request: Request, db: DB):
             db, token, csrf, body.scope, body.payload, body.expires_in, body.action_type
         ),
     )
+
+
+@router.post("/query")
+def query(body: QueryRequest, request: Request, db: DB):
+    token, csrf = credentials(request)
+    return perform(request, db, lambda: approvals.listing(db, token, csrf, body.scope, body.after))
 
 
 @router.get("/{identifier}")

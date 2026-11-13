@@ -8,7 +8,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import identity
+from app import identity, manual_tasks
 from app.models import Approval, User
 
 POLICY = "v0.1-record-only-1"
@@ -214,3 +214,73 @@ def operate(
         record.consumed_at = identity.now_utc()
     event(db, record, user, record.status, before=before)
     return identity.Result(200, document(record))
+
+
+PAGE = 25
+
+
+def listing(db: Session, token, csrf, scope: str, after: UUID | None = None) -> identity.Result:
+    """Read-only page of pending, unexpired, bound approvals for one granted scope.
+
+    Writes no approval row and applies no lazy expiry; it records exactly one metadata-only
+    audit event. The payload, hash, policy version and every other person's identifier are
+    deliberately not selected into the response.
+    """
+    current = manual_tasks.authority(db, token, csrf, scope, event_prefix="approval")
+    if isinstance(current, identity.Result):
+        return current
+    user, session = current
+    now = identity.now_utc()
+    query = select(Approval).where(
+        Approval.scope_key == scope,
+        Approval.status == "pending",
+        Approval.expires_at.is_not(None),
+        Approval.expires_at > now,
+        Approval.payload_hash.is_not(None),
+        Approval.policy_version.is_not(None),
+    )
+    if after is not None:
+        query = query.where(Approval.id > after)
+    rows = list(
+        db.scalars(
+            query.order_by(Approval.id)
+            .limit(PAGE + 1)
+            .with_for_update(read=True)
+            .execution_options(populate_existing=True)
+        )
+    )
+    if identity.resolve(db, token, refresh_session=True) is None:
+        return identity.denied(db, 401, "approval.session_denied", user=user)
+    session.last_seen_at = identity.now_utc()
+    # One event per request, committed before release; a failure here withholds the page.
+    identity.audit(
+        db,
+        "approval.query",
+        "success",
+        user=user,
+        scope=scope,
+        entity_type="approval",
+        metadata={"returned": min(len(rows), PAGE)},
+    )
+    return identity.Result(
+        200,
+        {
+            "schema_version": 1,
+            "mode": "approval_page",
+            "checked_at": now.isoformat(),
+            "page_limit": PAGE,
+            "items": [
+                {
+                    "id": str(row.id),
+                    "scope": row.scope_key,
+                    "action_type": row.action_type,
+                    "status": row.status,
+                    "requested_at": identity.aware(row.requested_at).isoformat(),
+                    "expires_at": identity.aware(row.expires_at).isoformat(),
+                    "requested_by_you": row.requested_by == str(user.id),
+                }
+                for row in rows[:PAGE]
+            ],
+            "next_cursor": str(rows[PAGE - 1].id) if len(rows) > PAGE else None,
+        },
+    )

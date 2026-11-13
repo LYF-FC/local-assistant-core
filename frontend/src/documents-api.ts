@@ -58,6 +58,14 @@ export async function action(row:Document,op:"read"|"correct"|"replace"|"extract
   if (v.id!==row.id || v.owner_id!==row.owner_id || v.scope!==row.scope || (op!=="read" && v.revision!==row.revision+1) || (op==="forget"?v.state!=="forgotten":v.state!=="active")) invalid();
   return v;
 }
+export type DocumentIdentity={id:string;owner_id:string;scope:Scope;min_revision:number};
+// Identity-only navigation read: sends only the id and scope, and trusts nothing but the current response.
+export async function readByIdentity(target:DocumentIdentity,actorId:string,csrf:string,signal:AbortSignal):Promise<Document> {
+  if (!uuid(target.id)||!uuid(target.owner_id)||!Number.isSafeInteger(target.min_revision)||target.min_revision<1||!Object.hasOwn(documentScopes,target.scope)||(target.scope!=="household_shared"&&target.owner_id!==actorId)) throw new Error("Invalid document target");
+  const v=parseDocument(await request(`/${target.id}/read`,{scope:target.scope},csrf,signal));
+  if (v.state!=="active"||v.id!==target.id||v.owner_id!==target.owner_id||v.scope!==target.scope||v.revision<target.min_revision||v.can_edit!==(v.owner_id===actorId)) throw new Error("Invalid document target");
+  return v;
+}
 export async function upload(scope:Scope,values:object,csrf:string,signal:AbortSignal):Promise<Document> {
   const v=parseDocument(await request("",{scope,...values},csrf,signal));
   if (v.state!=="active" || v.scope!==scope || !v.can_edit || v.revision!==1 || v.reviewed!==false) invalid();

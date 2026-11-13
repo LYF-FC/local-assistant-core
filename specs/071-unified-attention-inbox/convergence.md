@@ -1,33 +1,76 @@
 # Convergence — unified attention inbox (first slice)
 
-**Not converged. This is a pre-implementation convergence plan, not a report.** Nothing has been implemented, tested or verified for this feature. Every "Evidence" cell below is empty by design and must be filled only from real results after implementation. Drafting this file changes no implementation status, status counts, verification or owner acceptance. Gate 2 stays open (criterion unchanged: "Dashboard exposes agenda, pending approvals, reminders, failures and authorized search."); CORE-08 and UI-01 stay partial; the five-priority order stays unapproved. The constitution requires convergence to report the agreed feature complete before delivery; that happens only after implementation.
-
+**Implemented on branch `codex/impl-071-attention-inbox` (open PR #34); locally tested; hosted CI passed on the current head; not owner-accepted, not merged.** The Evidence column below records results produced on this branch in a disposable local environment (synthetic data) as of the correction pass; the hosted result is recorded under "Hosted CI evidence". Passing CI is not verification or acceptance. Gate 2 stays open (criterion unchanged: "Dashboard exposes agenda, pending approvals, reminders, failures and authorized search."); CORE-08 and UI-01 stay partial; no status counts changed; the five-priority order stays unapproved. Implementation, testing, verification and acceptance are separate facts; only implementation and testing (local and hosted CI) are claimed.
 ## What convergence must show
 
 | Spec requirement | Source | Required evidence | Evidence |
 |---|---|---|---|
-| Inbox view composing the six sections for one granted scope; search entry reuses spec 067 | spec §Delivers; CORE-08, UI-01 | Client and browser workflow results (A1) | not yet evidenced |
-| Approvals list: pending, unexpired, bound only; allow-listed fields; no payload, hash, policy, approver or requester id; paging | spec §Pending approvals; CORE-04 | Backend allow-list, status, expiry, legacy and cursor tests (A2, A4, E1, E2) | not yet evidenced |
-| "Requested by you" label; no self-approval restriction implied | owner decision 3 | Label tests (A3) | not yet evidenced |
-| One metadata-only audit event per list request; failure withholds results; event name rechecked and pinned | owner decision 2; CORE-05 | Event shape/count tests, real-role PostgreSQL insert and induced failure (U1, U2) | not yet evidenced |
-| Approvals evidence-only: no destination, no Open, decide, cancel or consume control, no request to approval operation routes | owner review; CORE-04 | Browser and network-recording assertions (N3, S1) | not yet evidenced |
-| Tasks (open overdue) and reminders (delivered) with owner-only and shared-read-only rules; routine-generated tasks also under ORG-03 | REM-01, ORG-03 | Visibility tests (P2, P3); routine-origin check | not yet evidenced |
-| Documents needing review | CORE-10 | Unreviewed and extraction-failed selection tests | not yet evidenced |
-| Filing and notification failures with uncertainty wording and owner-only visibility | DOC-03, CORE-11 | Failure-state and visibility tests (F1, P2) | not yet evidenced |
-| Explicit refresh, 60-second and approval-expiry clearing, non-atomic notice, late-response discard | spec §Refresh | Expiry and clearing tests (E3, E4) | not yet evidenced |
-| Source failure never appears as empty; per-source retry; empty-state sentence only when every source loaded | spec §Refresh | Partial-failure tests (F1–F4, U2) | not yet evidenced |
-| Authorization denial clears every section; navigation rereads under current authorization; revoked grant handled | spec §Navigation | Denial and revocation tests (N1, N2) | not yet evidenced |
-| Duplicate references render once; separate record kinds not merged | spec §Item model | Dedup tests (D1) | not yet evidenced |
-| No state-changing request from the inbox | spec | Network-recording test (S1, S2) | not yet evidenced |
-| Mobile 390×844, keyboard and live-region behaviour (existing obligations only; REV-03 not claimed) | spec §Mobile | Browser workflow (mobile) | not yet evidenced |
+| Inbox view composing the six sections for one granted scope; search entry reuses spec 067 | spec §Delivers; CORE-08, UI-01 | Client and browser workflow results (A1) | Vitest `attention-inbox.test.ts` (48 tests) and `browser/attention-inbox.spec.ts` (12 Playwright tests, synthetic component harness, not the real stack) passed locally. |
+| Approvals list: pending, unexpired, bound only; allow-listed fields; no payload, hash, policy, approver or requester id; paging | spec §Pending approvals; CORE-04 | Backend allow-list, status, expiry, legacy and cursor tests (A2, A4, E1, E2) | `test_approval_query.py` (12 tests) passed locally; strict client parsers tested in Vitest. |
+| "Requested by you" label; no self-approval restriction implied | owner decision 3 | Label tests (A3) | Backend and client tests passed locally; the label implies no self-approval restriction. |
+| One metadata-only audit event per list request; failure withholds results; event name rechecked and pinned | owner decision 2; CORE-05 | Event shape/count tests, real-role PostgreSQL insert and induced failure (U1, U2) | `integration/test_approval_query_postgres.py` (5 tests) with `test_approval_postgres.py` (22 passed together) on local PostgreSQL 16 under the restricted runtime role, including an induced audit-insert failure that withholds the page and leaves no event. Event name rechecked and pinned. |
+| Approvals evidence-only: no destination, no Open, decide, cancel or consume control, no request to approval operation routes | owner review; CORE-04 | Browser and network-recording assertions (N3, S1) | Browser spec asserts no Open control for approvals and that only the six read routes are requested; passed locally (harness). |
+| Tasks (open overdue) and reminders (delivered) with owner-only and shared-read-only rules; routine-generated tasks also under ORG-03 | REM-01, ORG-03 | Visibility tests (P2, P3); routine-origin check | Visibility tests passed locally. Routine origin is not shown: the existing task response does not provide it and no field was added. |
+| Documents needing review | CORE-10 | Unreviewed and extraction-failed selection tests | Client selection tests passed locally. |
+| Filing and notification failures with uncertainty wording and owner-only visibility | DOC-03, CORE-11 | Failure-state and visibility tests (F1, P2) | Client and backend tests passed locally. |
+| Explicit refresh, 60-second and approval-expiry clearing, non-atomic notice, late-response discard | spec §Refresh | Expiry and clearing tests (E3, E4) | Vitest and browser expiry, hidden-tab, scope-change and soonest-approval-expiry tests passed locally. |
+| Source failure never appears as empty; per-source retry; empty-state sentence only when every source loaded | spec §Refresh | Partial-failure tests (F1–F4, U2) | Vitest tests passed locally. |
+| Authorization denial clears every section; navigation rereads under current authorization; revoked grant handled | spec §Navigation | Denial and revocation tests (N1, N2) | Vitest and browser denial tests (401/403/404/410) passed locally. |
+| Duplicate references render once; separate record kinds not merged | spec §Item model | Dedup tests (D1) | Vitest tests passed locally. |
+| No state-changing request from the inbox | spec | Network-recording test (S1, S2) | Browser network test passed locally (harness). |
+| Mobile 390×844, keyboard and live-region behaviour (existing obligations only; REV-03 not claimed) | spec §Mobile | Browser workflow (mobile) | 390×844 run showed no horizontal overflow; passed locally. No screen-reader or device testing. |
 
-## Carried open items
+## Independent review findings (PR #34), fixed on the branch
 
-1. Audit event name `approval.query`: proposed only; recheck for later constraints and pin with a test.
-2. Whether the existing task response identifies routine origin (ORG-03 display); show only if it already exists.
-3. Approvals have no authorized in-app destination; adding one is a later owner decision.
-4. Open overdue tasks only; widening is a reviewer decision.
+1. **Misleading "open the source for the rest" wording — fixed.** Each section now has specific wording (`MORE_TEXT`). Approvals can be paged inside the inbox with an explicit **Load more approvals** control using the existing `after` cursor (implemented; no new route, grant or architecture). Filing and notification sections state that no screen lists those records. Documents, reminders and tasks name the view that lists them. An unavailable source is never described as empty and offers no paging.
+2. **Record-level navigation — implemented on the branch (owner-approved); hosted CI passed on the current head.** The spec's navigation table is implemented as written; the spec was not edited.
+   - **Filing failure → related document.** The card opens the existing Documents destination with an identity-only target: document id, owner, scope and a minimum revision from the filing record's `source_revision`. No `created_at` is used. The destination rereads the document (`POST /documents/{id}/read`, sending only the scope) under the current session and grants, and accepts it only if it is active, its id, owner and scope match, `can_edit` agrees with ownership, a private-scope owner is the actor, and its revision is at least the minimum. A missing, revoked, mismatched, forgotten or older document shows the existing unavailable state; cached inbox data is never authority. No document is fetched per card; the read happens only after the click.
+   - **Notification failure → related reminder.** The notification query response now carries the related `task_id`, released only when the source reminder's owner and scope match the delivery's (otherwise `null`, and the card shows "The related reminder is not available to open" with no Open control). Sealed notification event/history snapshots are unchanged. The Reminders destination takes a selected task id: after the click it rereads the task (`POST /tasks/{id}/read`, scope only, owner-only) and then shows it in the existing selected-reminder view, whose controls reread the reminder through the existing `/reminders/read`. All reminder confirmation and mutation boundaries are unchanged. No new screen and no new reminder route.
+   - The scope-level links, the "does not show this record" notices and their label text were removed.
+3. **Revision-tie dedup — fixed.** `merge()` now takes the later read on equal revisions (`>=`). Tests prove higher wins, lower does not replace, equal takes the later read, and kind/identity dedup is unchanged; the test fails when the old `>` is restored.
+4. **Real-stack browser coverage — added.** `frontend/e2e/inbox.spec.ts` (4 tests; the navigation test now opens the related records) uses the built UI, the real API under the restricted `butler_runtime` role, PostgreSQL and a real login session, with synthetic rows from `scripts/inbox-browser-fixtures.py` (isolated `member_b_private` scope, 26 pending approvals, one overdue task, one delivered reminder, one unknown notification, one unreviewed document, one failed filing request). It covers: opening the real RecordsWorkspace Inbox; all six sections; approval, filing, notification, document, reminder and task items; real cursor paging of approvals; no approval controls, payload, hash or policy text in the page; a source failure shown as unavailable (the only injected fault is a network 500 for the documents read) and retried alone; real navigation to the selected task, document, related filing document and related notification reminder; no state-changing or approval-operation request and no browser storage or URL state; and, after the run, `inbox-browser-fixtures.py check` proves in PostgreSQL that all 26 approvals, the filing, notification, reminder and document rows are unchanged and every `approval.query` audit event is count-only. The harness spec (`browser/attention-inbox.spec.ts`) remains a mocked component harness and is not real-stack coverage.
+   - **Where it runs in CI:** `scripts/test-containers.sh` (the `containers` job, browser phase), in its own phase after the default browser run: inbox fixtures are seeded, a disposable login budget is reset (`inbox-browser-fixtures.py fresh-login-budget`), `BUTLER_INBOX_BROWSER_TESTS=1 bash scripts/test-ci-browser.sh inbox.spec.ts` runs, and `inbox-browser-fixtures.py check` verifies the database afterwards. The spec is skipped in the default run (like the other fresh-account specs).
+   - **Why a separate phase (hosted CI evidence):** the first hosted run that included the spec in the default run failed one existing test (`work.spec.ts:58`, the last test) with HTTP 429 on login: the application limits logins to 30 per source per 15 minutes and the default suite already uses that window, so any added login exhausts it. The inbox tests were not among the failures in that run. The application limiter is unchanged; only the disposable test database's counters are cleared before the inbox phase, following the repository's existing fresh-budget phases.
+   - **Second hosted failure and fix:** the first version of the reset phase printed "Cleared 26 rows" but exited with `SystemExit` inside the transaction, which rolled the delete back; all four inbox tests then hit login 429 in CI. The reset now commits in its own transaction before exiting (verified locally: 3 rows before, 0 after). The next hosted run is the first evidence for this fix.
+   - **Local execution:** run locally against the real application stack (uvicorn as `butler_runtime`, local PostgreSQL 16, the built UI behind a local TLS proxy standing in for Caddy and nginx, with a throwaway local Playwright config that trusts the self-signed certificate): 4 passed, and the check phase passed. This is not the compose stack and uses a local PostgreSQL, so it does not replace the CI container run.
 
-## Required at convergence (to be recorded, not asserted now)
+## Deviations and decisions
 
-Exact merged commit and PR number once merged; the local check components that actually ran; PostgreSQL evidence under the real runtime role; browser workflow results; the dashboard and register reconciliation made in the same PR; explicit statements of what was not verified (private host, remote/mobile device acceptance, real providers) and that owner acceptance of Gate 2 is separate. Implementation, integration, testing, verification and acceptance stay separate facts. Branch engineering is not merged delivery.
+1. Audit event name `approval.query`: rechecked; `audit_events.event_type` is an unrestricted varchar(128) with no code allow-list, so the name is used and pinned by a test. No migration.
+2. Routine origin: not shown (see above); no field added.
+3. Filing and notification cards open the related record by identity (finding 2); the owner approved record-level navigation, so the earlier scope-level deviation no longer exists.
+4. Approvals have no authorized in-app destination; adding one is a later owner decision. They can now be paged within the inbox (evidence only).
+5. Open overdue tasks only; widening is a reviewer decision.
+
+## Local checks that ran (synthetic data, disposable environment)
+
+Initial implementation run, then the correction pass (the correction-pass results are the current ones):
+
+- Backend: `ruff check` and `ruff format --check` passed (both runs). Initial run: `pytest -m 'not integration' --allow-unix-socket` 1564 passed, 1094 deselected. Correction pass changed no backend application code, so the full backend suite was not rerun; `test_approval_query.py` and `test_approvals.py` were rerun: 35 passed.
+- Frontend (correction pass): `npm test` 758 passed (32 files; 6 new tests for the tie rule, approvals paging and wording); `npm run build` succeeded (existing chunk-size warning only).
+- Policy: `check_repository.py` passed; `test_ci_scope.py` 23 passed.
+- PostgreSQL 16 (local, disposable): `test_approval_query_postgres.py` and `test_approval_postgres.py`, 22 passed (includes the induced audit-insert failure). Initial run: approval query, approval, identity, manual-task and migration suites, 58 passed. The full integration suite was started and stopped at about 6% because it was too slow locally, so it was **not** completed here; hosted CI runs it.
+- Browser, harness (mocked component page; not real-stack): `browser/attention-inbox.spec.ts` 13 passed (12 before the record-level navigation test) with `playwright.local.config.ts` (`BUTLER_LOCAL_UI_TESTS=1`). This config is not run by CI.
+- Browser, real stack (see finding 4): earlier local real-stack run of the original spec passed; the updated record-level navigation test was **not** run locally (the container stack cannot be pulled here) and is evidenced only by the hosted run below.
+- Security/dependency: `bandit -r app ../pdf-worker -q` exit 0; `pip-audit --local` "No known vulnerabilities found" (skipping the project's own package, as in CI); `npm audit --audit-level=high` 0 vulnerabilities.
+- Generators: `build_feature_overview.py` and `--check` ran; overview and dashboard output did not change.
+- Mutation spot-checks: surviving mutants led to stronger tests; restoring the old `>` tie comparison fails the new tie test.
+
+## Not run or not verified
+
+- Locally, the container runtime is unavailable, so the compose configuration, Caddy and nginx paths and the container-built migration image were not exercised here; the hosted `containers` job below did exercise them.
+- The full PostgreSQL integration suite was not completed locally (see above); the hosted `postgres` job ran it (1094 passed).
+- Not claimed: owner acceptance, private-host and mobile-device acceptance, real-provider integration, an approvals screen.
+
+## Hosted CI evidence
+
+- Run [43521167626](https://github.com/LYF-FC/local-assistant-core/actions/runs/43521167626), event `pull_request`, on exact head `6488588dd76b932a1f15e2c6b6a3fc514b042150`: scope, backend, frontend, postgres, containers and ci all passed.
+- The `containers` job ran `frontend/e2e/inbox.spec.ts` in its own phase (the real-stack tests, not the mocked harness): the log lists tests 1/4 to 4/4, including "task, document, reminder, filing and notification cards open the real related record", and reports `4 passed`. The log exposes the aggregate result; this record does not claim more than that per-test.
+- The default browser run skipped the inbox spec, as designed. The frontend job ran 765 unit tests; the postgres job ran 1094 integration tests.
+- This is a CI result on the branch, not independent verification and not owner acceptance.
+- Local-only workarounds: `--allow-unix-socket` for pytest, Chromium build symlinks, and a throwaway local TLS proxy and Playwright config for the real-stack run. None changes repository files.
+- Private-host and mobile-device acceptance, screen-reader testing, real providers and owner acceptance of Gate 2 are not done and are separate.
+
+## Still required after review
+
+The owner review, approval and merge of PR #34; the merged commit recorded only after merge; owner acceptance, private-host and mobile-device acceptance and real-provider integration, which are separate and unperformed. The owner-review box in `tasks.md` stays unchecked. Branch engineering is not merged delivery.
