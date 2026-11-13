@@ -1,6 +1,6 @@
 # Convergence — unified attention inbox (first slice)
 
-**Implemented on branch `codex/impl-071-attention-inbox`; locally tested; not independently verified, not merged, not accepted.** The Evidence column below records only results actually produced on this branch in a disposable local environment (synthetic data). Hosted CI and the compose container e2e have not run on this change. Gate 2 stays open (criterion unchanged: "Dashboard exposes agenda, pending approvals, reminders, failures and authorized search."); CORE-08 and UI-01 stay partial; no status counts changed; the five-priority order stays unapproved. Implementation, testing, verification and acceptance are separate facts, and only the first two are claimed, locally.
+**Implemented on branch `codex/impl-071-attention-inbox` (open PR #34); locally tested; hosted CI passed on the current head; not owner-accepted, not merged.** The Evidence column below records results produced on this branch in a disposable local environment (synthetic data) as of the correction pass; the hosted result is recorded under "Hosted CI evidence". Passing CI is not verification or acceptance. Gate 2 stays open (criterion unchanged: "Dashboard exposes agenda, pending approvals, reminders, failures and authorized search."); CORE-08 and UI-01 stay partial; no status counts changed; the five-priority order stays unapproved. Implementation, testing, verification and acceptance are separate facts; only implementation and testing (local and hosted CI) are claimed.
 ## What convergence must show
 
 | Spec requirement | Source | Required evidence | Evidence |
@@ -23,7 +23,7 @@
 ## Independent review findings (PR #34), fixed on the branch
 
 1. **Misleading "open the source for the rest" wording — fixed.** Each section now has specific wording (`MORE_TEXT`). Approvals can be paged inside the inbox with an explicit **Load more approvals** control using the existing `after` cursor (implemented; no new route, grant or architecture). Filing and notification sections state that no screen lists those records. Documents, reminders and tasks name the view that lists them. An unavailable source is never described as empty and offers no paging.
-2. **Record-level navigation — implemented on the branch (owner-approved); hosted CI pending.** The spec's navigation table is implemented as written; the spec was not edited.
+2. **Record-level navigation — implemented on the branch (owner-approved); hosted CI passed on the current head.** The spec's navigation table is implemented as written; the spec was not edited.
    - **Filing failure → related document.** The card opens the existing Documents destination with an identity-only target: document id, owner, scope and a minimum revision from the filing record's `source_revision`. No `created_at` is used. The destination rereads the document (`POST /documents/{id}/read`, sending only the scope) under the current session and grants, and accepts it only if it is active, its id, owner and scope match, `can_edit` agrees with ownership, a private-scope owner is the actor, and its revision is at least the minimum. A missing, revoked, mismatched, forgotten or older document shows the existing unavailable state; cached inbox data is never authority. No document is fetched per card; the read happens only after the click.
    - **Notification failure → related reminder.** The notification query response now carries the related `task_id`, released only when the source reminder's owner and scope match the delivery's (otherwise `null`, and the card shows "The related reminder is not available to open" with no Open control). Sealed notification event/history snapshots are unchanged. The Reminders destination takes a selected task id: after the click it rereads the task (`POST /tasks/{id}/read`, scope only, owner-only) and then shows it in the existing selected-reminder view, whose controls reread the reminder through the existing `/reminders/read`. All reminder confirmation and mutation boundaries are unchanged. No new screen and no new reminder route.
    - The scope-level links, the "does not show this record" notices and their label text were removed.
@@ -50,19 +50,27 @@ Initial implementation run, then the correction pass (the correction-pass result
 - Frontend (correction pass): `npm test` 758 passed (32 files; 6 new tests for the tie rule, approvals paging and wording); `npm run build` succeeded (existing chunk-size warning only).
 - Policy: `check_repository.py` passed; `test_ci_scope.py` 23 passed.
 - PostgreSQL 16 (local, disposable): `test_approval_query_postgres.py` and `test_approval_postgres.py`, 22 passed (includes the induced audit-insert failure). Initial run: approval query, approval, identity, manual-task and migration suites, 58 passed. The full integration suite was started and stopped at about 6% because it was too slow locally, so it was **not** completed here; hosted CI runs it.
-- Browser, harness (mocked component page): `browser/attention-inbox.spec.ts` 12 passed with `playwright.local.config.ts` (`BUTLER_LOCAL_UI_TESTS=1`). This config is not run by CI.
-- Browser, real stack (see finding 4): `e2e/inbox.spec.ts` 4 passed locally plus the database check phase.
+- Browser, harness (mocked component page; not real-stack): `browser/attention-inbox.spec.ts` 13 passed (12 before the record-level navigation test) with `playwright.local.config.ts` (`BUTLER_LOCAL_UI_TESTS=1`). This config is not run by CI.
+- Browser, real stack (see finding 4): earlier local real-stack run of the original spec passed; the updated record-level navigation test was **not** run locally (the container stack cannot be pulled here) and is evidenced only by the hosted run below.
 - Security/dependency: `bandit -r app ../pdf-worker -q` exit 0; `pip-audit --local` "No known vulnerabilities found" (skipping the project's own package, as in CI); `npm audit --audit-level=high` 0 vulnerabilities.
 - Generators: `build_feature_overview.py` and `--check` ran; overview and dashboard output did not change.
 - Mutation spot-checks: surviving mutants led to stronger tests; restoring the old `>` tie comparison fails the new tie test.
 
 ## Not run or not verified
 
-- Hosted CI on this change has not run, including the `containers` job that runs `e2e/inbox.spec.ts` under the real compose stack. The container runtime is unavailable locally, so the compose configuration, Caddy and nginx paths and the container-built migration image were not exercised.
-- The full PostgreSQL integration suite was not completed locally (see above).
+- Locally, the container runtime is unavailable, so the compose configuration, Caddy and nginx paths and the container-built migration image were not exercised here; the hosted `containers` job below did exercise them.
+- The full PostgreSQL integration suite was not completed locally (see above); the hosted `postgres` job ran it (1094 passed).
+- Not claimed: owner acceptance, private-host and mobile-device acceptance, real-provider integration, an approvals screen.
+
+## Hosted CI evidence
+
+- Run [43521167626](https://github.com/LYF-FC/local-assistant-core/actions/runs/43521167626), event `pull_request`, on exact head `6488588dd76b932a1f15e2c6b6a3fc514b042150`: scope, backend, frontend, postgres, containers and ci all passed.
+- The `containers` job ran `frontend/e2e/inbox.spec.ts` in its own phase (the real-stack tests, not the mocked harness): the log lists tests 1/4 to 4/4, including "task, document, reminder, filing and notification cards open the real related record", and reports `4 passed`. The log exposes the aggregate result; this record does not claim more than that per-test.
+- The default browser run skipped the inbox spec, as designed. The frontend job ran 765 unit tests; the postgres job ran 1094 integration tests.
+- This is a CI result on the branch, not independent verification and not owner acceptance.
 - Local-only workarounds: `--allow-unix-socket` for pytest, Chromium build symlinks, and a throwaway local TLS proxy and Playwright config for the real-stack run. None changes repository files.
 - Private-host and mobile-device acceptance, screen-reader testing, real providers and owner acceptance of Gate 2 are not done and are separate.
 
 ## Still required after review
 
-The merged commit and PR number once merged (recorded only after merge); hosted CI results (including the first run of `e2e/inbox.spec.ts` in the `containers` job); hosted CI for the record-level navigation commit, including the real-stack `e2e/inbox.spec.ts` (updated to open the related document and reminder; not run locally, because the container stack cannot be pulled in this environment). The owner-review box in `tasks.md` stays unchecked. Branch engineering is not merged delivery.
+The owner review, approval and merge of PR #34; the merged commit recorded only after merge; owner acceptance, private-host and mobile-device acceptance and real-provider integration, which are separate and unperformed. The owner-review box in `tasks.md` stays unchecked. Branch engineering is not merged delivery.
