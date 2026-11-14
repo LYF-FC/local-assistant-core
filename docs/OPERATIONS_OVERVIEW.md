@@ -56,4 +56,4 @@ PR21 merged at `4001230471d19f83fe9c9a8ef3d6d38622381dfc`; exact head `2c5cdb27d
 
 ## Recovery-set manifest tool (spec 074, synthetic-only)
 
-An offline `generate`/`verify` command for a backup-set manifest is documented in [RECOVERY_SET.md](RECOVERY_SET.md). It verifies integrity and authenticity of a defined backup set only; it is not a backup-freshness observation, not a restoration or recovery-readiness check and not an RPO/RTO measure, and it changes no OPS or recovery status here.
+The synthetic-only offline `generate`/`verify` command for a backup-set manifest was implemented and merged in PR #40. PR-head and merge-commit Foundation CI passed, including the synthetic PostgreSQL restore drill; the exact runs, scope and limitations are recorded in [RECOVERY_SET.md](RECOVERY_SET.md). It verifies integrity and authenticity of a defined backup set only; it is not a backup-freshness observation, restoration or recovery-readiness check, or RPO/RTO measure. It changes no OPS or recovery-gate status here; Phase B owner acceptance remains pending.

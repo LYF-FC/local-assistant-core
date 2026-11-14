@@ -1,14 +1,14 @@
 # Spec 074 plan, checklist and analysis
 
-**Accompanies a FROZEN specification (owner freeze decision of 14 November 2026; frozen revision is the content of commit `f903237a69e6e2eeeef8b057abef3fc618a27630`, see the freeze record in [spec.md](spec.md)). Nothing here is implemented, verified, merged or accepted, and this document does not authorize implementation.** It follows the "Plan / analyze" pattern of spec 071. Freezing did not authorize implementation: a narrowly scoped synthetic-only implementation needs a separate explicit owner authorization, not given.
+**Companion plan for the FROZEN specification (owner freeze decision of 14 November 2026; frozen revision is the content of commit `f903237a69e6e2eeeef8b057abef3fc618a27630`, see the freeze record in [spec.md](spec.md)). Phase A is complete. Phase B synthetic-only implementation was separately authorized by the owner, implemented and merged in PR #40 (merge commit `47b949e61c96a2e3c2fd883e1784a2856946146c`); B050 and B052 validation tasks are complete as recorded in [tasks.md](tasks.md). Phase B has not been owner-accepted. Phase C remains deferred and unauthorized; real-key and real-set use remain outside this authorization.** This document retains the original plan, checklist and analysis; it does not expand the frozen requirements or authorize further work.
 
-## 1. Plan (proposal; conditional on a future, separate implementation authorization)
+## 1. Plan and implementation record (original plan, delivered within the separately authorized Phase B scope)
 
 ### 1.1 Shape
 
-A standalone offline command, `python -m app.recovery_set generate|verify` (module name proposed), in a new `backend/app/recovery_set/` package, with no FastAPI route, worker, router registration, settings entry, model, migration, dependency or compose/Dockerfile change. Proposed split:
+A standalone offline command, `python -m app.recovery_set generate|verify` (implemented command interface), in a new `backend/app/recovery_set/` package, with no FastAPI route, worker, router registration, settings entry, model, migration, dependency or compose/Dockerfile change. Proposed split:
 
-| Unit | Responsibility |
+| Unit | Delivered responsibility |
 |---|---|
 | `format.py` | Closed Pydantic models (`extra=forbid`), canonical JSON, duplicate-key hook, manifest hash, limits with their provenance classes (spec 3.8) |
 | `key.py` | Key file model, namespace and installation binding, keyed fingerprint and MAC domains, masked secret type |
@@ -19,30 +19,31 @@ A standalone offline command, `python -m app.recovery_set generate|verify` (modu
 
 Reuse of `work_suppression_file.py` primitives is allowed only by importing without modifying them; where signatures do not fit, the unit re-implements the same behaviour rather than altering Work code (acceptance A11).
 
-### 1.2 Proposed staging (each stage independently testable; none authorized)
+### 1.2 Implementation staging (completed within the authorized Phase B scope; task evidence is recorded in tasks.md)
 
 1. Format, canonical JSON, key model, keyed fingerprint, domains (tests T8 to T16, T24).
 2. Closed-set enumeration, invariants, pending-object handling and limits via injected test limits (T2 to T7, T35, T36, T49, T50, T52; limits exercised through injected test limits and small fixtures only).
 3. Verification flow, four-field state model, freshness precedence, archive expectation and `verified_references` (T1, T17 to T23, T25, T26, T33, T34, T44 to T48, T53, T54).
 4. Atomic generation and publication stages, including the unsupported-filesystem behaviour and notes (T27 to T31, T37 to T43, T51).
-5. PostgreSQL drill in `scripts/test-db-restore.sh` and a CI step (spec 11.3), plus documentation (a `docs/` recovery-set page, an operations-overview cross-reference, no status change).
+5. PostgreSQL drill in `scripts/test-db-restore.sh` and a CI step (spec 11.3), plus the recovery-set documentation and operations-overview cross-reference; task status is recorded in tasks.md.
 
-### 1.3 Files an implementation would touch (informational)
+### 1.3 Files delivered by the implementation (informational)
 
 New: `backend/app/recovery_set/*`, `backend/tests/test_recovery_set_*.py`, a synthetic key helper under `backend/tests/`, one documentation page. Modified: `scripts/test-db-restore.sh` and its CI invocation only. **Not modified:** any migration, `app/main.py`, routes, settings, Work modules, frontend, compose files, runtime images, dependencies.
 
-### 1.4 Quality gates for an implementation
+### 1.4 Quality gates and mutation checks applied to the implementation
 
-`ruff`, `ruff format --check`, `bandit`, full non-integration suite, integration suite in CI shape, `scripts/check_repository.py`, `build_feature_overview.py --check`. Mutation checks recommended for: dropping the expected-fingerprint check; dropping the installation binding; dropping the domain prefix; dropping the closed-set "unexpected" check; dropping the post-hash `fstat`; using a replacing `rename` for publication; removing directory `fsync`; swallowing a directory-`fsync` error; emitting a note outside the vocabulary; reporting `freshness_match` for an unauthenticated manifest; accepting a pending archive object; deriving `--expect-archive` from the manifest.
+`ruff`, `ruff format --check`, `bandit`, full non-integration suite, integration suite in CI shape, `scripts/check_repository.py`, `build_feature_overview.py --check`. Mutation checks included:  dropping the expected-fingerprint check; dropping the installation binding; dropping the domain prefix; dropping the closed-set "unexpected" check; dropping the post-hash `fstat`; using a replacing `rename` for publication; removing directory `fsync`; swallowing a directory-`fsync` error; emitting a note outside the vocabulary; reporting `freshness_match` for an unauthenticated manifest; accepting a pending archive object; deriving `--expect-archive` from the manifest.
 
 ## 2. Phases are distinct
 
 | Phase | State | What it needs |
 |---|---|---|
 | Specification | **Frozen** 14 November 2026 (revision of commit `f903237a69e6e2eeeef8b057abef3fc618a27630`) | Done. Owner review and freeze decision recorded |
-| Synthetic-only implementation | **Not authorized** | A frozen specification and a separate, narrowly scoped owner authorization |
-| Real-key or real-set use | Not possible under this specification | The deferred decisions of spec 10.2 |
-| Restore and staging | Out of scope | A later restore specification |
+| Synthetic-only implementation | **Merged; owner acceptance pending** | Separately authorized by the owner; delivered in PR #40. B050 and B052 validation evidence is recorded in tasks.md |
+| Real-key or real-set use | **Not authorized; deferred** | The deferred decisions of spec 10.2 and further owner decisions/procedures |
+| Restore and staging | **Out of scope** | A later restore specification and separate authorization |
+| Phase B owner acceptance | **Pending** | Separate owner decision after independent verification at an exact `main` revision and acknowledgement of documented limitations |
 
 ## 3. Checklist (requirements quality)
 
@@ -142,8 +143,8 @@ New: `backend/app/recovery_set/*`, `backend/tests/test_recovery_set_*.py`, a syn
 
 ### 4.4 Open items
 
-The specification is frozen (14 November 2026) and no question remains open (spec 10.3). The owner has resolved `--expect-archive` (mandatory), hard-link, group/other write and group/other read rejection (mandatory, for recovery-set files and the manifest), the `expectations` field (approved) and the dump ceiling (not approved, deferred). The deferred decisions of spec 10.2 do not block a synthetic-only implementation, which uses small fixtures and injected test limits; they block real-key and real-set use. Freezing was decided by the owner on 14 November 2026; implementation remains a separate explicit owner authorization, not given.
+The specification is frozen (14 November 2026) and no question remains open for the frozen design (spec 10.3). The owner resolved `--expect-archive` (mandatory), hard-link and group/other permission rejection, and the `expectations` field; the dump ceiling remains unapproved and deferred. The separately authorized synthetic-only Phase B implementation was merged in PR #40; B050 and B052 validation evidence is recorded in tasks.md. Phase B owner acceptance remains a separate decision. The deferred decisions of spec 10.2 continue to block real-key and real-set use.
 
-## 5. Statement of non-action
+## 5. Scope and status of this plan document
 
-This specification adds only the three files under `specs/074-recovery-set-manifest/`. It contains no code, test, migration, configuration, key, credential or generated file, and does not change any status, count or gate.
+This plan document remains a companion record of the frozen design, original implementation plan, requirements-quality checklist and analysis. The synthetic-only implementation was delivered separately in PR #40; its merge and validation evidence is recorded in tasks.md. This status reconciliation does not change the frozen spec.md requirements, interfaces, decisions, deferrals or limitations, and does not change any wider gate, register row, count or acceptance status.
