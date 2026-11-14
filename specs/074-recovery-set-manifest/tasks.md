@@ -29,7 +29,8 @@
 ## Stage 4: generation
 
 - [ ] T040 Exclusive temporary file, no-replace atomic publication, file and directory `fsync`, cleanup.
-- [ ] T041 Tests T27 to T31 using real subprocesses and SIGKILL at controlled points.
+- [ ] T041 Tests T27 to T31 and T37 to T41 using real subprocesses, SIGKILL at controlled points and fault injection at the pre-publication steps and the directory flush.
+- [ ] T043 Informational `notes` field and tests T42, T43 (spec 7.3.1).
 - [ ] T042 Test T32 (point-in-time limitation demonstration).
 
 ## Stage 5: drill and documentation

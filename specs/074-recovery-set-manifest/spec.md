@@ -66,7 +66,8 @@ The slice creates no latest-manifest service, no online dependency and no second
 | `integrity` | `integrity_valid`, `integrity_invalid`, `integrity_not_evaluated` |
 | `authenticity` | `authenticity_valid`, `authenticity_invalid`, `authenticity_not_evaluated` |
 | `freshness` | `freshness_not_established`, `freshness_validated_against_expected_hash`, `freshness_mismatch_with_expected_hash` |
-| always present | `point_in_time: true`, `restore_performed: false`, `recovery_complete: false` |
+| always present | `point_in_time: true`, `restore_performed: false`, `recovery_complete: false`, `notes` (informational only, section 7.3.1) |
+| `generate` only | `publication`: `not_published`, `published_durability_uncertain`, `published_durable` (section 9.1) |
 
 ## 3. Requirement and gate mapping, baseline and recovery-set definition
 
@@ -304,9 +305,11 @@ The command prints one JSON object with a closed key set; unknown or additional 
 | `elapsed_ms` | Tool-measured duration of this run; informational; **not** a recovery-time measurement |
 | `point_in_time` | Always `true` |
 | `restore_performed`, `recovery_complete` | Always `false` |
+| `publication` | `generate` only; omitted for `verify`. One of `not_published`, `published_durability_uncertain`, `published_durable` (section 9.1) |
+| `notes` | Always present. Array of informational notes, never failure reasons (section 7.3.1) |
 | `freshness_note` | Fixed string when freshness is validated: `matches_supplied_expected_hash_only` |
 
-Exit status: `0` when integrity is valid, authenticity is valid, all bindings hold (and, only with `--require-freshness`, freshness is validated); `1` for any verification failure; `2` for usage or trust-input errors. Without `--require-freshness`, an unestablished freshness does not change the exit status, and the output still says so.
+Exit status for `verify`: `0` when integrity is valid, authenticity is valid, all bindings hold (and, only with `--require-freshness`, freshness is validated); `1` for any verification failure; `2` for usage or trust-input errors. Exit status for `generate`: `0` only when `publication` is `published_durable`; `1` for every other outcome, including `published_durability_uncertain`; `2` for usage or trust-input errors. Notes never change an exit status. Without `--require-freshness`, an unestablished freshness does not change the exit status, and the output still says so.
 
 Reason codes (closed, stable; additions need a spec change):
 
@@ -318,8 +321,18 @@ Reason codes (closed, stable; additions need a spec change):
 | Bindings | `installation_mismatch`, `schema_head_mismatch`, `schema_chain_inconsistent`, `schema_unknown_to_verifier` |
 | Set | `set_member_missing`, `set_member_unexpected`, `set_directory_unexpected`, `set_path_unsafe`, `set_member_not_regular`, `set_member_symlink`, `set_member_hardlinked`, `set_member_unsafe_mode`, `set_member_size_mismatch`, `set_member_hash_mismatch`, `set_entry_limit_exceeded`, `set_enumeration_ambiguous`, `set_changed_during_read`, `archive_marker_mismatch` |
 | Freshness | `freshness_mismatch_with_expected_hash` |
-| Generation | `output_exists`, `output_unsafe`, `io_error` |
+| Generation | `output_exists`, `output_unsafe`, `io_error`, `publication_durability_uncertain` |
 | Internal | `internal_error` (no detail) |
+
+#### 7.3.1 Informational notes (separate from failure reasons)
+
+`reasons` lists failures and is empty if and only if the operation had no failure. `notes` is a separate, bounded, informational list:
+
+- **Schema:** a JSON array of strings, each from a closed vocabulary, at most 4 entries, no duplicates, sorted ascending by byte value, never containing a path, name, count, value or free text. Additions need a spec change.
+- **Vocabulary (version 1):** `stale_temporary_present` only. Meaning: while preparing `generate`, the output directory held at least one entry whose name starts with the tool's temporary prefix. Detection examines at most the first 64 directory entries in sorted order and reports only the fixed string.
+- **Emission:** `generate` runs the scan after the output-path safety check; `verify` performs no scan and always emits `"notes": []`. A scan error is `io_error` only if it prevents the run; otherwise it emits no note.
+- **On success and on failure:** notes may accompany a successful result (exit `0`, `reasons: []`, `publication: published_durable`) and an unsuccessful one. They never change `integrity`, `authenticity`, `freshness`, `reasons`, `publication` or the exit status, and a note is never a reason to fail or to pass.
+- **Stale temporaries inside `SET`** are not notes: an unexpected file in `SET` is the failure `set_member_unexpected`.
 
 Safe error handling: no exception text, no traceback, no path the operator supplied (only the closed code), no file content and no key material is printed. Member names are printed only if they match the allowlist, so they cannot carry arbitrary text. The tool never echoes a supplied expected value that failed to match; it states which check failed.
 
@@ -333,16 +346,33 @@ Future mitigation options, none of which this slice implements: (a) a combined v
 
 ### 9.1 Observable guarantees for manifest publication
 
-Specified as guarantees, not as one implementation; an exclusive-create temporary file published with a no-replace atomic link or rename plus `fsync` is a suitable approach.
+Specified as guarantees, not as one implementation; an exclusive-create temporary file published with a no-replace atomic link (or an equivalent no-replace atomic step) followed by `fsync` of the file and of the containing directory is a suitable approach.
 
-- **G1 No partial final manifest.** After any interruption (crash, kill, power loss to the extent the filesystem honours `fsync`, I/O error, out of space), the final manifest path either does not exist or contains a complete, valid manifest. Never a prefix, never a mix.
-- **G2 No overwrite.** An existing file at the output path is never modified, truncated, replaced or removed. `generate` fails with `output_exists`. There is no replace option in this slice.
-- **G3 Temporary files.** Temporaries are created exclusively (never reusing a name), owner-only, in the output directory, with a recognizable prefix and a per-run random token. A run removes its own temporary on every failure it survives. A temporary left by a killed run is never mistaken for a manifest (it is not at the final name), is never deleted by a later run (which cannot prove it created it), and is reported as an informational `stale_temporary_present` note, not a failure.
-- **G4 Atomic publication.** The final name appears in one step, fully written and flushed.
-- **G5 Durability.** The temporary file is flushed to stable storage before publication and the containing directory is flushed after, so a success return means the manifest survives a subsequent crash on filesystems that honour `fsync`. The documentation states that this depends on the filesystem and storage.
+**Publication phases.** A `generate` run passes through ordered phases, and the guarantees depend on which phase a failure occurs in:
+
+1. **Pre-publication:** reading the set, validating, serializing, writing the temporary file, flushing the temporary file.
+2. **Publication:** the single atomic step that makes the final name appear. It either happens completely or not at all.
+3. **Post-publication, pre-durability:** the final name may already exist and be complete; the containing directory has not yet been confirmed durable.
+4. **Durable:** directory durability (`fsync` of the containing directory) was confirmed.
+
+The command reports the phase outcome in the `publication` field (section 7.3): `not_published`, `published_durability_uncertain` or `published_durable`. Only `published_durable` is a success.
+
+- **G1 No partial final manifest.** At every moment, including after any interruption (crash, kill, power loss, I/O error, out of space), the final manifest path either does not exist or contains a complete, valid manifest. Never a prefix, never a mix. G1 says nothing about whether a *complete* final file is durable; that is G5. G1 also does not promise that the final path is absent after a failure: after publication it may be present (G5).
+- **G2 No overwrite.** An existing file at the output path is never modified, truncated, replaced or removed. `generate` fails with `output_exists` and `publication: not_published`. There is no replace option in this slice.
+- **G3 Temporary files.** Temporaries are created exclusively (never reusing a name), owner-only, in the output directory, with a recognizable prefix and a per-run random token. A run removes its own temporary on every failure it survives, and after publication. A temporary that remains (killed run, or removal failure) is a **documented recoverable artifact**: it is never at the final name, is never mistaken for a manifest, is never deleted by a later run (which cannot prove it created it), and is reported through the informational `stale_temporary_present` note (section 7.3), never as a failure reason. The operator may delete it after inspection. If a temporary exists because publication used a hard link and cleanup failed, it holds the same bytes as the final manifest.
+- **G4 Atomic publication.** The final name appears in one step, fully written and flushed to the temporary file beforehand.
+- **G5 Durability and the post-publication window.** The temporary file is flushed to stable storage before publication, and the containing directory is flushed after. Between publication and a confirmed directory flush, a complete final manifest **may exist while durability is uncertain**. If the directory flush fails (or cannot be confirmed), `generate` **must**: report failure (exit status 1), report reason `publication_durability_uncertain` and `publication: published_durability_uncertain`, and **never** report `published_durable` or exit status 0. It must not state or imply that the final file is absent, and it must not delete, rename or overwrite the possibly published file. Success (`published_durable`, exit 0) means only: the file was published and the directory flush was confirmed, on a filesystem and storage that honour `fsync`, which the documentation states is outside the tool's control.
 - **G6 Concurrent generation.** Two generators targeting the same output path: exactly one publishes; the other receives `output_exists`; neither leaves a partial file and neither corrupts the other's result. Generators targeting different outputs do not interfere. Concurrent *modification of the set* during generation is not prevented, only detected within the read of each member (`set_changed_during_read`).
-- **G7 Filesystem errors.** Any error while reading the set or writing the manifest ends the run with `io_error` (or the specific set code), exit status 1, no final manifest and best-effort removal of the run's own temporary. The tool never reports success when any write, flush or publish step failed.
+- **G7 Failure semantics by phase.**
+  - *Before publication:* any error while reading the set, validating, writing or flushing ends the run with the specific set code or `io_error`, exit status 1, `publication: not_published`, **no final manifest**, and best-effort removal of the run's own temporary (a remaining temporary is a G3 artifact).
+  - *After publication, before durability confirmation:* G5 applies. The run ends with `publication_durability_uncertain`, exit status 1; a complete final manifest may exist.
+  - The tool never reports success when any write, flush, publish or directory-flush step failed.
 - **G8 Output path safety.** An output path that is a symlink, a directory, inside `SET`, or whose parent is writable by group or other is `output_unsafe`.
+- **G9 Safe retry and operator recovery.** The tool never silently overwrites. After `publication_durability_uncertain`, or after any failure whose outcome is unclear:
+  1. A retry to the **same** output path fails with `output_exists` if the final file exists (G2); the tool does not distinguish an earlier uncertain publication from any other existing file, and says nothing about its durability.
+  2. The operator inspects the existing file by running `verify` with the independently supplied trust inputs; a complete file verifies exactly like any other manifest (it carries no marker of the uncertainty). Whether the file's bytes match what this run intended is established by `verify` and, optionally, by comparing its `manifest_hash` with the one the failed run printed (the failed run's output includes it, because it is computed before publication).
+  3. If the manifest is acceptable, the operator makes it durable by an action **outside the tool** (for example a filesystem sync of the directory by the operator, or copying it to storage whose durability they control) and the tool offers no way to confirm that. Alternatively the operator moves the file aside themselves and runs `generate` to a new path or the same path.
+  4. The tool provides no replace, force or cleanup option in this slice.
 
 ### 9.2 Scope boundaries
 
@@ -395,7 +425,8 @@ All tests use synthetic data and synthetic keys. Tests that need no database run
 4. **A4 Closed set**: all violations of section 3.4 are rejected with their closed codes and nothing is read outside the allowlist.
 5. **A5 External trust inputs**: every required input is mandatory; none is taken from candidate files; the tool refuses to run with a missing or malformed input before touching any file.
 6. **A6 Freshness never overstates**: section 2.3 and the tests below.
-7. **A7 Atomic generation**: G1 to G8.
+7. **A7 Atomic generation**: G1 to G9, including the phase distinction of section 9.1 (T27 to T31, T37 to T43).
+7a. **A7a Informational notes**: `notes` is bounded, closed, non-leaking and separate from `reasons` (section 7.3.1; T42, T43).
 8. **A8 No secrets or foreign paths in any output** (section 6.3, section 7.3).
 9. **A9 Point-in-time limitation demonstrated** (section 8).
 10. **A10 No database, network or write to the set**: asserted by running the verifier with sockets disabled (the suite already uses `--disable-socket`) and a read-only set, and by a test that fails if the tool opens a database connection or writes inside `SET`.
@@ -432,7 +463,7 @@ All tests use synthetic data and synthetic keys. Tests that need no database run
 | T24 | Key rotation: manifest under key K1 verified with K2 and fingerprint(K2); with K1 and fingerprint(K2); with K1 and fingerprint(K1) | the first two fail with `manifest_key_reference_mismatch` / `key_fingerprint_mismatch`; the third passes |
 | T25 | Cross-installation substitution: a complete valid set and manifest for installation B presented for installation A, with B's key and with A's key | `installation_mismatch` / `key_installation_mismatch` / `manifest_authentication_failed` |
 | T26 | Manifest and set re-created together by an attacker without the key | authenticity invalid; integrity not evaluated for the set |
-| T27 | Interrupted generation: the generator is killed with SIGKILL at controlled points (before the temporary is complete; after it is flushed, before publication) | no manifest at the final path; a following `generate` succeeds; the leftover temporary is not mistaken for a manifest and not deleted |
+| T27 | Interrupted generation: the generator is killed with SIGKILL at controlled points (before the temporary is complete; after it is flushed, before publication; after publication, before the directory flush) | the final path is absent or holds a complete valid manifest (never a prefix); in the first two points it is absent and a following `generate` succeeds; at the third point a complete final manifest may exist and a following `generate` to that path fails with `output_exists`; a leftover temporary is not mistaken for a manifest, not deleted, and appears as the `stale_temporary_present` note |
 | T28 | Existing destination manifest | `output_exists`; the existing bytes are unchanged |
 | T29 | Concurrent generation to one output path (several processes) | exactly one succeeds; the others `output_exists`; the published manifest verifies |
 | T30 | Concurrent generation to different outputs | all succeed and are identical when inputs are identical |
@@ -442,6 +473,13 @@ All tests use synthetic data and synthetic keys. Tests that need no database run
 | T34 | Output allowlist | no host path, exception text or traceback appears for any failing case |
 | T35 | Bounds: 8194 members; oversize object; manifest at the limit and one byte over | the specified codes; constant memory (a large synthetic sparse member is hashed without loading it) |
 | T36 | Manifest and set paths overlap (`MANIFEST` inside `SET`, key inside `SET`) | `paths_overlap`, exit 2 |
+| T37 | **Failure before publication** (injected failure at each pre-publication step: set read error, write error to the temporary, flush error on the temporary, out-of-space, pre-publication validation failure) | exit 1; `publication: not_published`; no file at the final path; the run's own temporary removed (if removal also fails, the `stale_temporary_present` note appears on the next run); the reason is the specific set code or `io_error`, never `publication_durability_uncertain` |
+| T38 | **Atomic publication succeeds, then directory `fsync` fails** (fault injection at the directory flush: `EIO`, `EBADF`, persistent `EINTR`) | exit 1; reason `publication_durability_uncertain`; `publication: published_durability_uncertain`; a complete final manifest exists and is byte-identical to the temporary's content; the run did not delete, rename or modify it; the printed `manifest_hash` equals the hash of the existing file |
+| T39 | **The CLI never reports durable success when the directory flush failed or is unconfirmed** | across every T38 variant and a variant where the flush result cannot be determined: exit never `0`; the string `published_durable` never appears; `reasons` is never empty; no output states or implies the final file is absent |
+| T40 | **Retry against an existing final manifest** (after T38 and after a plain pre-existing file) | `output_exists`; exit 1; `publication: not_published`; existing bytes unchanged (hash and modification time); no temporary left behind |
+| T41 | **Recovery and inspection of a complete but durability-uncertain manifest** (continuing T38) | `verify` of that file with the independent trust inputs gives the same outcomes as for any manifest (it carries no uncertainty marker); after the operator moves the file aside, `generate` to the same path succeeds with `published_durable`; the operator-sync step is outside the tool, and no test claims the tool confirms it |
+| T42 | **Informational note on a successful run** (a stale temporary is present in the output directory) | exit 0; `reasons: []`; `publication: published_durable`; `notes: ["stale_temporary_present"]`; integrity, authenticity and freshness fields unaffected |
+| T43 | **Notes are bounded and non-leaking** (zero, one and many stale temporaries; adversarial temporary names containing control characters, long names, key-like strings; a failure run with stale temporaries) | `notes` contains only vocabulary strings, no duplicates, sorted, at most 4 entries; no temporary name, count or path appears anywhere in output; on failure the same note may appear beside the failure reason without changing it; `verify` always emits `notes: []`; a stale temporary inside `SET` yields `set_member_unexpected`, not a note |
 
 ### 11.3 PostgreSQL and real-set drill (hosted CI, `postgres:17` service container)
 
@@ -455,7 +493,7 @@ Extend `scripts/test-db-restore.sh` (no application code change beyond the new t
 
 ### 11.4 Restart and recovery evidence
 
-The generator is stateless; its restart evidence is T27 to T29 (kill, then recover by a fresh process, no partial output). There is no daemon to restart. Evidence that a *restored system* works is the existing restore drill, unchanged.
+The generator is stateless; its restart evidence is T27 to T29 and T37 to T41 (kill or fault, then recover by a fresh process; no partial final manifest, and no claim of durability when the directory flush failed). There is no daemon to restart. Evidence that a *restored system* works is the existing restore drill, unchanged.
 
 ### 11.5 Migration and downgrade
 

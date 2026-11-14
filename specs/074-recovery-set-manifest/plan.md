@@ -24,7 +24,7 @@ Reuse of `work_suppression_file.py` primitives is allowed only by importing with
 1. Format, canonical JSON, key model, domains (unit tests T8 to T16, T24).
 2. Closed-set enumeration and hashing (T2 to T7, T35, T36).
 3. Verification flow and output model (T1, T17 to T23, T25, T26, T33, T34).
-4. Atomic generation (T27 to T31).
+4. Atomic generation and publication phases (T27 to T31, T37 to T43), including the informational `notes` contract.
 5. PostgreSQL drill in `scripts/test-db-restore.sh` and a CI step (section 11.3 of the spec), plus documentation (`docs/` recovery-set page, operations overview cross-reference, no status changes).
 
 ### 1.3 Files that an implementation would touch (informational)
@@ -33,7 +33,7 @@ New: `backend/app/recovery_set/*`, `backend/tests/test_recovery_set_*.py`, a syn
 
 ### 1.4 Security and quality gates for an implementation
 
-`ruff`, `ruff format --check`, `bandit` (the tool uses `hmac`, `hashlib`, `os.open`; no subprocess, no shell, no network), full non-integration suite, integration suite in CI shape, `scripts/check_repository.py`, `build_feature_overview.py --check`. Mutation checks recommended for: dropping the expected-fingerprint check, dropping the installation binding, dropping the domain prefix, dropping the closed-set "unexpected" check, dropping the post-hash `fstat`, using `os.rename` instead of a no-replace link, and removing directory `fsync`.
+`ruff`, `ruff format --check`, `bandit` (the tool uses `hmac`, `hashlib`, `os.open`; no subprocess, no shell, no network), full non-integration suite, integration suite in CI shape, `scripts/check_repository.py`, `build_feature_overview.py --check`. Mutation checks recommended for: dropping the expected-fingerprint check, dropping the installation binding, dropping the domain prefix, dropping the closed-set "unexpected" check, dropping the post-hash `fstat`, using `os.rename` instead of a no-replace link, and removing directory `fsync`, swallowing a directory-`fsync` error (must surface `publication_durability_uncertain`), and emitting a note value outside the vocabulary.
 
 ## 2. Checklist (requirements quality)
 
@@ -52,7 +52,8 @@ New: `backend/app/recovery_set/*`, `backend/tests/test_recovery_set_*.py`, a syn
 | C11 | Path, symlink, special-file, traversal, closed-set rules | Specified; T3, T6, T7 |
 | C12 | Bounded resource use; safe errors | Specified (3.4, 7.3, 9.4); T35 |
 | C13 | Verification-to-restore gap stated with future mitigations, no restore design | Specified (spec 8); T32 |
-| C14 | Atomic generation guarantees and failure semantics are observable, not one implementation | Specified (spec 9.1); T27 to T31 |
+| C14 | Atomic generation guarantees and failure semantics are observable, not one implementation, and G1, G5, G7 are consistent by phase (before publication, after publication before durability, durable) | Specified (spec 9.1, G1 to G9); T27 to T31, T37 to T41 |
+| C14a | Informational notes are a bounded, closed field separate from failure reasons; a successful result may carry notes while `reasons` is empty | Specified (spec 7.3.1); T42, T43 |
 | C15 | Scope boundaries and non-goals explicit | Specified (spec 9.2) |
 | C16 | All required adversarial cases appear in tests | Complete: see mapping in section 3.1 |
 | C17 | Evidence boundaries stated; no clean-host, RPO/RTO, real-NAS or acceptance claim | Specified (spec 11.6, 11.7) |
@@ -86,6 +87,12 @@ New: `backend/app/recovery_set/*`, `backend/tests/test_recovery_set_*.py`, a syn
 | manifest matching expected hash, comparison-only wording | T23 |
 | key rotation, wrong namespace, cross-installation substitution | T24, T16, T25 |
 | interrupted generation / existing destination / concurrent generation | T27 / T28 / T29 (T30) |
+| failure before publication | T37 |
+| publication success then directory `fsync` failure | T38 |
+| CLI never reports durable success in that case | T39 |
+| retry against an existing final manifest | T40 (T28) |
+| recovery and inspection of a complete, durability-uncertain final manifest | T41 |
+| informational note on success; notes bounded and non-leaking | T42, T43 |
 | modification after verification (point-in-time) | T32 |
 | no secrets, key material, content or foreign paths in output | T33, T34 |
 
@@ -108,7 +115,8 @@ New: `backend/app/recovery_set/*`, `backend/tests/test_recovery_set_*.py`, a syn
 5. **HMAC forging power** (O6) and **TOCTOU** (spec 8) are accepted limitations, stated rather than hidden.
 6. **Hard-coded head in the existing drill** (`0038_work_status_audit_category`) means the drill needs updating on every migration; the manifest's declared head should replace that constant when the drill is extended.
 7. **Large dumps.** Streaming hashing is constant memory, but run time scales with size; the elapsed time is informational only (O3).
-8. **Filesystem durability assumptions** (G5) depend on the storage honouring `fsync`; network or removable media may not. Stated in documentation requirements, not claimed as solved.
+8. **Filesystem durability assumptions** (G5) depend on the storage honouring `fsync`; network or removable media may not. Stated in documentation requirements, not claimed as solved. The tool cannot confirm durability after a failed directory flush; the operator step in G9 is outside the tool.
+9. **Revision note.** After owner review the draft was corrected: G1, G5 and G7 now distinguish pre-publication failure from the post-publication, pre-durability window (a complete final manifest may exist), and the stale-temporary report became a defined `notes` field separate from `reasons`. No owner decision was resolved or changed.
 
 ### 3.4 Open items that block implementation
 
