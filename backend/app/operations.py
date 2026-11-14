@@ -186,7 +186,7 @@ def audit_summary(db, token, csrf, body):
         text(
             "SELECT category_key, outcome_key, event_count FROM public.butler_audit_summary(:a,:e,:h)"
         ),
-        {"a": user.id, "e": checked, "h": hours},
+        {"a": token, "e": checked, "h": hours},
     ).all()
     counts = {(category, outcome): 0 for category in AUDIT_CATEGORIES for outcome in AUDIT_OUTCOMES}
     for category, outcome, number in rows:

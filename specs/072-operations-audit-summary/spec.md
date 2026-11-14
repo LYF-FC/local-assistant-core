@@ -9,7 +9,7 @@ The Operations overview (spec 066) states that audit review is unavailable becau
 ## Scope
 
 - One protected request, `POST /api/v1/operations/audit-summary`, and one section in the existing Operations overview with an explicit **Load audit summary** control. Nothing loads with the overview and nothing polls.
-- A reviewed projection: `public.butler_audit_summary(p_actor uuid, p_end timestamptz, p_hours integer)`, `SECURITY DEFINER`, fixed `search_path`, `EXECUTE` revoked from PUBLIC and granted only to `butler_runtime`.
+- A reviewed projection: `public.butler_audit_summary(p_token text, p_end timestamptz, p_hours integer)`, `SECURITY DEFINER`, fixed `search_path`, `EXECUTE` revoked from PUBLIC and granted only to `butler_runtime`. The function takes the caller's session token, never an actor identifier, and derives the actor itself (see Authorization).
 - Counts per fixed **category** and fixed **outcome** over a fixed window (24 hours or 7 days, chosen from a closed set).
 
 ## Explicit exclusions (remain open, unclaimed)
@@ -36,7 +36,11 @@ Outcomes: `success`, `denied` (rows whose `result_status` is exactly `denied`), 
 
 ## Authorization
 
-`authority(...)` with scope `technical_admin`, the same path as `operations/read`: HTTPS, exact Host/Origin, current session, CSRF, current grant, installation membership lock, session revalidation after the query. Technical administration grants nothing over household, financial or Work records, and this summary contains none. Defence in depth: the function itself verifies that `p_actor` is an active user currently holding `technical_admin`, otherwise raises `42501`; it also rejects `p_hours` outside `{24, 168}`. Either failure is a server error with no payload.
+`authority(...)` with scope `technical_admin`, the same path as `operations/read`: HTTPS, exact Host/Origin, current session, CSRF, current grant, installation membership lock, session revalidation after the query. Technical administration grants nothing over household, financial or Work records, and this summary contains none. Defence in depth, with the actor bound inside the database: the function takes the raw session token, hashes it (`sha256`, hex, the same digest `identity.resolve` stores in `auth_sessions.token_hash`) and itself looks up a session that is unrevoked, unexpired and not idle beyond the 30-minute limit, whose user is active and currently holds `technical_admin`. Otherwise it raises `42501`. It also rejects `p_hours` outside `{24, 168}` and a token outside 40 to 128 characters. Either failure is a server error with no payload.
+
+**Why a token and not an actor id.** Every application user connects as the same `butler_runtime` role, so a caller-supplied actor UUID is a claim the database cannot check: any runtime-role session could pass another administrator's valid id. A live session token is the existing trusted identity credential (the route authenticates the request with the same token), and only that token's session can authorize the call. Supplying another administrator's UUID, a stored hash (`token_hash` is not the token), a decorated token or the token of a revoked, expired, idle, inactive-user or grant-revoked session is refused. There is no `uuid` overload.
+
+**Residual limit (stated, not hidden).** `butler_runtime` may INSERT and UPDATE `auth_sessions`; a process already running as the runtime role with arbitrary SQL could insert a session row for a technical administrator and use its token. That is a pre-existing property of the shared runtime role (it already lets such a process forge sessions for every route), not something this function can close, and it yields counts only. The token is passed as a bound query parameter: with statement logging of parameters enabled a live token could appear in the PostgreSQL log, which is the same exposure as the session lookup that already precedes it.
 
 ## Request and response
 
@@ -73,7 +77,7 @@ A "Audit summary (security and administrative events)" section inside the Operat
 - A1. A technical administrator receives the exact allow-listed shape and correct counts for synthetic events across all categories and outcomes, inside and outside the window.
 - A2. Content-domain events (for example `documents.*`, `tasks.*`) and unknown event types never appear in any count.
 - A3. Non-technical-admin, revoked grant, expired session, missing CSRF, wrong Host/Origin, extra request keys and an invalid window are denied without payload.
-- A4. The runtime role still cannot SELECT from `audit_events`, cannot call the function with another actor id that lacks the grant, and cannot call it with a window other than 24 or 168 hours.
+- A4. The runtime role still cannot SELECT from `audit_events`, cannot call the function with another technical administrator's id (no such parameter exists; a UUID is refused), with a stored token hash, or with the token of a session that is revoked, expired, idle, inactive-user or without a current grant, and cannot call it with a window other than 24 or 168 hours.
 - A5. An induced audit-insert failure withholds the response and leaves no `operations.audit_summary` row.
 - A6. The response never contains ids, actors, scopes, timestamps of events, metadata or exception text; strict client parsing rejects any extra or out-of-order key, a negative or non-integer count, and totals that do not equal the column sums.
 - A7. The function is `SECURITY DEFINER` with a fixed `search_path`, is not executable by PUBLIC, and the migration round-trips (upgrade, downgrade, upgrade) on PostgreSQL.

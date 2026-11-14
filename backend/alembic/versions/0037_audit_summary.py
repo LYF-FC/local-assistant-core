@@ -4,6 +4,15 @@ The runtime role keeps INSERT-only access to audit_events. This function is the 
 path: it returns aggregate counts by a closed category and outcome catalogue for the fixed
 auth./admin./operations. event families, and never an id, actor, scope, entity, metadata or
 timestamp. It writes nothing.
+
+Actor binding: the function takes no actor id. The only trusted identity inside a database
+transaction is the session the application authenticated, so the caller passes the raw session
+token, the function hashes it exactly as the application does and derives the actor from a
+current, unrevoked, unexpired, non-idle auth_sessions row of an active technical administrator.
+The stored token_hash alone (readable by the runtime role) is not accepted, and a user id cannot
+be supplied. Limit: the runtime role is the application and may insert auth_sessions rows, so a
+fully compromised runtime role could mint a session; the function narrows, but cannot remove,
+that trust.
 """
 
 from alembic import op
@@ -16,18 +25,30 @@ depends_on = None
 
 def upgrade():
     op.execute("""
-      CREATE FUNCTION public.butler_audit_summary(p_actor uuid, p_end timestamptz, p_hours integer)
+      CREATE FUNCTION public.butler_audit_summary(p_token text, p_end timestamptz, p_hours integer)
       RETURNS TABLE(category_key text, outcome_key text, event_count bigint)
       LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = pg_catalog AS $$
+      DECLARE
+        v_actor uuid;
       BEGIN
         IF p_end IS NULL OR p_hours IS NULL OR p_hours NOT IN (24, 168) THEN
           RAISE EXCEPTION 'Unsupported audit summary window' USING ERRCODE = '22023';
         END IF;
-        PERFORM 1 FROM public.users AS u
+        IF p_token IS NULL OR length(p_token) NOT BETWEEN 40 AND 128 THEN
+          RAISE EXCEPTION 'Technical administration is required' USING ERRCODE = '42501';
+        END IF;
+        SELECT u.id INTO v_actor
+          FROM public.auth_sessions AS a
+          JOIN public.users AS u ON u.id = a.user_id
           JOIN public.user_scopes AS g ON g.user_id = u.id
           JOIN public.scopes AS s ON s.id = g.scope_id
-          WHERE u.id = p_actor AND u.is_active AND s.key = 'technical_admin';
-        IF NOT FOUND THEN
+          WHERE a.token_hash = encode(sha256(convert_to(p_token, 'UTF8')), 'hex')
+            AND a.revoked_at IS NULL
+            AND a.expires_at > now()
+            AND a.last_seen_at > now() - interval '30 minutes'
+            AND u.is_active AND s.key = 'technical_admin'
+          LIMIT 1;
+        IF v_actor IS NULL THEN
           RAISE EXCEPTION 'Technical administration is required' USING ERRCODE = '42501';
         END IF;
         RETURN QUERY
@@ -62,9 +83,9 @@ def upgrade():
         ) AS c
         GROUP BY c.cat, c.res;
       END; $$;
-      REVOKE ALL ON FUNCTION public.butler_audit_summary(uuid, timestamptz, integer) FROM PUBLIC;
+      REVOKE ALL ON FUNCTION public.butler_audit_summary(text, timestamptz, integer) FROM PUBLIC;
     """)
 
 
 def downgrade():
-    op.execute("DROP FUNCTION public.butler_audit_summary(uuid, timestamptz, integer)")
+    op.execute("DROP FUNCTION public.butler_audit_summary(text, timestamptz, integer)")

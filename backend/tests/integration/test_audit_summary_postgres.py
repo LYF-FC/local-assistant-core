@@ -6,11 +6,13 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
+from conftest import SYNTHETIC_PASSWORD, client_for
 from sqlalchemy import event, func, select, text
 from sqlalchemy.exc import DBAPIError, SQLAlchemyError
+from sqlalchemy.orm import sessionmaker
 
 from app import identity
-from app.manage import set_scope
+from app.manage import provision, set_scope
 from app.models import AuditEvent, User
 
 pytestmark = pytest.mark.integration
@@ -62,11 +64,15 @@ def grant(admin, uid, on=True):
         set_scope(db, db.get(User, uid), "technical_admin", on)
 
 
-def summary(admin, uid, end, hours=24):
+def token_of(client):
+    return next(c.value for c in client.cookies.jar if c.name == identity.COOKIE)
+
+
+def summary(admin, token, end, hours=24):
     with admin() as db:
         rows = db.execute(
             text("SELECT * FROM public.butler_audit_summary(:a,:e,:h)"),
-            {"a": uid, "e": end, "h": hours},
+            {"a": token, "e": end, "h": hours},
         ).all()
     return {(r[0], r[1]): r[2] for r in rows}
 
@@ -98,11 +104,12 @@ def request(client, headers, **body):
 
 
 def test_mapping_window_and_exclusions_are_exact(scenario):
-    _, _, _, admin, uid = scenario
+    client, _, _, admin, uid = scenario
     grant(admin, uid)
+    token = token_of(client)
     end = identity.now_utc()
-    before = summary(admin, uid, end)
-    wide_before = summary(admin, uid, end, 168)
+    before = summary(admin, token, end)
+    wide_before = summary(admin, token, end, 168)
     inside = end - timedelta(hours=1)
     for event_type, status, _, _ in CASES:
         insert(admin, uid, event_type, status, inside)
@@ -112,8 +119,8 @@ def test_mapping_window_and_exclusions_are_exact(scenario):
     insert(admin, uid, "auth.login", "success", end - timedelta(hours=30))
     insert(admin, uid, "auth.login", "success", end - timedelta(hours=200))
     insert(admin, uid, "auth.login", "success", end + timedelta(hours=1))
-    after = summary(admin, uid, end)
-    wide_after = summary(admin, uid, end, 168)
+    after = summary(admin, token, end)
+    wide_after = summary(admin, token, end, 168)
     expected: dict = {}
     for _, _, category, outcome in CASES:
         expected[(category, outcome)] = expected.get((category, outcome), 0) + 1
@@ -141,35 +148,78 @@ def refuse(engine, statement, match=None, **params):
 CALL = "SELECT * FROM public.butler_audit_summary(:a,:e,:h)"
 
 
+def second_admin(admin, runtime_engine):
+    """A distinct, valid technical administrator with a live session of their own."""
+    slug = "synthetic-" + uuid4().hex
+    with admin.begin() as db:
+        user = provision(
+            db, slug, "Synthetic Second Admin", SYNTHETIC_PASSWORD, {"household_shared"}
+        )
+        other = user.id
+        set_scope(db, user, "technical_admin", True)
+    with client_for(sessionmaker(bind=runtime_engine, expire_on_commit=False)) as other_client:
+        response = other_client.post(
+            "/api/v1/auth/login", json={"slug": slug, "password": SYNTHETIC_PASSWORD}
+        )
+        assert response.status_code == 200
+        return other, token_of(other_client)
+
+
 def test_function_guards_and_privileges(scenario, runtime_engine, postgres_engine):
-    _client, _, _, admin, uid = scenario
+    client, _, _, admin, uid = scenario
+    token = token_of(client)
     end = identity.now_utc()
     with postgres_engine.connect() as db:
         proc = db.execute(
             text(
                 "SELECT prosecdef, provolatile, proconfig, "
                 "has_function_privilege('butler_runtime', oid, 'EXECUTE'), "
-                "has_function_privilege('public', oid, 'EXECUTE'), pg_get_userbyid(proowner) "
+                "has_function_privilege('public', oid, 'EXECUTE'), pg_get_userbyid(proowner), "
+                "pg_get_function_identity_arguments(oid) "
                 "FROM pg_proc WHERE proname='butler_audit_summary'"
             )
         ).one()
         assert proc[0] is True and proc[1] == "s" and proc[2] == ["search_path=pg_catalog"]
         assert proc[3] is True and proc[4] is False
         assert proc[5] != "butler_runtime"
-    # Without the current technical_admin grant the projection refuses.
-    refuse(runtime_engine, CALL, "Technical administration is required", a=uid, e=end, h=24)
+        assert proc[6] == "p_token text, p_end timestamp with time zone, p_hours integer"
+        # No overload that accepts a user id exists.
+        assert (
+            db.scalar(
+                text(
+                    "SELECT to_regprocedure('public.butler_audit_summary(uuid,timestamptz,integer)')"
+                )
+            )
+            is None
+        )
+        assert (
+            db.scalar(text("SELECT count(*) FROM pg_proc WHERE proname='butler_audit_summary'"))
+            == 1
+        )
+    # Without the current technical_admin grant the session is refused.
+    refuse(runtime_engine, CALL, "Technical administration is required", a=token, e=end, h=24)
     grant(admin, uid)
     try:
         for hours in (0, 23, 25, 167, 169, 720):
-            refuse(runtime_engine, CALL, "Unsupported audit summary window", a=uid, e=end, h=hours)
+            refuse(
+                runtime_engine, CALL, "Unsupported audit summary window", a=token, e=end, h=hours
+            )
         refuse(
             runtime_engine,
             "SELECT * FROM public.butler_audit_summary(:a,NULL,24)",
             "Unsupported audit summary window",
-            a=uid,
+            a=token,
         )
-        # Another actor id that does not hold the grant is refused.
-        refuse(runtime_engine, CALL, "Technical administration is required", a=uuid4(), e=end, h=24)
+        # Missing, short, long and unknown tokens are refused.
+        for bad in (
+            None,
+            "",
+            "x" * 39,
+            "x" * 129,
+            "x" * 64,
+            token[:-1] + ("A" if token[-1] != "A" else "B"),
+        ):
+            refuse(runtime_engine, CALL, "Technical administration is required", a=bad, e=end, h=24)
         # The runtime role still has no table access to the audit history.
         refuse(runtime_engine, "SELECT occurred_at FROM public.audit_events LIMIT 1")
         refuse(runtime_engine, "SELECT count(*) FROM public.audit_events")
@@ -181,6 +231,106 @@ def test_function_guards_and_privileges(scenario, runtime_engine, postgres_engin
         )
     finally:
         grant(admin, uid, False)
+
+
+def test_actor_substitution_is_rejected_for_the_restricted_runtime_role(
+    scenario, runtime_engine, postgres_engine
+):
+    client, _, _, admin, uid = scenario
+    token_a = token_of(client)
+    other, token_b = second_admin(admin, runtime_engine)
+    grant(admin, uid)
+    end = identity.now_utc()
+    try:
+        # Positive controls: each administrator's own live session works.
+        for token in (token_a, token_b):
+            with runtime_engine.begin() as db:
+                db.execute(text(CALL), {"a": token, "e": end, "h": 24}).all()
+        # A user id of another valid technical administrator is not an accepted input.
+        refuse(
+            runtime_engine,
+            CALL.replace(":a", "CAST(:a AS uuid)"),
+            "does not exist",
+            a=str(other),
+            e=end,
+            h=24,
+        )
+        refuse(
+            runtime_engine,
+            CALL.replace(":a", "CAST(:a AS uuid)"),
+            "does not exist",
+            a=str(uid),
+            e=end,
+            h=24,
+        )
+        # Another administrator's stored token hash, which the runtime role can read, is not a credential.
+        with runtime_engine.connect() as db:
+            hashes = (
+                db.execute(
+                    text("SELECT token_hash FROM public.auth_sessions WHERE user_id IN (:a,:b)"),
+                    {"a": uid, "b": other},
+                )
+                .scalars()
+                .all()
+            )
+        assert hashes
+        for stored in hashes:
+            refuse(
+                runtime_engine, CALL, "Technical administration is required", a=stored, e=end, h=24
+            )
+        # Identifier-shaped values and decorated tokens are not credentials either.
+        for bad in (
+            str(other) * 2,
+            token_b + " ",
+            " " + token_b,
+            token_b.upper(),
+            token_b.lower() + "0",
+        ):
+            if bad != token_b:
+                refuse(
+                    runtime_engine, CALL, "Technical administration is required", a=bad, e=end, h=24
+                )
+        # The session decides: revoked, expired, idle, inactive-user and revoked-grant sessions fail.
+        steps = (
+            "UPDATE public.auth_sessions SET revoked_at=now() WHERE user_id=:b",
+            "UPDATE public.auth_sessions SET revoked_at=NULL, expires_at=now()-interval '1 second' WHERE user_id=:b",
+            "UPDATE public.auth_sessions SET expires_at=now()+interval '1 day', last_seen_at=now()-interval '31 minutes' WHERE user_id=:b",
+            "UPDATE public.auth_sessions SET last_seen_at=now() WHERE user_id=:b",
+        )
+        for index, statement in enumerate(steps):
+            with postgres_engine.begin() as db:
+                db.execute(text(statement), {"b": other})
+            if index < 3:
+                refuse(
+                    runtime_engine,
+                    CALL,
+                    "Technical administration is required",
+                    a=token_b,
+                    e=end,
+                    h=24,
+                )
+        with runtime_engine.begin() as db:
+            db.execute(text(CALL), {"a": token_b, "e": end, "h": 24}).all()
+        with postgres_engine.begin() as db:
+            db.execute(text("UPDATE public.users SET is_active=false WHERE id=:b"), {"b": other})
+        refuse(runtime_engine, CALL, "Technical administration is required", a=token_b, e=end, h=24)
+        with admin.begin() as db:
+            db.execute(text("UPDATE public.users SET is_active=true WHERE id=:b"), {"b": other})
+            set_scope(db, db.get(User, other), "technical_admin", False)
+        refuse(runtime_engine, CALL, "Technical administration is required", a=token_b, e=end, h=24)
+        # B's session never lends authority to A's request and vice versa: revoking A's grant
+        # leaves A refused even though B (re-granted) is a valid administrator.
+        with admin.begin() as db:
+            set_scope(db, db.get(User, other), "technical_admin", True)
+        grant(admin, uid, False)
+        refuse(runtime_engine, CALL, "Technical administration is required", a=token_a, e=end, h=24)
+        with runtime_engine.begin() as db:
+            db.execute(text(CALL), {"a": token_b, "e": end, "h": 24}).all()
+    finally:
+        grant(admin, uid, False)
+        with admin.begin() as db:
+            db.execute(text("UPDATE public.users SET is_active=true WHERE id=:b"), {"b": other})
+            set_scope(db, db.get(User, other), "technical_admin", False)
 
 
 def test_api_shape_denials_and_metadata_only_audit(scenario):
@@ -315,7 +465,7 @@ def test_revoked_grant_and_migration_round_trip(scenario, postgres_engine):
         with postgres_engine.begin() as db:
             db.execute(
                 text(
-                    "GRANT EXECUTE ON FUNCTION public.butler_audit_summary(uuid,timestamptz,integer)"
+                    "GRANT EXECUTE ON FUNCTION public.butler_audit_summary(text,timestamptz,integer)"
                     " TO butler_runtime"
                 )
             )
