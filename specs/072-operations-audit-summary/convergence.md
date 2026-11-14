@@ -84,4 +84,20 @@
 
 ## Still required
 
-*(Historical, as written on the open branch. Since then PR #35 merged as `41aa5f3`, pull-request-head CI passed on `4918faa` (run 43590537393), and the push to `main` at the merge commit failed in `postgres` (run 43592529868) before the later push at `f617330` passed; see the merge record. Independent review, owner review and acceptance, and the remaining items below are still outstanding.)* Independent review, owner review and acceptance; hosted CI on the final head (the passing run predates the window fix); real-stack coverage of audit-summary expiry and late-response clearing; the rest of OPS-10 (overdue jobs, capacity trends, periodic/scheduled reports, delivery, alerting); OPS-09 observations; Gate 6 recovery suppression and Gate 11 clean-host recovery.
+### Historical record (written on the open branch)
+
+*Historical, kept as written.* Independent review, owner review and acceptance; hosted CI on the final head (the passing run predates the window fix); real-stack coverage of audit-summary expiry and late-response clearing; the rest of OPS-10 (overdue jobs, capacity trends, periodic/scheduled reports, delivery, alerting); OPS-09 observations; Gate 6 recovery suppression and Gate 11 clean-host recovery.
+
+### Current status (14 November 2026), from the recorded workflow runs
+
+| Item | Commit | Run | Event | Result |
+|---|---|---|---|---|
+| Last branch-dispatch run before the window fix | `821cc17` | 43584841853 | `workflow_dispatch` | success (predates the recent-window fix) |
+| Pull-request head | `4918faa` | 43590537393 | `pull_request` | success: scope, backend, frontend, containers, postgres, `ci` |
+| **Merge commit, push to `main`** | `41aa5f3` | 43592529868 | `push` | **failure**: `postgres` and the `ci` gate failed; scope, backend, frontend and containers succeeded. The failing test was not established in this record. |
+| Later push to `main` (calendar test determinism fix, no associated PR; a descendant of `41aa5f3`) | `f617330` | 43603362335 | `push` | success: all six jobs |
+
+- Hosted CI on the pull-request head passed. That does not establish that the merge commit passed, and the merge commit's own run **failed**. The later passing run is for `f617330` only and is not evidence that `41aa5f3` passed. This record does not establish that the failure was resolved by `f617330`; it records only that the later push passed.
+- The run on `4918faa` was not recorded as covering real-stack audit-summary expiry or late-response clearing, and no evidence in this record shows they were tested on the real stack. That limitation is **still current**: only the mocked component spec covers them.
+- **Outstanding now (none claimed):** independent verification and independent review; owner acceptance; the rest of OPS-10 (overdue jobs, capacity trends, periodic or scheduled reports, delivery, alerting); OPS-09 observations; Gate 6 recovery suppression; Gate 11 clean-host recovery.
+- The merge is integration only; no requirement, gate, count or priority changed.

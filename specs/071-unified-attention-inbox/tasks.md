@@ -23,5 +23,13 @@ Implementation (one coherent batch, one grouped push). Items marked done were co
 - [x] Check whether the existing task response identifies routine origin; show origin only if it already does. Done: the response does not provide origin, so none is shown and no field was added.
 - [x] Playwright workflows at 390×844, including the no-state-changing-request network assertion and storage/URL privacy checks. Harness (mocked) spec done. Review follow-up: a real-stack spec `frontend/e2e/inbox.spec.ts` with `scripts/inbox-browser-fixtures.py` is added and wired into `scripts/test-containers.sh`; hosted run 43521167626 executed it in the `containers` job (4 passed, aggregate result).
 - [x] Contract document, master gate entry, register rows and regenerated overview/dashboard in the same PR, without changing any acceptance criterion; Gate 2 remains the owner's to accept.
-- [x] Required local checks once, one grouped push and one PR, then stop without merge. Final convergence per [convergence.md](convergence.md). Local checks ran and PR #34 was opened; at that time hosted CI passed on head `6488588` and owner review, approval and merge were pending and the owner's. Update: PR #34 was merged as `0fbea4e` (final PR-head CI on `7c31105`, run 43527723181; push to `main` run 43530042389 passed). Merge is integration only.
-- [ ] Independent verification and owner acceptance of this slice (Gate 2 and the related requirements): not done, not claimed.
+- [ ] Required local checks once, one grouped push and one PR, then stop without merge. Final convergence per [convergence.md](convergence.md). Local checks ran; PR #34 is open for owner review; hosted CI passed on the current head; owner review, approval and merge are pending and are the owner's. *(Historical record as written before the merge, left unchecked as originally recorded. The delivery facts are in the status list below.)*
+
+## Status by phase (14 November 2026)
+
+The boxes above are the historical task record and are not edited to imply otherwise. Current facts, kept distinct:
+
+- [ ] **Historical specification review before implementation** (the "Owner review of spec, plan and tasks" box above): unchecked as originally recorded. This file holds no record that it was completed and does not claim it.
+- [x] **Implementation delivered and merged:** PR #34, merge `0fbea4e`, 13 November 2026. Pull-request-head CI passed on `7c31105` (run 43527723181); the push to `main` at `0fbea4e` passed (run 43530042389). Merge is integration only. An implementation authorization is not recorded in this file.
+- [ ] **Independent verification:** not done, not claimed.
+- [ ] **Owner acceptance** (Gate 2 and the related requirements; private-host, mobile-device and real-provider acceptance are separate): not done, not claimed.

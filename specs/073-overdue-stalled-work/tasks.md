@@ -25,4 +25,12 @@ Implementation authorized by the owner on 14 November 2026. Contract: [spec.md](
 
 ## Not authorized here
 
-- [ ] Owner review, merge and acceptance; any OPS-09/OPS-10 or Gate 10 status change. (Merged as PR #37 at `4a7e624`, 14 November 2026. Independent verification, owner acceptance and any status change are not done and stay unchecked.)
+- [ ] Owner review, merge and acceptance; any OPS-09/OPS-10 or Gate 10 status change. *(Historical task record, written before the merge and left unchecked as originally recorded; it combined items that are now separated below.)*
+
+## Current status by item (14 November 2026)
+
+- [x] **Merged:** PR #37, merge `4a7e624`, 14 November 2026 (integration only).
+- [x] **Hosted CI as recorded:** pull-request head `2408a68`, run 43615751104, success; push to `main` at the merge commit `4a7e624`, run 43624054196, success. CI results only, not verification or acceptance.
+- [ ] **Independent verification:** not done, not claimed.
+- [ ] **Owner acceptance:** not done, not claimed.
+- [ ] **Any OPS-09, OPS-10, Gate 10 or other status change:** none made; each remains the owner's decision.

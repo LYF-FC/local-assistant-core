@@ -75,4 +75,12 @@ Initial implementation run, then the correction pass (the correction-pass result
 
 ## Still required after review
 
-*(Historical, as written during PR #34 review. PR #34 has since been merged as `0fbea4e` and the merge commit is recorded in the merge record above. Still outstanding today: independent verification and the items from "owner acceptance" onward below.)* The owner review, approval and merge of PR #34; the merged commit recorded only after merge; owner acceptance, private-host and mobile-device acceptance and real-provider integration, which are separate and unperformed. The owner-review box in `tasks.md` stays unchecked. *(Historical sentence: it described the branch before merge. Merge is now recorded above and is integration only.)* Branch engineering is not merged delivery.
+### Historical record (written during PR #34 review; superseded where marked)
+
+*Historical, kept as written. It grouped the owner review, approval and merge of PR #34 as pending. That grouping is no longer current: PR #34 is merged (below).* The owner review, approval and merge of PR #34; the merged commit recorded only after merge; owner acceptance, private-host and mobile-device acceptance and real-provider integration, which are separate and unperformed. The owner-review box in `tasks.md` stays unchecked. Branch engineering is not merged delivery.
+
+### Current status (14 November 2026)
+
+- **Complete:** PR #34 is merged as `0fbea4e` (13 November 2026). The merged commit is recorded in the merge record above. Pull-request-head CI passed on `7c31105` (run 43527723181) and the push to `main` at `0fbea4e` passed (run 43530042389). Merge is integration only.
+- **Outstanding, separate matters (none performed or claimed):** independent verification of this slice; owner acceptance (Gate 2 and the related requirements stay open and partial); private-host acceptance; mobile-device acceptance; real-provider integration.
+- Nothing in this file is, or implies, independent verification or owner acceptance.
