@@ -32,15 +32,72 @@ _OBJECT_NAME = re.compile(OBJECT_NAME_RE)
 _FLAGS_READ = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC
 
 
+_DIRECTORY_FLAGS = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
+
+
+class UnsafePath(OSError):
+    """A path component could not be opened as a plain directory without following a link."""
+
+    def __init__(self, error, component, *, symlink=False):
+        super().__init__(error.errno, os.strerror(error.errno or 0))
+        self.component, self.symlink = component, symlink
+
+
+def open_directory_nofollow(path):
+    """Open ``path`` one component at a time and return a pinned directory descriptor.
+
+    Every component, from ``/`` down to the last, is opened with ``O_NOFOLLOW | O_DIRECTORY``
+    relative to the descriptor of the previous one, which stays pinned until the next is open.
+    A symlink (or non-directory) at *any* position is refused, including a component replaced
+    after an earlier check: each step is its own atomic no-follow open. The returned descriptor
+    keeps referring to the directory that was opened even if its name is later renamed or
+    replaced, so every later operation must be made relative to it. The path is first made
+    absolute and lexically normalised (``abspath``); that normalised path is what is opened, and
+    nothing in it is resolved through a link.
+    """
+    parts = [part for part in os.path.abspath(path).split(os.sep) if part]
+    current = os.open(os.sep, _DIRECTORY_FLAGS)
+    try:
+        for part in parts:
+            try:
+                following = os.open(part, _DIRECTORY_FLAGS, dir_fd=current)
+            except OSError as error:
+                symlink = False
+                if error.errno in {errno.ELOOP, errno.ENOTDIR}:
+                    try:
+                        symlink = stat.S_ISLNK(
+                            os.stat(part, dir_fd=current, follow_symlinks=False).st_mode
+                        )
+                    except OSError:
+                        symlink = False
+                raise UnsafePath(error, part, symlink=symlink) from error
+            os.close(current)
+            current = following
+        return current
+    except BaseException:
+        os.close(current)
+        raise
+
+
 def read_protected_file(
     path, *, max_bytes, unsafe_code, too_large_code, any_group_other_bit, require_owner
 ):
     """Bounded read of a single-link regular file with no group or other bits (spec 3.6)."""
     mask = GROUP_OTHER_ANY if any_group_other_bit else GROUP_OTHER_READ_WRITE
+    absolute = os.path.abspath(path)
+    directory_path, name = os.path.split(absolute)
+    if not name:
+        raise CodedError(unsafe_code)
     try:
-        descriptor = os.open(path, _FLAGS_READ)
+        parent = open_directory_nofollow(directory_path)
     except OSError as error:
         raise CodedError(unsafe_code) from error
+    try:
+        descriptor = os.open(name, _FLAGS_READ, dir_fd=parent)
+    except OSError as error:
+        raise CodedError(unsafe_code) from error
+    finally:
+        os.close(parent)  # the file descriptor is what is used from here on
     try:
         before = os.fstat(descriptor)
         if (
@@ -248,6 +305,9 @@ class OpenSet:
 
     def _scan_archive(self, scan):
         limits = self.limits
+        if self.archive_fd is not None:  # a second pass (generate) must not leak the first
+            os.close(self.archive_fd)
+            self.archive_fd = None
         try:
             self.archive_fd = _open_directory("archive", self.set_fd)
         except CodedError as error:
@@ -345,7 +405,18 @@ class OpenSet:
 
 @contextmanager
 def open_set(path, limits: Limits):
-    descriptor = _open_directory(path)
+    try:
+        descriptor = open_directory_nofollow(path)
+    except UnsafePath as error:
+        if error.errno == errno.ENOENT:
+            raise CodedError("set_member_missing") from error
+        if error.symlink:
+            raise CodedError("set_member_symlink") from error
+        if error.errno in {errno.ELOOP, errno.ENOTDIR}:
+            raise CodedError("set_member_not_regular") from error
+        raise CodedError("io_error") from error
+    except OSError as error:
+        raise CodedError("io_error") from error
     handle = OpenSet(descriptor, limits)
     try:
         yield handle

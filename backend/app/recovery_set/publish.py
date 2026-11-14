@@ -12,9 +12,11 @@ import stat
 from dataclasses import dataclass, field
 
 from app.recovery_set.format import CodedError
+from app.recovery_set.fsset import open_directory_nofollow
 
 TEMP_PREFIX = ".recovery-set-tmp-"
 STALE_SCAN_LIMIT = 64
+STALE_NOTE = "stale_temporary_present"
 _UNSUPPORTED = {
     errno.EPERM,
     errno.ENOTSUP,
@@ -44,16 +46,26 @@ def _fire(faults, name):
 
 
 def stale_temporary_note(directory_path):
-    """Informational only: does the first 64 sorted names include the tool's temp prefix?"""
+    """Informational only: does the first 64 sorted names include the tool's temp prefix?
+
+    The directory is opened with the same component-wise no-follow walk as publication and read
+    through the pinned descriptor; any failure simply yields no note.
+    """
     try:
-        with os.scandir(directory_path) as entries:
+        descriptor = open_directory_nofollow(directory_path)
+    except OSError:
+        return []
+    try:
+        with os.scandir(descriptor) as entries:
             first = heapq.nsmallest(
                 STALE_SCAN_LIMIT, (os.fsencode(entry.name) for entry in entries)
             )
     except OSError:
         return []
+    finally:
+        os.close(descriptor)
     prefix = TEMP_PREFIX.encode()
-    return ["stale_temporary_present"] if any(name.startswith(prefix) for name in first) else []
+    return [STALE_NOTE] if any(name.startswith(prefix) for name in first) else []
 
 
 def _write_all(descriptor, data, faults):
@@ -69,14 +81,30 @@ def _write_all(descriptor, data, faults):
             _fire(faults, "mid_write")
 
 
-def publish_manifest(output_path, data, faults=None):
+def publish_manifest(output_path, data, faults=None, report=None):
     """Returns ``published_durable`` or ``published_durability_uncertain``; raises CodedError
-    with ``publication: not_published`` semantics for every failure before publication."""
+    with ``publication: not_published`` semantics for every failure before publication.
+
+    ``report``, when given, is a dict that receives ``temporary_remaining: True`` if this run's
+    own temporary could not be removed (a G3 artifact the caller must surface as a note). The
+    output directory is opened component by component without following links and pinned;
+    every later operation is relative to that descriptor, so renaming or replacing the
+    directory's name after the open cannot redirect the publication.
+    """
     directory_path, name = os.path.split(os.path.abspath(output_path))
+    if not name:
+        raise CodedError("output_unsafe")
     try:
-        parent = os.open(directory_path, os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+        parent = open_directory_nofollow(directory_path)
     except OSError as error:
         raise CodedError("output_unsafe") from error
+    try:
+        return _publish(parent, name, data, faults, report)
+    finally:
+        os.close(parent)
+
+
+def _publish(parent, name, data, faults, report):
     temporary = None
     try:
         if os.fstat(parent).st_mode & 0o022:
@@ -123,7 +151,7 @@ def publish_manifest(output_path, data, faults=None):
             raise CodedError("io_error") from error
     except BaseException as error:
         if temporary is not None and isinstance(error, CodedError):
-            _remove(parent, temporary)
+            _remove(parent, temporary, report)
         raise
     # Published: from here the final name may exist. Nothing below deletes or renames it.
     try:
@@ -131,26 +159,31 @@ def publish_manifest(output_path, data, faults=None):
     except BaseException as error:
         if isinstance(error, (KeyboardInterrupt, SystemExit)):
             raise
-        os.close(parent)
         return "published_durability_uncertain"
-    _remove(parent, temporary)
+    _remove(parent, temporary, report)
     try:
         _fire(faults, "after_publish")
         _flush_directory(parent, faults)
     except BaseException as error:
         if isinstance(error, (KeyboardInterrupt, SystemExit)):
             raise
-        os.close(parent)
         return "published_durability_uncertain"
-    os.close(parent)
     return "published_durable"
 
 
-def _remove(parent, temporary):
+def _remove(parent, temporary, report=None):
+    """Best-effort removal of this run's own temporary; a failure is observable, never silent.
+
+    A surviving temporary is a documented G3 artifact. After publication it is a second hard
+    link to the final manifest, so the manifest's link count is 2 until the operator removes it.
+    """
     try:
         os.unlink(temporary, dir_fd=parent)
+    except FileNotFoundError:
+        pass
     except OSError:
-        pass  # a remaining temporary is a documented recoverable artifact (G3)
+        if report is not None:
+            report["temporary_remaining"] = True
 
 
 def _flush_directory(parent, faults):

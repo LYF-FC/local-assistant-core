@@ -96,9 +96,14 @@ def _same_existing_file(first, second):
 def _overlaps(set_path, key_path, file_path):
     """Stage-1 ``paths_overlap`` test (spec 3.4, 7.3.0).
 
-    This is a path-shape check made before any file content is touched. It is **not** the
-    symlink defence: the descriptor-relative, ``O_NOFOLLOW`` opens of the later stages are, and
-    a path swapped for a symlink after this check is still refused there.
+    This is a path-shape pre-check made before any file content is touched, on the path names
+    as they are at this moment. It does not close a race: a name can be replaced after it
+    returns. What refuses links is the later opens, which walk every component of the SET, key,
+    manifest and output-directory paths with ``O_NOFOLLOW`` relative to pinned directory
+    descriptors (``fsset.open_directory_nofollow``), so a symlink in any position is refused and
+    a component swapped after the walk cannot redirect an operation made through the pinned
+    descriptor. A name swapped *between two components of the walk* is refused by that
+    component's own no-follow open.
     """
     sets, keys, files = _spellings(set_path), _spellings(key_path), _spellings(file_path)
     for directory in sets:

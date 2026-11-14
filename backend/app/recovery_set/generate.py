@@ -24,7 +24,12 @@ from app.recovery_set.format import (
 )
 from app.recovery_set.fsset import open_set
 from app.recovery_set.key import check_fingerprint, load_key
-from app.recovery_set.publish import InjectedFaults, publish_manifest, stale_temporary_note
+from app.recovery_set.publish import (
+    STALE_NOTE,
+    InjectedFaults,
+    publish_manifest,
+    stale_temporary_note,
+)
 from app.recovery_set.result import Result
 from app.recovery_set.verify import verifier_chain
 
@@ -189,10 +194,14 @@ def _generate(trust, limits, chain, result, faults, set_id, created_at):
     data = canonical(envelope)
     parse_manifest(data, limits)  # the generator never publishes what its own parser rejects
     result.extras["manifest_hash"] = manifest_hash(payload)
+    report = {}
     try:
-        result.publication = publish_manifest(trust["output"], data, faults)
+        result.publication = publish_manifest(trust["output"], data, faults, report)
     except CodedError:
         result.publication = "not_published"
         raise
+    finally:
+        if report.get("temporary_remaining") and STALE_NOTE not in result.notes:
+            result.notes = sorted([*result.notes, STALE_NOTE])
     if result.publication == "published_durability_uncertain":
         result.reason("publication_durability_uncertain")

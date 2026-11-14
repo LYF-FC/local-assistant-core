@@ -43,7 +43,7 @@
 
 ### B5 drill and documentation
 
-- [ ] B050 Extend `scripts/test-db-restore.sh` with the real-dump drill of spec 11.3 using a synthetic key; state the limits of spec 11.8 in the drill log. _Written, not yet executed against PostgreSQL: the extension is in `scripts/test-db-restore.sh` and its shell logic ran against a stubbed docker and a synthetic file only; the real-dump drill needs the hosted `postgres:17` job (no Docker daemon was available for the local run)._
+- [ ] B050 Extend `scripts/test-db-restore.sh` with the real-dump drill of spec 11.3 using a synthetic key; state the limits of spec 11.8 in the drill log. _Written, not yet executed against PostgreSQL: the extension is in `scripts/test-db-restore.sh` and its shell logic, including the second-synthetic-installation cases (distinct installation UUID, own key and manifest), ran against a stubbed docker and a synthetic file only; the real-dump drill needs the hosted `postgres:17` job (no Docker daemon was available for the local run)._
 - [x] B051 Documentation page (integrity, authenticity, freshness and expectations; trust inputs; generation-host trust boundary; HMAC limitation; filesystem assumptions; custody responsibilities) and cross-references, with no status change.
 - [ ] B052 Quality gates, mutation checks of plan 1.4, hosted CI on the PR head and, separately, on the merge commit. _Local quality gates and mutation checks run (see the implementation report); hosted CI on the PR head and the merge commit has not been run, so this stays open._
 
