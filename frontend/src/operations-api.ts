@@ -64,3 +64,46 @@ export async function readOperations(session: Session, signal: AbortSignal): Pro
   if (!response.ok) throw new OperationsError(response.status);
   return parseSnapshot(await response.json(), session);
 }
+
+export const auditCategories = ["sign_in", "denied_access", "access_change", "recovery_admin", "other_admin", "operations_read", "other_security"] as const;
+export const auditOutcomes = ["success", "denied", "other"] as const;
+export const auditWindows = { "24h": 86400000, "7d": 604800000 } as const;
+export const auditExcludes = ["content_domain_events", "overdue_jobs", "capacity", "per_event_detail"] as const;
+export type AuditWindow = keyof typeof auditWindows;
+export type AuditSummary = {
+  schema_version: 1; scope: "technical_admin"; actor_id: string; checked_at: string; valid_until: string;
+  window: AuditWindow; window_start: string; window_end: string;
+  categories: ({ key: typeof auditCategories[number] } & { [K in typeof auditOutcomes[number]]: number })[];
+  totals: { [K in typeof auditOutcomes[number]]: number };
+  excludes: typeof auditExcludes;
+};
+function total(value: unknown): number { if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) return fail(); return value; }
+export function parseAuditSummary(value: unknown, session: Session, expected: AuditWindow): AuditSummary {
+  const v = obj(value);
+  exact(v, ["schema_version", "scope", "actor_id", "checked_at", "valid_until", "window", "window_start", "window_end", "categories", "totals", "excludes"]);
+  if (v.schema_version !== 1 || v.scope !== "technical_admin" || v.actor_id !== session.user.id || !session.user.scopes.includes("technical_admin")) fail();
+  const window = choice(v.window, Object.keys(auditWindows) as AuditWindow[]);
+  if (window !== expected) fail();
+  const checked_at = stamp(v.checked_at), valid_until = stamp(v.valid_until), window_start = stamp(v.window_start), window_end = stamp(v.window_end);
+  const checked = Date.parse(checked_at), until = Date.parse(valid_until);
+  if (checked > Date.now() + 5000 || until <= Date.now() || until !== checked + 60000 || Date.parse(window_end) !== checked || Date.parse(window_start) !== checked - auditWindows[window]) fail();
+  const rows = array(v.categories, auditCategories.length);
+  if (rows.length !== auditCategories.length) fail();
+  const categories = rows.map((item, i) => {
+    const r = obj(item); exact(r, ["key", ...auditOutcomes]);
+    if (choice(r.key, auditCategories) !== auditCategories[i]) fail();
+    return { key: auditCategories[i], success: total(r.success), denied: total(r.denied), other: total(r.other) };
+  });
+  const sums = obj(v.totals); exact(sums, auditOutcomes);
+  const totals = { success: total(sums.success), denied: total(sums.denied), other: total(sums.other) };
+  for (const outcome of auditOutcomes) if (categories.reduce((a, c) => a + c[outcome], 0) !== totals[outcome]) fail();
+  const excludes = array(v.excludes, auditExcludes.length);
+  if (excludes.length !== auditExcludes.length || excludes.some((item, i) => item !== auditExcludes[i])) fail();
+  return { schema_version: 1, scope: "technical_admin", actor_id: session.user.id, checked_at, valid_until, window, window_start, window_end, categories, totals, excludes: auditExcludes };
+}
+export async function readAuditSummary(session: Session, window: AuditWindow, signal: AbortSignal): Promise<AuditSummary> {
+  if (!session.user.scopes.includes("technical_admin") || !Object.hasOwn(auditWindows, window)) throw new OperationsError(403);
+  const response = await fetch("/api/v1/operations/audit-summary", { method: "POST", credentials: "same-origin", cache: "no-store", redirect: "error", signal, headers: { "Content-Type": "application/json", "X-CSRF-Token": session.csrfToken }, body: JSON.stringify({ scope: "technical_admin", window }) });
+  if (!response.ok) throw new OperationsError(response.status);
+  return parseAuditSummary(await response.json(), session, window);
+}

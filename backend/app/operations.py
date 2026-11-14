@@ -37,6 +37,26 @@ class Read(BaseModel):
     scope: Literal["technical_admin"]
 
 
+AUDIT_CATEGORIES = (
+    "sign_in",
+    "denied_access",
+    "access_change",
+    "recovery_admin",
+    "other_admin",
+    "operations_read",
+    "other_security",
+)
+AUDIT_OUTCOMES = ("success", "denied", "other")
+AUDIT_WINDOWS = {"24h": 24, "7d": 168}
+AUDIT_EXCLUDES = ("content_domain_events", "overdue_jobs", "capacity", "per_event_detail")
+
+
+class AuditSummaryRead(BaseModel):
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True)
+    scope: Literal["technical_admin"]
+    window: Literal["24h", "7d"]
+
+
 def safe_version(value):
     return (
         value
@@ -139,5 +159,73 @@ def read(db, token, csrf, body):
         user=user,
         scope="technical_admin",
         metadata={"jobs_sampled": min(len(statuses), 25)},
+    )
+    return identity.Result(200, payload)
+
+
+def audit_summary(db, token, csrf, body):
+    """Count-only security/administrative audit summary through the reviewed projection.
+
+    The runtime role has no audit SELECT; the only read path is the SECURITY DEFINER function
+    from migration 0037, which returns aggregates for a closed catalogue and nothing else.
+    """
+    current = authority(
+        db, token, csrf, body.scope, event_prefix="operations", scope_lock="installation"
+    )
+    if isinstance(current, identity.Result):
+        return current
+    user, _ = current
+    if db.get_bind().dialect.name != "postgresql":
+        # The projection exists only in PostgreSQL; never fabricate counts elsewhere.
+        return identity.Result(503, {"detail": "Audit summary is unavailable"})
+    db.execute(text("SET LOCAL lock_timeout='2s'"))
+    db.execute(text("SET LOCAL statement_timeout='5s'"))
+    checked = identity.now_utc()
+    hours = AUDIT_WINDOWS[body.window]
+    rows = db.execute(
+        text(
+            "SELECT category_key, outcome_key, event_count FROM public.butler_audit_summary(:a,:e,:h)"
+        ),
+        {"a": token, "e": checked, "h": hours},
+    ).all()
+    counts = {(category, outcome): 0 for category in AUDIT_CATEGORIES for outcome in AUDIT_OUTCOMES}
+    for category, outcome, number in rows:
+        if (category, outcome) not in counts or not isinstance(number, int) or number < 0:
+            raise RuntimeError("Unexpected audit summary row")
+        counts[(category, outcome)] = number
+    now = identity.now_utc()
+    if identity.resolve(db, token, refresh_session=True) is None or now >= checked + timedelta(
+        seconds=60
+    ):
+        return identity.denied(db, 401, "operations.session_denied", user=user)
+    payload = {
+        "schema_version": 1,
+        "scope": "technical_admin",
+        "actor_id": str(user.id),
+        "checked_at": stamp(checked),
+        "valid_until": stamp(checked + timedelta(seconds=60)),
+        "window": body.window,
+        "window_start": stamp(checked - timedelta(hours=hours)),
+        "window_end": stamp(checked),
+        "categories": [
+            {
+                "key": category,
+                **{outcome: counts[(category, outcome)] for outcome in AUDIT_OUTCOMES},
+            }
+            for category in AUDIT_CATEGORIES
+        ],
+        "totals": {
+            outcome: sum(counts[(category, outcome)] for category in AUDIT_CATEGORIES)
+            for outcome in AUDIT_OUTCOMES
+        },
+        "excludes": list(AUDIT_EXCLUDES),
+    }
+    identity.audit(
+        db,
+        "operations.audit_summary",
+        "success",
+        user=user,
+        scope="technical_admin",
+        metadata={"window": body.window},
     )
     return identity.Result(200, payload)
