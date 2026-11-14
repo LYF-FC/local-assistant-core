@@ -16,11 +16,12 @@ import time
 from datetime import timedelta
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from sqlalchemy import and_, or_, select, text
+from sqlalchemy import or_, select, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app import identity
 from app import notifications as notes
+from app import queue_eligibility as eligible
 from app import task_reminders as reminders
 from app.config import settings
 from app.db import SessionLocal
@@ -72,14 +73,8 @@ def enqueue_pass(db, limit):
     due = list(
         db.scalars(
             select(TaskReminder)
-            .outerjoin(
-                NotificationDelivery,
-                and_(
-                    NotificationDelivery.reminder_id == TaskReminder.id,
-                    NotificationDelivery.cycle == TaskReminder.cycle,
-                ),
-            )
-            .where(TaskReminder.state == "delivered", NotificationDelivery.id.is_(None))
+            .outerjoin(NotificationDelivery, eligible.enqueue_on())
+            .where(eligible.notification_enqueue_eligible())
             .order_by(TaskReminder.id)
             .limit(limit)
             .with_for_update(of=TaskReminder)
@@ -93,7 +88,6 @@ def enqueue_pass(db, limit):
 
 def candidates(db, limit):
     now = identity.now_utc()
-    stale = now - notes.IN_FLIGHT_DEADLINE
     return list(
         db.execute(
             select(
@@ -101,27 +95,11 @@ def candidates(db, limit):
                 NotificationDelivery.owner_id,
                 NotificationDelivery.scope_key,
             )
-            .outerjoin(
-                ReminderPreferences, ReminderPreferences.owner_id == NotificationDelivery.owner_id
-            )
+            .outerjoin(ReminderPreferences, eligible.preferences_on_delivery())
+            # A delivery parked as paused stays out of the due set until its owner resumes;
+            # otherwise the oldest paused rows would fill every bounded pass (E5/E6 carry it).
             .where(
-                # A delivery parked as paused stays out of the due set until its owner resumes;
-                # otherwise the oldest paused rows would fill every bounded pass.
-                or_(
-                    NotificationDelivery.reason.is_distinct_from("paused"),
-                    ReminderPreferences.enabled.is_distinct_from(False),
-                ),
-                or_(
-                    and_(
-                        NotificationDelivery.state.in_(("pending", "unknown")),
-                        NotificationDelivery.next_attempt_at <= now,
-                        NotificationDelivery.attempt_started_at.is_(None),
-                    ),
-                    and_(
-                        NotificationDelivery.state == "pending",
-                        NotificationDelivery.attempt_started_at <= stale,
-                    ),
-                ),
+                or_(eligible.notification_due(now), eligible.notification_in_flight_expired(now))
             )
             .order_by(NotificationDelivery.next_attempt_at, NotificationDelivery.id)
             .limit(limit)

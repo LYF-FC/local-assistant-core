@@ -10,6 +10,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app import approvals, identity
+from app import queue_eligibility as eligible
 from app.config import settings
 from app.models import Approval, AuditEvent, DurableJob, JobOutbox, User
 
@@ -132,12 +133,7 @@ def claim(db: Session) -> Claim | None:
     now = identity.now_utc()
     delivery = db.scalar(
         select(JobOutbox)
-        .where(
-            or_(
-                (JobOutbox.state == "pending") & (JobOutbox.available_at <= now),
-                (JobOutbox.state == "leased") & (JobOutbox.lease_until <= now),
-            )
-        )
+        .where(or_(eligible.job_pending(now), eligible.job_lease_expired(now)))
         .order_by(JobOutbox.available_at, JobOutbox.id)
         .with_for_update(skip_locked=True)
         .limit(1)

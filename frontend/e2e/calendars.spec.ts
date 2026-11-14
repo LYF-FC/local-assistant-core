@@ -145,6 +145,8 @@ test.describe.serial('operations overview',()=>{
 // The overview's own status is a direct child of the region; the audit summary keeps a separate status in its own region.
 const overviewStatus=(page:Page)=>panel(page).locator(':scope > [role="status"]');
 const auditStatus=(page:Page)=>panel(page).getByRole('region',{name:'Audit summary',exact:true}).getByRole('status');
+const workRegion=(page:Page)=>panel(page).getByRole('region',{name:'Work status',exact:true});
+const workStatus=(page:Page)=>workRegion(page).getByRole('status');
  async function enter(page:Page,slug='browser-finance-admin'){
   let csrf:string;
   if(adminCookies&&slug==='browser-finance-admin'){
@@ -174,6 +176,21 @@ const auditStatus=(page:Page)=>panel(page).getByRole('region',{name:'Audit summa
   let reads=0;page.on('request',r=>{if(r.url().endsWith('/api/v1/operations/read'))reads++;});await page.clock.fastForward(61000);await expect(overviewStatus(page)).toContainText('expired');await expect(auditStatus(page)).toContainText('Audit summary hidden');expect(reads).toBe(0);
   let release!:()=>void,started!:()=>void;const held=new Promise<void>(r=>release=r),seen=new Promise<void>(r=>started=r);await page.route('**/api/v1/operations/read',async route=>{const response=await route.fetch();started();await held;try{await route.fulfill({response});}catch{/* Navigation cancelled this observation. */}});await panel(page).getByRole('button',{name:'Reload operations observations',exact:true}).click();await seen;await page.getByRole('button',{name:'Memory',exact:true}).click();release();await page.unroute('**/api/v1/operations/read');await page.getByRole('button',{name:'Operations overview',exact:true}).click();await expect(panel(page).getByRole('region',{name:'Service observations',exact:true})).toHaveCount(0);
  });
+ test('work status shows queue-level states only, with exact copy, and clears when hidden',async({page})=>{
+  await enter(page);await expect(workRegion(page).getByRole('list',{name:'Queue states',exact:true})).toHaveCount(0);
+  const response=page.waitForResponse(r=>r.url().endsWith('/api/v1/operations/work-status'));await workRegion(page).getByRole('button',{name:'Load work status',exact:true}).click();const result=await response;
+  expect(result.status()).toBe(200);expect(result.headers()['cache-control']).toBe('no-store');
+  const body=await result.json();expect(Object.keys(body).sort()).toEqual(['actor_id','checked_at','excludes','not_observed','queues','schema_version','scope','valid_until']);
+  expect(body.queues.map((q:{key:string})=>q.key)).toEqual(['approved_jobs','reminders','notifications','filing']);
+  for(const q of body.queues){expect(Object.keys(q).sort()).toEqual(['key','state']);expect(['none_observed','overdue','stalled']).toContain(q.state);}
+  expect(body.queues[1].state).not.toBe('stalled');expect(body.not_observed).toEqual(['calendar_sync','routines','work']);
+  const list=workRegion(page).getByRole('list',{name:'Queue states',exact:true});await expect(list).toBeVisible();await expect(workStatus(page)).toContainText('Work status loaded');
+  await expect(workRegion(page).getByRole('list',{name:'Not observed queues',exact:true})).toContainText('Calendar sync: Not observed by this view.');
+  if(body.queues[2].state==='overdue')await expect(list.getByRole('listitem').nth(2)).toContainText('Notification queue work (queuing, processing or reconciling a delivery) has waited longer than the grace period. This does not mean a notification will be sent: a queued delivery may still be paused, deferred or cancelled.');
+  const text=(await workRegion(page).innerText()).toLowerCase();for(const phrase of ['unsent','pending send','missed notification','will be delivered'])expect(text).not.toContain(phrase);
+  await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'));});
+  await expect(workStatus(page)).toContainText('Work status hidden');await expect(list).toHaveCount(0);
+ });
  test('operations rejects malformed receipts, clears denial and honors actual session revocation',async({page})=>{
   const csrf=await enter(page);await reload(page);
   await page.route('**/api/v1/operations/read',async route=>{const response=await route.fetch(),body=await response.json();body.actor_id='99999999-9999-4999-8999-999999999999';await route.fulfill({json:body});});await panel(page).getByRole('button',{name:'Reload operations observations',exact:true}).click();await expect(overviewStatus(page)).toContainText('unavailable or invalid');await expect(panel(page).getByRole('region',{name:'Service observations',exact:true})).toHaveCount(0);await page.unroute('**/api/v1/operations/read');
@@ -182,7 +199,7 @@ const auditStatus=(page:Page)=>panel(page).getByRole('region',{name:'Audit summa
   expect((await post(page,csrf,'/api/v1/auth/logout',{})).status).toBe(200);await panel(page).getByRole('button',{name:'Reload operations observations',exact:true}).click();await expect(page.getByRole('button',{name:'Sign in',exact:true})).toBeVisible();await expect(panel(page)).toHaveCount(0);
  });
  test('finance membership alone exposes no operations view and server denies access',async({page})=>{
-  const csrf=await enter(page,'browser-finance-peer');await expect(page.getByRole('button',{name:'Operations overview',exact:true})).toHaveCount(0);expect((await post(page,csrf,'/api/v1/operations/read',{scope:'technical_admin'})).status).toBe(403);
+  const csrf=await enter(page,'browser-finance-peer');await expect(page.getByRole('button',{name:'Operations overview',exact:true})).toHaveCount(0);expect((await post(page,csrf,'/api/v1/operations/read',{scope:'technical_admin'})).status).toBe(403);expect((await post(page,csrf,'/api/v1/operations/work-status',{scope:'technical_admin'})).status).toBe(403);
  });
 });
 

@@ -87,7 +87,7 @@ The feature dashboard is an offline generated documentation artifact, outside th
 
 ### Spec066 (merged PR #21) — bounded operations observations
 
-[Operations overview](docs/OPERATIONS_OVERVIEW.md) reuses current technical-admin session/CSRF/installation membership locks and existing SELECT grants. Fixed runtime package metadata/configuration states and a caller-owned technical-scope job status sample feed a strict ephemeral UI. No audit SELECT, payload query, filesystem/network/service probe, new grant/schema or execution capability. Metadata-only read audit must commit before release; failures withhold all observations.
+[Operations overview](docs/OPERATIONS_OVERVIEW.md) reuses current technical-admin session/CSRF/installation membership locks and existing SELECT grants. Fixed runtime package metadata/configuration states and a caller-owned technical-scope job status sample feed a strict ephemeral UI. No audit SELECT, payload query, filesystem/network/service probe, new grant/schema or execution capability. Metadata-only read audit must commit before release; failures withhold all observations. Spec 073 work status (branch engineering) reports queue-level overdue/stalled states from the workers' own shared eligibility rules (`app/queue_eligibility.py`), with observer-only eligible-since guards and existing SELECT grants; it is not a worker-health check.
 
 
 ### Spec067 (merged PR #22) — scoped task/document search

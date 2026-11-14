@@ -22,3 +22,12 @@ def audit_summary(
     db: Annotated[Session, Depends(get_db)],
 ):
     return execute(db, request, lambda token, csrf: operations.audit_summary(db, token, csrf, body))
+
+
+@router.post("/work-status")
+def work_status(
+    body: operations.WorkStatusRead,
+    request: Request,
+    db: Annotated[Session, Depends(get_db)],
+):
+    return execute(db, request, lambda token, csrf: operations.work_status(db, token, csrf, body))

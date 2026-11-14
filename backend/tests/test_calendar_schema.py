@@ -65,7 +65,7 @@ def test_migration_is_the_single_head():
         if match:
             revisions[match.group(1)] = down.group(1) if down else None
     heads = set(revisions) - {value for value in revisions.values() if value}
-    assert heads == {"0037_audit_summary"}
+    assert heads == {"0038_work_status_audit_category"}
 
 
 def test_model_constraints_exist_in_the_migration(migration):

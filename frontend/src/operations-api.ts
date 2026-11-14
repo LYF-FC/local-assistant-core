@@ -107,3 +107,42 @@ export async function readAuditSummary(session: Session, window: AuditWindow, si
   if (!response.ok) throw new OperationsError(response.status);
   return parseAuditSummary(await response.json(), session, window);
 }
+
+// Spec 073: queue-level overdue/stalled work states only. Never counts, ages, owners, scopes,
+// ids, payloads, recipients, destinations, reasons or attempts; not a worker-health check.
+export const workQueues = ["approved_jobs", "reminders", "notifications", "filing"] as const;
+export const workStates = ["none_observed", "overdue", "stalled"] as const;
+export const workNotObserved = ["calendar_sync", "routines", "work"] as const;
+export const workExcludes = ["counts", "ages", "owners_and_scopes", "items", "worker_liveness", "capacity", "backups", "restore"] as const;
+export type WorkState = typeof workStates[number];
+export type WorkStatus = {
+  schema_version: 1; scope: "technical_admin"; actor_id: string; checked_at: string; valid_until: string;
+  queues: { key: typeof workQueues[number]; state: WorkState }[];
+  not_observed: typeof workNotObserved; excludes: typeof workExcludes;
+};
+export function parseWorkStatus(value: unknown, session: Session): WorkStatus {
+  const v = obj(value);
+  exact(v, ["schema_version", "scope", "actor_id", "checked_at", "valid_until", "queues", "not_observed", "excludes"]);
+  if (v.schema_version !== 1 || v.scope !== "technical_admin" || v.actor_id !== session.user.id || !session.user.scopes.includes("technical_admin")) fail();
+  const checked_at = stamp(v.checked_at), valid_until = stamp(v.valid_until);
+  const checked = Date.parse(checked_at), until = Date.parse(valid_until);
+  if (checked > Date.now() + 5000 || until <= Date.now() || until !== checked + 60000) fail();
+  const rows = array(v.queues, workQueues.length);
+  if (rows.length !== workQueues.length) fail();
+  const queues = rows.map((item, i) => {
+    const r = obj(item); exact(r, ["key", "state"]);
+    const key = choice(r.key, workQueues), state = choice(r.state, workStates);
+    if (key !== workQueues[i] || (key === "reminders" && state === "stalled")) fail();
+    return { key, state };
+  });
+  const unobserved = array(v.not_observed, workNotObserved.length), excludes = array(v.excludes, workExcludes.length);
+  if (unobserved.length !== workNotObserved.length || unobserved.some((item, i) => item !== workNotObserved[i])) fail();
+  if (excludes.length !== workExcludes.length || excludes.some((item, i) => item !== workExcludes[i])) fail();
+  return { schema_version: 1, scope: "technical_admin", actor_id: session.user.id, checked_at, valid_until, queues, not_observed: workNotObserved, excludes: workExcludes };
+}
+export async function readWorkStatus(session: Session, signal: AbortSignal): Promise<WorkStatus> {
+  if (!session.user.scopes.includes("technical_admin")) throw new OperationsError(403);
+  const response = await fetch("/api/v1/operations/work-status", { method: "POST", credentials: "same-origin", cache: "no-store", redirect: "error", signal, headers: { "Content-Type": "application/json", "X-CSRF-Token": session.csrfToken }, body: JSON.stringify({ scope: "technical_admin" }) });
+  if (!response.ok) throw new OperationsError(response.status);
+  return parseWorkStatus(await response.json(), session);
+}
