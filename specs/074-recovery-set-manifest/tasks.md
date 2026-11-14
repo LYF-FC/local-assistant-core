@@ -1,44 +1,60 @@
 # Spec 074 tasks (outline only)
 
-**Draft. No task is started or authorized.** Implementation requires a separate explicit owner authorization after the owner answers the decisions in [spec.md](spec.md) section 10 (at minimum O8; O1, O5, O6 before any real-key use). All boxes stay unchecked until that authorization exists.
+**Draft, revised after the owner decisions of 14 November 2026. Not frozen. No task is started or authorized.** Every box below stays unchecked: revising the documentation does not complete any task. The phases are distinct and each needs its own explicit owner decision.
 
-## Stage 0: preconditions
+## Phase A: specification (this document set)
 
-- [ ] T000 Owner answers O1 to O9 (or confirms the recommendations) and authorizes implementation in writing.
-- [ ] T001 Re-confirm 074 is still the next free spec identifier and re-read `main` at the implementation baseline.
+- [ ] A1 Owner review of the revised draft. (No open question remains for freezing: [spec.md](spec.md) section 10.3.)
+- [ ] A2 Separate owner decision to freeze the specification. (Recording owner decisions in the draft is not a freeze.)
 
-## Stage 1: format and key model
+## Phase B: synthetic-only implementation (not authorized; requires A2 and a separate, narrowly scoped owner authorization)
 
-- [ ] T010 Closed manifest models, canonical JSON, duplicate-key and unknown-field rejection, size limits.
-- [ ] T011 Manifest hash and MAC with the three new domains (spec 4.2).
-- [ ] T012 Key file model, namespace and installation binding, fingerprint, masked secret type.
-- [ ] T013 Tests T8 to T16, T24.
+### B0 preconditions
 
-## Stage 2: closed-set enumeration
+- [ ] B000 Written owner authorization for synthetic-only implementation.
+- [ ] B001 Re-confirm 074 is still the next free spec identifier and re-read `main` at the implementation baseline.
 
-- [ ] T020 Descriptor-relative enumeration, allowlist, mode, link and type checks, deterministic order.
-- [ ] T021 Streaming hashing with double `fstat` and bounds.
-- [ ] T022 Tests T2 to T7, T35, T36.
+### B1 format and key model
 
-## Stage 3: verification
+- [ ] B010 Closed manifest models, canonical JSON, duplicate-key and unknown-field rejection, size limits, no free-text field.
+- [ ] B011 Manifest hash, MAC and keyed fingerprint with the three new domains (spec 4.2).
+- [ ] B012 Key file model, namespace and installation binding, masked secret type.
+- [ ] B013 Tests T8 to T16, T24.
 
-- [ ] T030 Trust-input parsing and the evaluation order of spec 7.2.
-- [ ] T031 Closed output object, reason codes, exit statuses, exception boundary.
-- [ ] T032 Tests T1, T17 to T23, T25, T26, T33, T34 (including output-string absence checks).
+### B2 closed-set enumeration
 
-## Stage 4: generation
+- [ ] B020 Descriptor-relative enumeration, allowlist, invariants (including mandatory group/other read and write failures), and the single informational note `stale_temporary_present`, deterministic order (spec 3.4, 3.6).
+- [ ] B021 Pending-object refusal and two-pass change detection (spec 3.7).
+- [ ] B022 Streaming hashing with double `fstat`, limits with provenance classes, and a test-only limit injection point unreachable from the command line, environment and configuration (spec 3.8).
+- [ ] B023 Tests T2 to T7, T35 (injected limits, small fixtures, no 64 GiB data), T36, T49, T50, T52.
 
-- [ ] T040 Exclusive temporary file, no-replace atomic publication, file and directory `fsync`, cleanup.
-- [ ] T041 Tests T27 to T31 and T37 to T41 using real subprocesses, SIGKILL at controlled points and fault injection at the pre-publication steps and the directory flush.
-- [ ] T043 Informational `notes` field and tests T42, T43 (spec 7.3.1).
-- [ ] T042 Test T32 (point-in-time limitation demonstration).
+### B3 verification
 
-## Stage 5: drill and documentation
+- [ ] B030 Trust-input parsing (including `--expect-archive`) and the stage order of spec 2.5, 7.2.
+- [ ] B031 Four-field result model, freshness precedence, `verified_references`, closed output object, reason codes, exit statuses, exception boundary.
+- [ ] B032 Tests T1, T17 to T23, T25, T26, T33, T34, T44 to T48, T53, T54.
 
-- [ ] T050 Extend `scripts/test-db-restore.sh` with the real-dump drill of spec 11.3 using a synthetic key.
-- [ ] T051 Documentation page (integrity, authenticity, freshness; trust inputs; limits; custody responsibilities) and cross-references, with no status change.
-- [ ] T052 Quality gates, mutation checks of plan 1.4, hosted CI on the PR head and, separately, on the merge commit.
+### B4 generation
+
+- [ ] B040 Exclusive temporary file, no-replace atomic publication, capability detection and `filesystem_unsupported`, file and directory `fsync`, cleanup (spec 9.1).
+- [ ] B041 Tests T27 to T31 and T37 to T41 using real subprocesses, SIGKILL at controlled points and fault injection at the pre-publication steps and the directory flush; T51.
+- [ ] B042 Informational `notes` field and tests T42, T43 (spec 7.3.1).
+- [ ] B043 Test T32 (point-in-time limitation demonstration).
+
+### B5 drill and documentation
+
+- [ ] B050 Extend `scripts/test-db-restore.sh` with the real-dump drill of spec 11.3 using a synthetic key; state the limits of spec 11.8 in the drill log.
+- [ ] B051 Documentation page (integrity, authenticity, freshness and expectations; trust inputs; generation-host trust boundary; HMAC limitation; filesystem assumptions; custody responsibilities) and cross-references, with no status change.
+- [ ] B052 Quality gates, mutation checks of plan 1.4, hosted CI on the PR head and, separately, on the merge commit.
+
+## Phase C: before any real-key or real-set use (deferred, not part of this slice)
+
+- [ ] C1 Key holder, custody, storage, access, backup and loss-recovery procedure (O1b).
+- [ ] C2 Governance of the independently retained expected manifest hash (O5).
+- [ ] C3 Retention policy for manifests, backups and archives, expected-hash records, and forgetting reconciliation (O2).
+- [ ] C4 Measured resource testing and a separate owner decision on the real operational dump ceiling (O8); 64 GiB is not approved.
+- [ ] C5 Real key-generation tooling and provisioning workflow, after custody is decided (O9).
 
 ## Not tasks of this spec
 
-Restoration, key generation tooling (O9), encryption, backup scheduling or freshness services, DOC-X02, worker liveness, RPO/RTO acceptance, clean-host rehearsal.
+Restoration and staging (a later restore specification, including database binding of the installation identity and restore from the exact verified staged copy); approved-job and reminder-worker process-kill tests (a later, separate specification, O4); encryption; backup scheduling or freshness services; DOC-X02; worker liveness; RPO/RTO acceptance; clean-host rehearsal.
