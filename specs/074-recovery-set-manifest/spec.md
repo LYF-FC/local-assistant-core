@@ -256,7 +256,7 @@ Six limits (entries, object size, archive payload, key file, manifest, read buff
 - *Test limits (synthetic-only implementation):* every limit of this section must be **overridable through an internal, test-only injection point** (a parameter of the verification and generation functions), so that limit handling is exercised with **small synthetic fixtures**. The injection point is not reachable from the command line, environment or any configuration file, and is not an operator setting. **No test requires 64 GiB of data.** A passing limit test shows only that the logic reacts to the injected limit, not that any real dump of any size is handled.
 - *Real use:* until the real ceiling is decided from measured testing, the placeholder must not be presented, documented or relied on as validated capacity, and no real set may be treated as supported by it.
 
-**Three classes kept distinct:** existing-code-derived limits (above), provisional engineering limits (manifest, buffer) and the unapproved dump-ceiling placeholder and **measured operational capacity (none exists)**. Unconfirmed or provisional thresholds, and every synthetic result against them, **do not count as passing recovery evidence**.
+**Three classes kept distinct:** existing-code-derived limits (above), provisional engineering limits (manifest, buffer), the unapproved dump-ceiling placeholder, and **measured operational capacity (none exists)**. Unconfirmed or provisional thresholds, and every synthetic result against them, **do not count as passing recovery evidence**.
 
 ## 4. Manifest format (version 1)
 
@@ -717,7 +717,7 @@ The synthetic CI drill establishes a **test result for the defined hosted CI env
 1. A separate explicit owner decision to freeze this specification, and a separate narrowly scoped authorization for synthetic-only implementation.
 2. Implementation merged with PR evidence (merge commit and PR-head and merge-commit CI recorded separately).
 3. Independent verification at an exact `main` revision, with full rather than scope-reduced coverage.
-4. Owner decisions on the deferred matters of section 10.2 (key holder and custody, retained-hash governance, retention policy, dump capacity) and a reviewed procedure using them on a real set.
+4. Owner decisions on the deferred matters of section 10.2 (key holder and custody, retained-hash governance, retention policy, and a measured and separately approved dump ceiling) and a reviewed procedure using them on a real set.
 5. A later restore specification implementing the staged-restore principle, and a clean-host rehearsal on an independent compatible host (a separate gate).
 6. Owner acceptance naming environment and scope.
 
@@ -735,7 +735,8 @@ The future synthetic tests are deliberately weak evidence in these specific ways
 ## 12. Dependencies and blockers
 
 - **Dependencies:** none new. Python standard library (`hmac`, `hashlib`, `secrets`, `json`, `os`, `stat`), the already-present Pydantic models pattern, and existing modules read-only. No new package, service, schema, grant or compose change.
-- **Needed before freezing:** the owner's answer to the open question of section 10.3 (group or other read policy) and an owner decision to freeze.
-- **Needed before any implementation:** a separate explicit owner authorization (not given), after freezing.
+- **Open questions:** none remain (section 10.3). The group or other read-permission question is resolved as a mandatory failure (section 10.1).
+- **Needed before freezing:** a separate explicit owner decision to freeze this specification (not given). No further answer is outstanding.
+- **Needed before any implementation:** a separate explicit owner authorization, after freezing (not given). Freezing does not itself authorize implementation.
 - **Needed before any real-key or real-set use:** the deferred decisions of section 10.2 (O1b, retained-hash governance, retention policy, a measured and approved dump ceiling, and key tooling).
 - **Blockers for the wider recovery programme (not this slice):** an independent clean compatible host, a reviewed key-recovery policy, the restore specification, DOC-X02 reconciliation design for non-Work records.
