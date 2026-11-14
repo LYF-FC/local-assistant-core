@@ -1,18 +1,21 @@
 """Restricted-role, current-authority, audit and actual lock-wait evidence."""
 
+import re
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from datetime import timedelta
 from uuid import UUID, uuid4
 
 import pytest
-from sqlalchemy import event, select, text
+from sqlalchemy import event, or_, select, text
 from sqlalchemy.exc import DBAPIError, SQLAlchemyError
 from test_calendars import briefing, call, create, window
 
 from app import identity
 from app.manage import set_scope
-from app.models import AuthSession, CalendarRevision, CalendarSource, User
+from app.models import AuditEvent, AuthSession, CalendarRevision, CalendarSource, User
 
 pytestmark = pytest.mark.integration
 
@@ -64,14 +67,59 @@ def test_raw_mutation_and_history_seals(scenario, runtime_engine, statement):
     assert call(client, h, row, "read").json()["revision"] == 1
 
 
-def wait_for_lock(admin):
+LOCKING_SOURCE_QUERY = re.compile(
+    r"\bFROM calendar_sources\b.*\bFOR (?:NO KEY UPDATE|UPDATE|KEY SHARE|SHARE)\b", re.DOTALL
+)
+
+
+@contextmanager
+def request_backend(runtime_engine):
+    """Record the PostgreSQL backend that issues the request's locking source read."""
+    seen = threading.Event()
+    pids = []
+
+    def capture(connection, cursor, statement, parameters, context, executemany):
+        if not seen.is_set() and LOCKING_SOURCE_QUERY.search(statement):
+            pids.append(connection.connection.driver_connection.info.backend_pid)
+            seen.set()
+
+    event.listen(runtime_engine, "before_cursor_execute", capture)
+    try:
+        yield seen, pids
+    finally:
+        event.remove(runtime_engine, "before_cursor_execute", capture)
+
+
+def hold_row_lock(db, source_id):
+    """Lock one source row and return (holder pid, holder xid) for exact wait matching."""
+    locked = db.scalar(
+        select(CalendarSource).where(CalendarSource.id == source_id).with_for_update()
+    )
+    holder = db.execute(
+        text("SELECT pg_backend_pid(), pg_current_xact_id_if_assigned()::text")
+    ).one()
+    assert holder[1] is not None, "Row lock did not assign a holder transaction id"
+    return locked, holder
+
+
+def wait_for_lock(admin, backend, holder, pending):
+    """Fail unless the request's own backend is blocked by this holder's row lock."""
+    seen, pids = backend
+    if not seen.wait(timeout=10):
+        raise AssertionError("Calendar request never issued its locking source read")
     deadline = time.monotonic() + 5
     while time.monotonic() < deadline:
+        if pending.done():
+            raise AssertionError("Calendar request finished without waiting on the row lock")
         with admin() as db:
             if db.scalar(
                 text(
-                    "SELECT count(*) FROM pg_stat_activity WHERE wait_event_type='Lock' AND query LIKE '%calendar_sources%FOR %'"
-                )
+                    "SELECT EXISTS (SELECT 1 FROM pg_stat_activity a JOIN pg_locks l ON l.pid=a.pid"
+                    " WHERE a.pid=:waiter AND a.wait_event_type='Lock' AND NOT l.granted"
+                    " AND l.locktype='transactionid' AND l.transactionid::text=:xid"
+                    " AND :holder = ANY(pg_blocking_pids(a.pid)))"
+                ),
+                {"waiter": pids[0], "holder": holder[0], "xid": holder[1]},
             ):
                 return
         time.sleep(0.02)
@@ -79,18 +127,36 @@ def wait_for_lock(admin):
 
 
 @pytest.mark.parametrize("operation", ["read", "import", "briefing", "history", "export"])
-def test_session_expiry_after_actual_row_wait(scenario, monkeypatch, operation):
+def test_session_expiry_after_actual_row_wait(scenario, runtime_engine, monkeypatch, operation):
     client, h, _, admin, uid = scenario
-    row = create(client, h).json()
+    # Briefing locks only the first 26 visible active sources by UUID, and committed
+    # synthetic household_shared sources are retained across tests. A private scope is
+    # owner-only in calendars.visible(), so this user's single source is always selected.
+    scope = "member_a_private" if operation == "briefing" else "household_shared"
+    if scope != "household_shared":
+        with admin.begin() as db:
+            set_scope(db, db.get(User, uid), scope, True)
+    row = create(client, h, scope=scope).json()
     with admin() as db:
         expiry = db.scalar(select(AuthSession.expires_at).where(AuthSession.user_id == uid))
-    with ThreadPoolExecutor(max_workers=1) as pool:
+        if operation == "briefing":
+            assert list(
+                db.scalars(
+                    select(CalendarSource.id).where(
+                        CalendarSource.scope_key == scope,
+                        or_(
+                            CalendarSource.owner_id == uid,
+                            CalendarSource.scope_key == "household_shared",
+                        ),
+                        CalendarSource.state == "active",
+                    )
+                )
+            ) == [UUID(row["id"])]
+    with ThreadPoolExecutor(max_workers=1) as pool, request_backend(runtime_engine) as backend:
         with admin.begin() as db:
-            db.scalar(
-                select(CalendarSource).where(CalendarSource.id == UUID(row["id"])).with_for_update()
-            )
+            _, holder = hold_row_lock(db, UUID(row["id"]))
             if operation == "briefing":
-                pending = pool.submit(briefing, client, h)
+                pending = pool.submit(briefing, client, h, scope=scope)
             else:
                 payload = (
                     {"window": window()}
@@ -100,25 +166,37 @@ def test_session_expiry_after_actual_row_wait(scenario, monkeypatch, operation):
                     else {}
                 )
                 pending = pool.submit(call, client, h, row, operation, **payload)
-            wait_for_lock(admin)
+            wait_for_lock(admin, backend, holder, pending)
             monkeypatch.setattr(
                 identity, "now_utc", lambda: identity.aware(expiry) + timedelta(seconds=1)
             )
-        assert pending.result(timeout=5).status_code == 401
+        response = pending.result(timeout=5)
+        assert response.status_code == 401
+        assert "events" not in response.json()
     with admin() as db:
         assert db.get(CalendarSource, UUID(row["id"])).revision == 1
+        if operation == "briefing":
+            # The 401 body is the generic {"detail": "Access denied"}; the application error
+            # code is the denied audit event type. Pre-lock authority denials are anonymous,
+            # so matching this user's own initiator id selects the post-wait revalidation.
+            assert list(
+                db.scalars(
+                    select(AuditEvent.result_status).where(
+                        AuditEvent.event_type == "briefing.session_denied",
+                        AuditEvent.initiator_id == str(uid),
+                    )
+                )
+            ) == ["denied"]
 
 
-def test_actual_concurrent_stale_import_and_scope_pinning(scenario):
+def test_actual_concurrent_stale_import_and_scope_pinning(scenario, runtime_engine):
     client, h, _, admin, uid = scenario
     row = create(client, h).json()
-    with ThreadPoolExecutor(max_workers=1) as pool:
+    with ThreadPoolExecutor(max_workers=1) as pool, request_backend(runtime_engine) as backend:
         with admin.begin() as db:
-            locked = db.scalar(
-                select(CalendarSource).where(CalendarSource.id == UUID(row["id"])).with_for_update()
-            )
+            locked, holder = hold_row_lock(db, UUID(row["id"]))
             pending = pool.submit(call, client, h, row, "import", window=window())
-            wait_for_lock(admin)
+            wait_for_lock(admin, backend, holder, pending)
             with admin.begin() as revoker, pytest.raises(DBAPIError) as error:
                 revoker.execute(text("SET LOCAL lock_timeout='100ms'"))
                 revoker.execute(text("DELETE FROM user_scopes WHERE user_id=:id"), {"id": uid})
