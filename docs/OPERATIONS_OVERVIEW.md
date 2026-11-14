@@ -53,3 +53,7 @@ The client strictly validates schema, actor/scope, fixed catalogue IDs, source/s
 This batch advances existing OPS-09/RND-01 foundations. Complete monitoring, scheduled audit/scouting, unified approvals/search, real-model multilingual quality, live calendar/channel/intake/filing adapters, outage/restart acceptance, independent clean-host/key/archive recovery and separately authorized private adoption remain. All original155 scope references, original99 comparison and later/deferred ordering are preserved. The MVP is not declared finished by a green component suite.
 
 PR21 merged at `4001230471d19f83fe9c9a8ef3d6d38622381dfc`; exact head `2c5cdb27d6dd9a24ba54b17d925dc5f70fa4d507` run42880083517 passed all six jobs. Initial main push run42882633058 was in progress when checked; no full-main/host certificate is inferred.
+
+## Recovery-set manifest tool (spec 074, synthetic-only)
+
+An offline `generate`/`verify` command for a backup-set manifest is documented in [RECOVERY_SET.md](RECOVERY_SET.md). It verifies integrity and authenticity of a defined backup set only; it is not a backup-freshness observation, not a restoration or recovery-readiness check and not an RPO/RTO measure, and it changes no OPS or recovery status here.

@@ -11,41 +11,41 @@
 
 ### B0 preconditions
 
-- [ ] B000 Written owner authorization for synthetic-only implementation.
-- [ ] B001 Re-confirm 074 is still the next free spec identifier and re-read `main` at the implementation baseline.
+- [x] B000 Written owner authorization for synthetic-only implementation. Authorized by written owner instruction of 14 November 2026 (Phase B, synthetic-only, B010 to B052).
+- [x] B001 Re-confirm 074 is still the next free spec identifier and re-read `main` at the implementation baseline. Intent satisfied at main `355fd6fce2cb6d4874163c6fc377852c9550d104` (merge of PR #39): 074 is the unique assigned identifier, 075 is the next free one, frozen revision and freeze commit are ancestors, no intervening changes or new dependencies.
 
 ### B1 format and key model
 
-- [ ] B010 Closed manifest models, canonical JSON, duplicate-key and unknown-field rejection, size limits, no free-text field.
-- [ ] B011 Manifest hash, MAC and keyed fingerprint with the three new domains (spec 4.2).
-- [ ] B012 Key file model, namespace and installation binding, masked secret type.
-- [ ] B013 Tests T8 to T16, T24.
+- [x] B010 Closed manifest models, canonical JSON, duplicate-key and unknown-field rejection, size limits, no free-text field.
+- [x] B011 Manifest hash, MAC and keyed fingerprint with the three new domains (spec 4.2).
+- [x] B012 Key file model, namespace and installation binding, masked secret type.
+- [x] B013 Tests T8 to T16, T24.
 
 ### B2 closed-set enumeration
 
-- [ ] B020 Descriptor-relative enumeration, allowlist, invariants (including mandatory group/other read and write failures), and the single informational note `stale_temporary_present`, deterministic order (spec 3.4, 3.6).
-- [ ] B021 Pending-object refusal and two-pass change detection (spec 3.7).
-- [ ] B022 Streaming hashing with double `fstat`, limits with provenance classes, and a test-only limit injection point unreachable from the command line, environment and configuration (spec 3.8).
-- [ ] B023 Tests T2 to T7, T35 (injected limits, small fixtures, no 64 GiB data), T36, T49, T50, T52.
+- [x] B020 Descriptor-relative enumeration, allowlist, invariants (including mandatory group/other read and write failures), and the single informational note `stale_temporary_present`, deterministic order (spec 3.4, 3.6).
+- [x] B021 Pending-object refusal and two-pass change detection (spec 3.7).
+- [x] B022 Streaming hashing with double `fstat`, limits with provenance classes, and a test-only limit injection point unreachable from the command line, environment and configuration (spec 3.8).
+- [x] B023 Tests T2 to T7, T35 (injected limits, small fixtures, no 64 GiB data), T36, T49, T50, T52.
 
 ### B3 verification
 
-- [ ] B030 Trust-input parsing (including `--expect-archive`) and the stage order of spec 2.5, 7.2.
-- [ ] B031 Four-field result model, freshness precedence, `verified_references`, closed output object, reason codes, exit statuses, exception boundary.
-- [ ] B032 Tests T1, T17 to T23, T25, T26, T33, T34, T44 to T48, T53, T54.
+- [x] B030 Trust-input parsing (including `--expect-archive`) and the stage order of spec 2.5, 7.2.
+- [x] B031 Four-field result model, freshness precedence, `verified_references`, closed output object, reason codes, exit statuses, exception boundary.
+- [x] B032 Tests T1, T17 to T23, T25, T26, T33, T34, T44 to T48, T53, T54.
 
 ### B4 generation
 
-- [ ] B040 Exclusive temporary file, no-replace atomic publication, capability detection and `filesystem_unsupported`, file and directory `fsync`, cleanup (spec 9.1).
-- [ ] B041 Tests T27 to T31 and T37 to T41 using real subprocesses, SIGKILL at controlled points and fault injection at the pre-publication steps and the directory flush; T51.
-- [ ] B042 Informational `notes` field and tests T42, T43 (spec 7.3.1).
-- [ ] B043 Test T32 (point-in-time limitation demonstration).
+- [x] B040 Exclusive temporary file, no-replace atomic publication, capability detection and `filesystem_unsupported`, file and directory `fsync`, cleanup (spec 9.1).
+- [x] B041 Tests T27 to T31 and T37 to T41 using real subprocesses, SIGKILL at controlled points and fault injection at the pre-publication steps and the directory flush; T51.
+- [x] B042 Informational `notes` field and tests T42, T43 (spec 7.3.1).
+- [x] B043 Test T32 (point-in-time limitation demonstration).
 
 ### B5 drill and documentation
 
-- [ ] B050 Extend `scripts/test-db-restore.sh` with the real-dump drill of spec 11.3 using a synthetic key; state the limits of spec 11.8 in the drill log.
-- [ ] B051 Documentation page (integrity, authenticity, freshness and expectations; trust inputs; generation-host trust boundary; HMAC limitation; filesystem assumptions; custody responsibilities) and cross-references, with no status change.
-- [ ] B052 Quality gates, mutation checks of plan 1.4, hosted CI on the PR head and, separately, on the merge commit.
+- [ ] B050 Extend `scripts/test-db-restore.sh` with the real-dump drill of spec 11.3 using a synthetic key; state the limits of spec 11.8 in the drill log. _Written, not yet executed against PostgreSQL: the extension is in `scripts/test-db-restore.sh` and its shell logic ran against a stubbed docker and a synthetic file only; the real-dump drill needs the hosted `postgres:17` job (no Docker daemon was available for the local run)._
+- [x] B051 Documentation page (integrity, authenticity, freshness and expectations; trust inputs; generation-host trust boundary; HMAC limitation; filesystem assumptions; custody responsibilities) and cross-references, with no status change.
+- [ ] B052 Quality gates, mutation checks of plan 1.4, hosted CI on the PR head and, separately, on the merge commit. _Local quality gates and mutation checks run (see the implementation report); hosted CI on the PR head and the merge commit has not been run, so this stays open._
 
 ## Phase C: before any real-key or real-set use (deferred, not part of this slice)
 
