@@ -1,13 +1,13 @@
 # Spec 074 tasks (outline only)
 
-**Draft, revised after the owner decisions of 14 November 2026. Not frozen. No task is started or authorized.** Every box below stays unchecked: revising the documentation does not complete any task. The phases are distinct and each needs its own explicit owner decision.
+**Specification FROZEN (owner decision of 14 November 2026; frozen revision is the content of commit `f903237a69e6e2eeeef8b057abef3fc618a27630`). Phase A is closed. No implementation task is started or authorized, and every Phase B and C box stays unchecked.** The phases are distinct and each needs its own explicit owner decision; the freeze is not an implementation authorization.
 
 ## Phase A: specification (this document set)
 
-- [ ] A1 Owner review of the revised draft. (No open question remains for freezing: [spec.md](spec.md) section 10.3.)
-- [ ] A2 Separate owner decision to freeze the specification. (Recording owner decisions in the draft is not a freeze.)
+- [x] A1 Owner review of the revised specification. Done 14 November 2026: the owner reviewed and approved it. (No open question remained: [spec.md](spec.md) section 10.3.)
+- [x] A2 Owner decision to freeze the specification. Done 14 November 2026: frozen; frozen revision is the content of commit `f903237a69e6e2eeeef8b057abef3fc618a27630` (see the freeze record in [spec.md](spec.md)). This is not an implementation authorization.
 
-## Phase B: synthetic-only implementation (not authorized; requires A2 and a separate, narrowly scoped owner authorization)
+## Phase B: synthetic-only implementation (not authorized; requires the frozen specification (A2, done) and a separate, narrowly scoped owner authorization)
 
 ### B0 preconditions
 

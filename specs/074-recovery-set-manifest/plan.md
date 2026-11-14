@@ -1,8 +1,8 @@
 # Spec 074 plan, checklist and analysis
 
-**Draft, revised after the owner decisions of 14 November 2026. Not frozen and not approved for implementation. Nothing here is implemented, verified, merged or accepted, and this document does not authorize implementation.** It accompanies [spec.md](spec.md) and follows the "Plan / analyze" pattern of spec 071. Freezing the specification and authorizing a narrowly scoped synthetic-only implementation are each a separate explicit owner decision.
+**Accompanies a FROZEN specification (owner freeze decision of 14 November 2026; frozen revision is the content of commit `f903237a69e6e2eeeef8b057abef3fc618a27630`, see the freeze record in [spec.md](spec.md)). Nothing here is implemented, verified, merged or accepted, and this document does not authorize implementation.** It follows the "Plan / analyze" pattern of spec 071. Freezing did not authorize implementation: a narrowly scoped synthetic-only implementation needs a separate explicit owner authorization, not given.
 
-## 1. Plan (proposal; conditional on a future freeze and implementation authorization)
+## 1. Plan (proposal; conditional on a future, separate implementation authorization)
 
 ### 1.1 Shape
 
@@ -39,7 +39,7 @@ New: `backend/app/recovery_set/*`, `backend/tests/test_recovery_set_*.py`, a syn
 
 | Phase | State | What it needs |
 |---|---|---|
-| Specification (this draft) | Draft, revised after owner decisions | An owner review and a separate owner decision to freeze (no open question remains) |
+| Specification | **Frozen** 14 November 2026 (revision of commit `f903237a69e6e2eeeef8b057abef3fc618a27630`) | Done. Owner review and freeze decision recorded |
 | Synthetic-only implementation | **Not authorized** | A frozen specification and a separate, narrowly scoped owner authorization |
 | Real-key or real-set use | Not possible under this specification | The deferred decisions of spec 10.2 |
 | Restore and staging | Out of scope | A later restore specification |
@@ -138,11 +138,12 @@ New: `backend/app/recovery_set/*`, `backend/tests/test_recovery_set_*.py`, a syn
 10. **Revision note (14 November 2026).** This draft was revised to incorporate the owner decisions and corrections: the complete state model and freshness precedence, the keyed-fingerprint wording, the generation-host trust boundary, the invariant/assumption/informational/compatibility separation, the no-replace publication primitive and unsupported-filesystem behaviour, archive quiescence, the scope and assurance statement, the synthetic-drill limits and the limit-provenance classes. Earlier revisions corrected G1, G5 and G7 by publication stage and defined the `notes` field. No deferred decision was resolved.
 11. **Second revision (14 November 2026, final owner decisions).** `--expect-archive` is mandatory on every `generate` and `verify`; hard-link and group/other write rejection are mandatory; the `expectations` field is approved; a supplied expected-hash mismatch always fails and `--require-freshness` only requires a hash; the key-authenticated installation identity is part of authenticity and the expected-UUID comparison belongs to `expectations`; reason codes now have complete definitions (spec 7.3.0). Permissions were reworked into integrity, confidentiality, assumptions and compatibility (spec 3.6.1) and the group/other **read** policy was left explicitly unresolved at that revision with no confidentiality claim (resolved in the third revision below). The 64 GiB dump ceiling is an unapproved placeholder, and the synthetic implementation uses small fixtures with test-only injected limits.
 12. **Third revision (14 November 2026, final permission decision).** Group or other **read** permission on recovery-set files, `SET`, `archive/` and the manifest file is a mandatory failure, in addition to the already mandatory group/other write and hard-link failures; the key file rule is unchanged. The informational `set_mode_group_or_other_readable` note is removed, so the only note is `stale_temporary_present`. The unresolved read-permission question is removed from the open items and the freeze blockers. Reason-code definitions, state and exit behaviour, T43 and T52, the plan and the tasks were updated to match.
+13. **Freeze (14 November 2026).** The owner reviewed and approved the specification and decided to freeze it. The frozen revision is the content of commit `f903237a69e6e2eeeef8b057abef3fc618a27630`; the freeze commit changes only status wording, the freeze record and the freeze-related plan and task entries. Baseline check: the only commits on `main` not in this branch are PR #38, documentation only. Deferred decisions and the unapproved 64 GiB placeholder are unchanged. No implementation is authorized.
 
 ### 4.4 Open items
 
-No question remains open for freezing (spec 10.3). The owner has resolved `--expect-archive` (mandatory), hard-link, group/other write and group/other read rejection (mandatory, for recovery-set files and the manifest), the `expectations` field (approved) and the dump ceiling (not approved, deferred). The deferred decisions of spec 10.2 do not block a synthetic-only implementation, which uses small fixtures and injected test limits; they block real-key and real-set use. Freezing and implementation each remain a separate explicit owner decision, neither given.
+The specification is frozen (14 November 2026) and no question remains open (spec 10.3). The owner has resolved `--expect-archive` (mandatory), hard-link, group/other write and group/other read rejection (mandatory, for recovery-set files and the manifest), the `expectations` field (approved) and the dump ceiling (not approved, deferred). The deferred decisions of spec 10.2 do not block a synthetic-only implementation, which uses small fixtures and injected test limits; they block real-key and real-set use. Freezing was decided by the owner on 14 November 2026; implementation remains a separate explicit owner authorization, not given.
 
 ## 5. Statement of non-action
 
-This draft adds only the three files under `specs/074-recovery-set-manifest/`. It contains no code, test, migration, configuration, key, credential or generated file, and does not change any status, count or gate.
+This specification adds only the three files under `specs/074-recovery-set-manifest/`. It contains no code, test, migration, configuration, key, credential or generated file, and does not change any status, count or gate.

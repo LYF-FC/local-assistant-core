@@ -1,10 +1,14 @@
 # Spec 074: Recovery-set manifest and offline verification
 
-**Status: draft, revised after owner decisions of 14 November 2026. Not frozen, not approved for implementation. Nothing here is implemented, verified, merged or accepted.** Recording owner decisions does not freeze this specification and is not authorization to implement; freezing and a narrowly scoped synthetic-only implementation each need a separate explicit owner decision. Gate 11 (MVP-05), Gate 6 (DOC-X02) and Gate 10 stay open and unaccepted, and no register row, count, priority, gate or acceptance status changes.
+**Status: FROZEN (owner decision of 14 November 2026). Not implemented, not verified, not merged, not accepted. Freezing is not implementation authorization: implementation, including synthetic-only implementation, requires a separate explicit owner instruction.** Gate 11 (MVP-05), Gate 6 (DOC-X02) and Gate 10 stay open and unaccepted, and no register row, count, priority, gate or acceptance status changes.
+
+> **Freeze record.** On 14 November 2026 the owner reviewed this specification and explicitly approved it and decided to freeze it. **The frozen revision is the content of commit `f903237a69e6e2eeeef8b057abef3fc618a27630`** on branch `codex/spec-074-recovery-set-manifest` (the revision the owner reviewed, after the owner decisions and corrections of 14 November 2026). The commit that records this freeze changes only the status wording, this record and the freeze-related task and plan entries; it does not alter the specification's requirements, interfaces, decisions, deferrals or limitations. Any later change to the substance of this specification needs a new explicit owner decision and a new recorded revision. Baseline check at freeze: `main` is `e3e4d3d1da598f178068a32bf458ce4a7ccf4dd2`; the four commits on `main` not in this branch are PR #38 (documentation reconciliation of specs 071 to 073, project status and generated overview files) and touch no file, interface, migration, dependency or assumption of this specification; the migration head on `main` is still `0038_work_status_audit_category`.
+>
+> **Freeze does not authorize:** implementation of any kind; real key generation, provisioning or custody; real recovery-set generation or verification; operational use or recovery-readiness claims; any change to migrations, schemas, permissions, runtime configuration or deployment; any change to Gate 10, Gate 11, OPS-09, OPS-10, DOC-X02 or wider recovery status. **All deferred decisions of section 10.2 remain deferred, and the 64 GiB figure remains an unapproved placeholder.**
 
 Drafting baseline: `main` at `4a7e62468196fff913df02ac4fb6f60ae7759b83` (merge of PR #37). `main` has since advanced to `e3e4d3d1da598f178068a32bf458ce4a7ccf4dd2` (merge of PR #38, documentation only, touching no file this spec depends on). Companion documents: [plan.md](plan.md) (plan, checklist, analysis) and [tasks.md](tasks.md) (task outline, none started).
 
-This draft follows the repository workflow (specify, clarify, plan, checklist, tasks, analyze): sections 1 to 9 specify, section 10 records the owner's decisions, deferrals and the questions that remain, and the plan, checklist and analysis are in `plan.md`.
+This specification followed the repository workflow (specify, clarify, plan, checklist, tasks, analyze): sections 1 to 9 specify, section 10 records the owner's decisions, deferrals and the questions that remain, and the plan, checklist and analysis are in `plan.md`.
 
 ## 0. Scope and assurance statement
 
@@ -564,7 +568,7 @@ Nothing leaves the private environment. The tool opens no network connection and
 
 ### 10.1 Recorded owner decisions (14 November 2026)
 
-These record **approved design direction**. They do not freeze this specification, and none authorizes implementation.
+These record the **approved design direction** on which the frozen revision rests. None authorizes implementation.
 
 | ID | Decision | Status |
 |---|---|---|
@@ -607,7 +611,7 @@ Note on O8: the six limits approved provisionally are archive entries, archive o
 
 **None remain for freezing.** The earlier question about group or other read permission is resolved: it is a mandatory failure (section 10.1). Resolved questions: `--expect-archive` is mandatory; hard-link, group or other write and group or other read rejection are mandatory; the `expectations` field is approved; the dump ceiling is not approved and is deferred. The deferred decisions of section 10.2 are not questions for freezing; they block real-key and real-set use.
 
-Freezing remains a separate explicit owner decision, and implementation a further, separate authorization. Neither has been given.
+The owner froze this specification on 14 November 2026 (see the freeze record at the top). Implementation remains a further, separate authorization that has **not** been given.
 
 ## 11. Acceptance criteria, adversarial tests and evidence boundaries
 
@@ -714,7 +718,7 @@ The synthetic CI drill establishes a **test result for the defined hosted CI env
 
 ### 11.7 What would still be required, in order
 
-1. A separate explicit owner decision to freeze this specification, and a separate narrowly scoped authorization for synthetic-only implementation.
+1. A separate, narrowly scoped explicit owner authorization for synthetic-only implementation. (The owner's freeze decision of 14 November 2026 is recorded; it is not an implementation authorization.)
 2. Implementation merged with PR evidence (merge commit and PR-head and merge-commit CI recorded separately).
 3. Independent verification at an exact `main` revision, with full rather than scope-reduced coverage.
 4. Owner decisions on the deferred matters of section 10.2 (key holder and custody, retained-hash governance, retention policy, and a measured and separately approved dump ceiling) and a reviewed procedure using them on a real set.
@@ -736,7 +740,7 @@ The future synthetic tests are deliberately weak evidence in these specific ways
 
 - **Dependencies:** none new. Python standard library (`hmac`, `hashlib`, `secrets`, `json`, `os`, `stat`), the already-present Pydantic models pattern, and existing modules read-only. No new package, service, schema, grant or compose change.
 - **Open questions:** none remain (section 10.3). The group or other read-permission question is resolved as a mandatory failure (section 10.1).
-- **Needed before freezing:** a separate explicit owner decision to freeze this specification (not given). No further answer is outstanding.
-- **Needed before any implementation:** a separate explicit owner authorization, after freezing (not given). Freezing does not itself authorize implementation.
+- **Freezing:** done. The owner decided to freeze this specification on 14 November 2026 (freeze record at the top). No further answer was outstanding.
+- **Needed before any implementation:** a separate explicit owner authorization (not given). Freezing does not itself authorize implementation.
 - **Needed before any real-key or real-set use:** the deferred decisions of section 10.2 (O1b, retained-hash governance, retention policy, a measured and approved dump ceiling, and key tooling).
 - **Blockers for the wider recovery programme (not this slice):** an independent clean compatible host, a reviewed key-recovery policy, the restore specification, DOC-X02 reconciliation design for non-Work records.
