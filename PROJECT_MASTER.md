@@ -126,7 +126,8 @@ PR index: #1 scope reconciliation (docs); #2 spec 050; #3 spec 051; #4 spec 052;
 ### Gate 10 — Operations and restart (OPS-09/10, RND-01, PLATFORM-01/02)
 - **Delivered (subset):** explicit API/database observations, runtime package versions, bounded own technical job status (spec 066, [PR #21](https://github.com/LYF-FC/local-assistant-core/pull/21)).
 - **Testing evidence:** `test_operations.py`, `integration/test_operations_postgres.py`, `test_jobs.py`, `integration/test_jobs_postgres.py`.
-- **Outstanding:** full service/worker/capacity/backup/certificate observation; OPS-10 audit/reporting (not started); host startup/unlock, resource budgets, independent alerting, restart verification of durable progress and leases on a real host.
+- **Branch engineering (spec 072, local branch `codex/spec-072-operations-audit-summary`, not pushed, not merged):** an explicit count-only audit summary of security and administrative events for a technical administrator, through a reviewed `SECURITY DEFINER` projection; the runtime role still has no audit SELECT. See [docs/OPERATIONS_OVERVIEW.md](docs/OPERATIONS_OVERVIEW.md). It is the first slice of OPS-10 only; no status or count changed, and nothing is verified or accepted.
+- **Outstanding:** full service/worker/capacity/backup/certificate observation; OPS-10 overdue-job, capacity-trend, scheduled/periodic reporting, delivery and alerting (not started; only the count-only summary above exists on the branch); host startup/unlock, resource budgets, independent alerting, restart verification of durable progress and leases on a real host.
 - **Blockers:** an independent observer and a host to test on. **Next:** operations and recovery batch (priority 3).
 
 ### Gate 11 — Clean-host recovery (MVP-05)

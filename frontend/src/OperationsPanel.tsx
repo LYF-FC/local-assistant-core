@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Session } from "./api";
+import AuditSummarySection from "./AuditSummarySection";
 import { jobStates, OperationsError, readOperations, type Snapshot } from "./operations-api";
 
 const labels = {
@@ -44,6 +45,7 @@ export default function OperationsPanel({ session, onUnauthorized }: { session: 
     <p role="status">{message}</p>
     {session.user.scopes.includes("technical_admin") && <button disabled={busy} onClick={() => void reload()}>Reload operations observations</button>}
     <p>Observations clear within 60 seconds of the request, on hidden tab or when you leave. No polling or automatic action.</p>
+    <AuditSummarySection session={session} onUnauthorized={onUnauthorized} />
     {snapshot && <>
       <p>Checked {snapshot.checked_at}. Valid no later than {snapshot.valid_until}.</p>
       <section aria-label="Service observations"><h3>Service observations</h3><ul>{snapshot.components.map(row => <li key={row.key}><strong>{labels[row.key]}</strong>: {stateLabels[row.state]}</li>)}</ul>
@@ -54,7 +56,7 @@ export default function OperationsPanel({ session, onUnauthorized }: { session: 
       </section>
       <section aria-label="Own technical activity"><h3>Your recent technical jobs</h3>
         <p>Only your technical_admin activity from {snapshot.window_start} to {snapshot.window_end}. Latest 25 jobs; no household, financial or Work activity, other administrators or payloads. Not global totals or a scheduled audit.</p>
-        <h4>Audit review unavailable</h4><p>The application cannot read the audit log. No audit events or access-change totals are inferred. A separately reviewed scoped audit projection and periodic reports remain open.</p>
+        <h4>Job activity is not an audit review</h4><p>This sample does not read the audit log. Use the separate audit summary above for count-only security and administrative events; periodic reports, overdue-job and capacity reporting remain open.</p>
         <h4>Job sample</h4><p>{snapshot.jobs.sampled} shown. {snapshot.jobs.has_more ? "Additional jobs exist in this window." : "No additional jobs in this sample window."} Overdue work, leases and consumer heartbeat are not assessed.</p>
         <ul>{jobStates.map(key => <li key={key}>{key}: {snapshot.jobs.counts[key]}</li>)}</ul>
       </section>

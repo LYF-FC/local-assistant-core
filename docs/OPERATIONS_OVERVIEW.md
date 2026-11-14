@@ -14,7 +14,20 @@ Worker heartbeat, overdue work, storage/NAS headroom, backup age, independent re
 
 Only jobs requested by the current administrator in `technical_admin`, created in the last 24 hours, are sampled. The latest 25 statuses contribute fixed queued/running/succeeded/dead-letter/other counts. A 26th row signals additional jobs; the count is neither a global total nor an overdue-work measure. No ID, payload, result text, approval content, lease or other user's job is selected. Zero means no sampled matching rows, not that all workers are idle or healthy.
 
-Audit review is explicitly unavailable. The runtime role intentionally has INSERT-only audit access; this batch preserves it. OPS-10 periodic reporting, access-change review, errors and capacity trends remain open for a separately reviewed narrow projection. This supersedes the initial spec066 draft's direct audit-query idea, not the original requirement. Reading this view still appends metadata-only access audit, committed before release; an audit failure withholds the entire response.
+Audit review: the runtime role intentionally has INSERT-only audit access and still does. The overview itself reads no audit data. A separate, explicit **Audit summary** is described below. Reading this view still appends metadata-only access audit, committed before release; an audit failure withholds the entire response.
+
+## Audit summary (spec 072, first OPS-10 slice; local branch, unmerged)
+
+A technical administrator can choose a window (last 24 hours or 7 days) and **Load audit summary**. Nothing loads with the overview and nothing polls. The result is a count table of security and administrative audit events by a fixed category (sign-in/out, denied or rate-limited access, access changes, recovery administration, other administrative, operations views, other security) and outcome (succeeded, denied, other).
+
+- **Read path:** the only audit read is the reviewed `SECURITY DEFINER` function `public.butler_audit_summary` (migration 0037; `EXECUTE` granted to the runtime role by role configuration, revoked from PUBLIC, fixed `search_path`). It returns only `(category, outcome, count)`; the runtime role still has no table SELECT on `audit_events`, and the append-only triggers are untouched. The function itself refuses an actor without a current `technical_admin` grant and any window other than 24 or 168 hours.
+- **What it counts:** only `auth.`, `admin.` and `operations.` events. Household, financial, Work, document, task, memory and approval activity is neither counted nor reported. It never returns an id, actor, scope, entity, metadata, individual timestamp or text.
+- **Request:** protected POST `/api/v1/operations/audit-summary`, strict `{scope:"technical_admin", window:"24h"|"7d"}`, the same HTTPS/Origin/session/CSRF/grant/installation-lock path as the overview. Lock and statement timeouts (2 s, 5 s) make a slow query an unavailable response, never partial counts.
+- **Audit of the read:** one metadata-only `operations.audit_summary` event (window only), committed before release; if it cannot be written the entire response is withheld. The summary excludes the event written by its own request.
+- **Client:** strict parsing (exact keys, fixed category order, integer counts, totals equal to column sums, window echo, 60-second validity); clears on hidden tab, expiry, session or grant change and failure; no browser persistence, URL or download.
+- **What it cannot show:** that the system is healthy or secure; a complete security log (an unreviewed event type is grouped under an "other" category); anything about content activity; overdue work; capacity trends; periodic or scheduled reports; delivery or alerting. A zero is "no counted events in this window", also when the window predates retained history. Synthetic evidence only; no real host, provider or private data. These items stay open under OPS-10, and Gates 6, 10 and 11 are not changed.
+
+This supersedes the initial spec066 draft's direct audit-query idea, not the original requirement.
 
 ## Privacy and failure
 

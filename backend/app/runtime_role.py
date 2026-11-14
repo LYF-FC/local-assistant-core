@@ -286,6 +286,7 @@ def configure(connection, password: str) -> None:
             "butler_lock_finance_scope(uuid,text)",
             "butler_lock_installation_scope(uuid,text)",
             "butler_discovery_review_deadline(uuid,uuid,uuid,text,text,integer)",
+            "butler_audit_summary(uuid,timestamptz,integer)",
         ):
             cursor.execute(
                 sql.SQL("GRANT EXECUTE ON FUNCTION public.{} TO {}").format(
