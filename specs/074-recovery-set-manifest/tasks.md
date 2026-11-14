@@ -1,13 +1,13 @@
 # Spec 074 tasks (outline only)
 
-**Specification FROZEN (owner decision of 14 November 2026; frozen revision is the content of commit `f903237a69e6e2eeeef8b057abef3fc618a27630`). Phase A is closed. No implementation task is started or authorized, and every Phase B and C box stays unchecked.** The phases are distinct and each needs its own explicit owner decision; the freeze is not an implementation authorization.
+**Specification FROZEN (owner decision of 14 November 2026; frozen revision is the content of commit `f903237a69e6e2eeeef8b057abef3fc618a27630`). Phase A is closed and the specification remains frozen. Freezing it did not itself authorize implementation: the owner separately authorized Phase B synthetic-only implementation, which has been implemented and is undergoing PR review (B050 is complete; B052 remains open). Phase C remains deferred, unchecked and unauthorized.** Authorization, implementation, verification, merge and acceptance are distinct; Phase B has not been merged or accepted. The phases are distinct and each needs its own explicit owner decision; the freeze is not an implementation authorization.
 
 ## Phase A: specification (this document set)
 
 - [x] A1 Owner review of the revised specification. Done 14 November 2026: the owner reviewed and approved it. (No open question remained: [spec.md](spec.md) section 10.3.)
 - [x] A2 Owner decision to freeze the specification. Done 14 November 2026: frozen; frozen revision is the content of commit `f903237a69e6e2eeeef8b057abef3fc618a27630` (see the freeze record in [spec.md](spec.md)). This is not an implementation authorization.
 
-## Phase B: synthetic-only implementation (not authorized; requires the frozen specification (A2, done) and a separate, narrowly scoped owner authorization)
+## Phase B: synthetic-only implementation (separately authorized by the owner, limited to the approved Phase B scope; this does not authorize Phase C or any real-key or real-set operation)
 
 ### B0 preconditions
 
