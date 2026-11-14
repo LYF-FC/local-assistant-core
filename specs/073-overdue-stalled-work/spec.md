@@ -39,7 +39,7 @@ A technical administrator opens the Operations overview and clicks **Load work s
 
 #### Principles
 
-- **P1. Worker selection stays byte-for-byte equivalent.** Each worker's WHERE clause becomes a disjunction of shared eligibility functions, evaluated at the worker's own single `now` (one `identity.now_utc()` reading, as today). The joins, `ORDER BY`, `LIMIT`, locking (`FOR UPDATE`, `SKIP LOCKED`, `OF task_reminders`) and the `populate_existing` option stay unchanged. The shared functions take no grace parameter. Observer-only guards live solely in `operations.work_status`, and no worker module may import them.
+- **P1. Worker selection stays selection-equivalent, with identical ordered candidate IDs.** Each worker's WHERE clause becomes a disjunction of shared eligibility functions, evaluated at the worker's own single `now` (one `identity.now_utc()` reading, as today). The joins, `ORDER BY`, `LIMIT`, locking (`FOR UPDATE`, `SKIP LOCKED`, `OF task_reminders`) and the `populate_existing` option stay unchanged. The shared functions take no grace parameter. Observer-only guards live solely in `operations.work_status`, and no worker module may import them.
 - **P2. The observer evaluates the same functions at `c = now − G`,** using one app-clock reading.
 - **P3. The observer adds guards only where it needs them.** Where a worker rule has an input with no time of its own (a preference flag, a policy revision, the absence of a delivery row), or a time column that can be written with a past value, the observer adds an eligible-since guard. The guard proves the row's eligibility inputs have not changed since `c`. These guards can make the observer *under-report* for at most `G` after a change; they can never affect a worker.
 - **P4. No delay.** The grace period never delays a worker: workers still evaluate at `now`.
@@ -240,8 +240,8 @@ Adding any of these needs a separate owner decision.
 
 **Accepted residual privacy risk (D1).**
 
-- *Probing:* a technical administrator who reloads repeatedly while a worker is stopped can see a queue change to `overdue`. That reveals, to roughly the grace period's precision, when another member's private reminder, notification or filing became due.
-- *Small households:* in a household of two it may reveal whose item it was.
+- *Probing:* a technical administrator who reloads repeatedly while a worker is stopped can see a queue change to `overdue` (or `stalled`). This applies to all four observed queues: approved jobs, reminders, notifications and filing. It reveals, to roughly the grace period's precision, approximately when another household member's private work in that queue became due.
+- *Small households:* in a small household, for example one of two members, it may reveal whose work it was.
 - *Mitigation, partial:* every load writes one metadata-only `operations.work_status` audit event, which deters and records probing but does not prevent it.
 - *Clock rollback:* reports may be premature after the application clock steps backwards (§1.4.1). Real-host clock behaviour is not verified by this slice.
 - *Status:* the owner has accepted this risk as stated. No throttle or extra control is part of this design.
