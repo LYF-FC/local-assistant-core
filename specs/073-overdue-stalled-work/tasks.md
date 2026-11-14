@@ -1,6 +1,6 @@
 # Spec 073 tasks
 
-Implementation authorized by the owner on 14 November 2026. Contract: [spec.md](spec.md). Branch engineering only: nothing here is merged, verified or accepted, and no requirement, gate, priority or acceptance status changes.
+Implementation authorized by the owner on 14 November 2026. Contract: [spec.md](spec.md). *(Historical wording, written on the open branch: "Branch engineering only: nothing here is merged, verified or accepted.")* **Current status (14 November 2026):** implemented in PR #37, merged as `4a7e624` (see the merge record in [convergence.md](convergence.md)); the merge is integration only. Nothing here is independently verified or accepted, and no requirement, gate, priority or acceptance status changes.
 
 ## Implementation
 
