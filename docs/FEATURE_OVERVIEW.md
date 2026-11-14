@@ -1,6 +1,6 @@
 # Feature overview
 
-Snapshot: **13 November 2026**, merged main [`5096134`](https://github.com/LYF-FC/local-assistant-core/commit/5096134687fd1c03805977a1681b415395a046f0) through PR #31. This view does not query CI or certify exact-main/host/provider acceptance.
+Snapshot: **14 November 2026**, merged main [`4a7e624`](https://github.com/LYF-FC/local-assistant-core/commit/4a7e62468196fff913df02ac4fb6f60ae7759b83) through PR #37. This view does not query CI or certify exact-main/host/provider acceptance.
 
 [Critical review of every feature](FEATURE_REVIEW.md) · [Interactive dashboard — download HTML](FEATURE_DASHBOARD.html) · [Source metadata](FEATURE_PROGRESS.json)
 
@@ -39,7 +39,7 @@ A feature is counted once at its first stage; later expansions remain retained. 
 
 ## Delivered building blocks
 
-21 public feature batches have merged after the imported engineering foundation. Documentation PRs are not feature deliveries; building blocks are not added to the original-feature denominator.
+24 public feature batches have merged after the imported engineering foundation. Documentation PRs are not feature deliveries; building blocks are not added to the original-feature denominator.
 
 | Evidence | Working engineering subset |
 |---|---|
@@ -65,6 +65,9 @@ A feature is counted once at its first stage; later expansions remain retained. 
 | [PR #28 · Calendar recurrence and briefing v2](https://github.com/LYF-FC/local-assistant-core/pull/28) | Bounded recurring series and overrides, a cursor-based sync against a synthetic read-only provider and a 1 to 7 day briefing; no real provider, no calendar writes and no whole-MVP acceptance. |
 | [PR #29 · Filing revision fence and synthetic journey](https://github.com/LYF-FC/local-assistant-core/pull/29) | Revision-fenced filing attempts and reconciliations, PostgreSQL stale-worker tests, a synthetic email-to-filing journey and in-process crash/recovery tests; MVP-03 stays incomplete (no process-level restart proof, live inbox or real destination). |
 | [PR #31 · Process-restart recovery evidence (synthetic)](https://github.com/LYF-FC/local-assistant-core/pull/31) | Real worker subprocesses killed with SIGKILL and recovered by fresh processes against PostgreSQL and a durable synthetic destination/delivery ledger; ambiguous outcomes reconciled by lookup, stale workers fenced (fence added to the notification worker) and migration 0036 for notification rechecks. Testing evidence for Gates 5 and 7 against synthetic collaborators only: no real provider, destination or inbox, not exactly-once, no status count changes and no gate accepted. |
+| [PR #34 · Unified attention inbox](https://github.com/LYF-FC/local-assistant-core/pull/34) | An explicit read-and-link Inbox for one granted scope composing tasks, reminders, documents needing review and filing and notification failures, with evidence-only pending approvals; no approvals screen, live provider or infrastructure status, and no gate accepted. |
+| [PR #35 · Operations audit summary](https://github.com/LYF-FC/local-assistant-core/pull/35) | An explicit, audited, count-only summary of security and administrative audit events for a technical administrator through a reviewed SECURITY DEFINER projection (migration 0037); a first slice of OPS-10 only, with no status change. |
+| [PR #37 · Overdue and stalled work observation](https://github.com/LYF-FC/local-assistant-core/pull/37) | An explicit, audited, queue-level overdue/stalled observation of the approved-job, reminder, notification and filing queues for a technical administrator (migration 0038), reusing the workers' own selection rules; not a worker-health check, with OPS-09 and OPS-10 statuses unchanged. |
 
 ## All original named features
 

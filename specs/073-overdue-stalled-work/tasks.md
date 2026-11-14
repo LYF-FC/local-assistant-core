@@ -21,8 +21,8 @@ Implementation authorized by the owner on 14 November 2026. Contract: [spec.md](
 - [x] 21: `frontend/src/operations-api.test.ts` (parser, mocked).
 - [x] 22: `frontend/browser/work-status.spec.ts` with `frontend/test-harness/work-status.*` (mocked component tests; local opt-in, not hosted CI evidence).
 - [x] 23: `frontend/e2e/calendars.spec.ts` operations group (real stack; runs only in hosted CI).
-- [ ] 24: hosted CI on the PR head (recorded in PR metadata).
+- [x] 24: hosted CI on the PR head `2408a68` passed all six jobs (run 43615751104). The merge commit `4a7e624` also passed (run 43624054196). CI results only: neither is verification or acceptance.
 
 ## Not authorized here
 
-- [ ] Owner review, merge and acceptance; any OPS-09/OPS-10 or Gate 10 status change.
+- [ ] Owner review, merge and acceptance; any OPS-09/OPS-10 or Gate 10 status change. (Merged as PR #37 at `4a7e624`, 14 November 2026. Independent verification, owner acceptance and any status change are not done and stay unchecked.)

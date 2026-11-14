@@ -1,6 +1,8 @@
 # Convergence — unified attention inbox (first slice)
 
 **Implemented on branch `codex/impl-071-attention-inbox` (open PR #34); locally tested; hosted CI passed on the current head; not owner-accepted, not merged.** The Evidence column below records results produced on this branch in a disposable local environment (synthetic data) as of the correction pass; the hosted result is recorded under "Hosted CI evidence". Passing CI is not verification or acceptance. Gate 2 stays open (criterion unchanged: "Dashboard exposes agenda, pending approvals, reminders, failures and authorized search."); CORE-08 and UI-01 stay partial; no status counts changed; the five-priority order stays unapproved. Implementation, testing, verification and acceptance are separate facts; only implementation and testing (local and hosted CI) are claimed.
+
+> **Merge record (added 14 November 2026, after the merge; the text above is retained as written at the time):** the implementation merged as [PR #34](https://github.com/LYF-FC/local-assistant-core/pull/34) (merge `0fbea4e`, 13 November 2026). Pull-request-head CI passed on `7c31105` (run 43527723181) and the push to `main` at `0fbea4e` passed (run 43530042389). Merging is integration only: it is not independent verification or owner acceptance, and no requirement, gate, count or priority changed because of it.
 ## What convergence must show
 
 | Spec requirement | Source | Required evidence | Evidence |

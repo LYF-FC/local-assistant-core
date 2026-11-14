@@ -2,6 +2,8 @@
 
 **Implemented on branch `codex/impl-073-work-status` from `main` at `2e04ff8` (merge of PR #36), under the owner's implementation authorization of 14 November 2026. Locally tested; not merged, not independently verified, not accepted.** Local evidence uses disposable PostgreSQL 16 databases and synthetic data only. Implementation, testing, verification and acceptance are separate facts; only implementation and local testing are claimed here. No OPS-09, OPS-10, Gate 10 or other gate, priority or acceptance status changes.
 
+> **Merge record (added 14 November 2026, after the merge; the text above is retained as written at the time):** the implementation merged as [PR #37](https://github.com/LYF-FC/local-assistant-core/pull/37) (merge `4a7e624`, 14 November 2026). Pull-request-head CI passed on `2408a68` (run 43615751104) and the push to `main` at the merge commit `4a7e624` passed all six jobs (run 43624054196, attempt 1). Merging is integration only: it is not independent verification or owner acceptance, and no requirement, gate, count or priority changed because of it.
+
 ## Contract to code
 
 | Contract (spec 073) | Code |

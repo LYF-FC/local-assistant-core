@@ -2,6 +2,8 @@
 
 **Implemented on branch `codex/spec-072-operations-audit-summary` (from `main` at `0fbea4e`), pushed for review; locally tested; hosted CI recorded below; not independently verified, not merged, not accepted.** Local evidence was produced in a disposable environment with synthetic data; hosted evidence is from GitHub Actions on the pushed branch. Gate 10, OPS-09, OPS-10 and every other status, count and gate are unchanged; the first slice of OPS-10 exists, the rest is open. Implementation, testing, verification and acceptance are separate facts; only implementation and testing (local and hosted CI) are claimed.
 
+> **Merge record (added 14 November 2026, after the merge; the text above is retained as written at the time):** merged as [PR #35](https://github.com/LYF-FC/local-assistant-core/pull/35) (merge `41aa5f3`, 14 November 2026). Pull-request-head CI passed on `4918faa` (run 43590537393). The push to `main` at the merge commit `41aa5f3` **failed** in the `postgres` integration step (run 43592529868; the failing test was not established in this record); the later push at `f617330`, a calendar test determinism fix with no associated PR, passed (run 43603362335). A passing pull-request-head run therefore did not establish that the merge commit passed. Merging is integration only: it is not independent verification or owner acceptance, and no requirement, gate, count or priority changed because of it.
+
 ## Requirement mapping
 
 | Contract item | Source | Evidence |

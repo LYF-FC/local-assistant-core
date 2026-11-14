@@ -1,6 +1,6 @@
 # Unified attention inbox — spec 071 (first slice)
 
-Status: implemented on the branch `codex/impl-071-attention-inbox` and **not yet merged**. Merged delivery is recorded only after the PR is merged with a verified number and merge commit. Implementation, local testing, verification and owner acceptance are separate facts; see [convergence](../specs/071-unified-attention-inbox/convergence.md).
+Status: merged engineering, [PR #34](https://github.com/LYF-FC/local-assistant-core/pull/34), merge `0fbea4e` (contract [PR #33](https://github.com/LYF-FC/local-assistant-core/pull/33), merge `c68aad5`), 13 November 2026. Implementation, local testing, verification and owner acceptance are separate facts: it is not independently verified or accepted; see [convergence](../specs/071-unified-attention-inbox/convergence.md).
 
 Choose **Attention inbox** in the records workspace, pick one granted scope and select **Refresh inbox**. Nothing is read until you do. The inbox is read-and-link only: it cannot approve, reject, cancel, consume, retry, acknowledge, file, send, complete or change any record.
 

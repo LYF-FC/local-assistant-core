@@ -2,6 +2,8 @@
 
 **Status: specification frozen with owner decisions D1–D4 recorded (owner-approved 14 November 2026). Not implemented, not verified, not merged, not accepted. Owner approval of these decisions does not authorize implementation; implementation requires a separate explicit owner instruction.**
 
+> **Merge record (added 14 November 2026, after the merge; the text above is retained as written at the time):** the frozen contract merged as [PR #36](https://github.com/LYF-FC/local-assistant-core/pull/36) (merge `2e04ff8`, 14 November 2026; push run 43611079243 passed) and the implementation, authorized separately by the owner on 14 November 2026, as [PR #37](https://github.com/LYF-FC/local-assistant-core/pull/37) (merge `4a7e624`, 14 November 2026). Pull-request-head CI passed on `2408a68` (run 43615751104) and the push to `main` at the merge commit `4a7e624` passed all six jobs (run 43624054196, attempt 1). Merging is integration only: it is not independent verification or owner acceptance, and no requirement, gate, count or priority changed because of it.
+
 Baseline: `main` at `f617330f90e21c9af75cead7a8ea97d83580f7f0`. Worker, model, migration, operations, role and compose code are identical to `41aa5f3` (merge of PR #35); the only change between them is a test-only calendar fix.
 
 This document assembles the design reviewed in the owner conversation of 14 November 2026: the initial draft, the predicate correction (worker selection preserved exactly), the clock-rollback and enqueue clarifications, the revised acceptance test 4b step 6, and the recorded owner decisions. It adds no requirement and changes no acceptance criterion, requirement scope, priority or gate status.

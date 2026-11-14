@@ -2,6 +2,8 @@
 
 **Status: draft for owner review. Nothing here is implemented.** Drafting this spec changes no implementation status, status counts, verification or owner acceptance. Gate 2 stays open; CORE-08 and UI-01 stay **partial**. The Gate 2 criterion is unchanged and quoted exactly: "Dashboard exposes agenda, pending approvals, reminders, failures and authorized search." This spec defines one bounded slice of that existing scope. It does not complete or accept it, and it does not approve the five-priority implementation order (still "Proposed — awaiting owner confirmation"). The owner has confirmed this scope as the next item to develop and resolved the three decisions in [Owner decisions](#owner-decisions); that authorizes this draft only.
 
+> **Merge record (added 14 November 2026, after the merge; the text above is retained as written at the time):** the contract merged as [PR #33](https://github.com/LYF-FC/local-assistant-core/pull/33) (merge `c68aad5`, 13 November 2026) and the implementation as [PR #34](https://github.com/LYF-FC/local-assistant-core/pull/34) (merge `0fbea4e`, 13 November 2026). Pull-request-head CI passed on `7c31105` (run 43527723181) and the push to `main` at `0fbea4e` passed (run 43530042389). Merging is integration only: it is not independent verification or owner acceptance, and no requirement, gate, count or priority changed because of it.
+
 ## Baseline
 
 - `main` = `cec91ff49a5064ff6eae149ad43bef7398868aa9` (Merge PR #32), rechecked when this draft was written.
