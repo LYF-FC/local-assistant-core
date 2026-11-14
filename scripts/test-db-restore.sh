@@ -104,6 +104,105 @@ from pathlib import Path
 source = Path(os.environ["BUTLER_DOCUMENT_ARCHIVE_DIRECTORY"])
 shutil.copytree(source, source.parent / "archive-restored")
 PYARCHIVE
+# Spec 074 synthetic recovery-set drill (offline tool; synthetic key and synthetic data only).
+# This is test evidence for this synthetic dump in this CI environment. It is not independent
+# verification, real-key custody, clean-host recovery or an RPO/RTO measurement, and it does not
+# close the verification-to-restore gap: the same bytes are verified and restored in one script.
+RS_DIR="$BUTLER_SUPPRESSION_DIR/recovery-set-drill"
+mkdir -m 700 "$RS_DIR" "$RS_DIR/set" "$RS_DIR/key" "$RS_DIR/out"
+RS_SET="$RS_DIR/set"
+RS_INSTALLATION_ID=$(docker exec "$CONTAINER_ID" psql -U postgres -d butler_test -Atc "SELECT installation_id FROM installation_config LIMIT 1")
+RS_DECLARED_HEAD=$(docker exec "$CONTAINER_ID" psql -U postgres -d butler_test -Atc "SELECT version_num FROM alembic_version")
+[[ "$RS_INSTALLATION_ID" =~ ^[a-f0-9-]{36}$ && -n "$RS_DECLARED_HEAD" ]]
+install -m 600 "$DUMP" "$RS_SET/database.dump"
+RS_ARCHIVE_SOURCE="$BUTLER_SUPPRESSION_DIR/archive-restored" RS_SET="$RS_SET" python3 - <<'PYSET'
+import os, shutil
+shutil.copytree(os.environ["RS_ARCHIVE_SOURCE"], os.path.join(os.environ["RS_SET"], "archive"))
+PYSET
+# The synthetic key comes from the test helper; its fingerprint is recorded outside the set.
+RS_FINGERPRINT=$(cd backend && RS_KEY_DIR="$RS_DIR/key" RS_INSTALLATION_ID="$RS_INSTALLATION_ID" uv run --locked python - <<'PYKEY'
+import os, sys
+sys.path.insert(0, "tests")
+from recovery_set_support import make_key
+print(make_key(os.environ["RS_KEY_DIR"], installation_id=os.environ["RS_INSTALLATION_ID"]).fingerprint())
+PYKEY
+)
+[[ "$RS_FINGERPRINT" =~ ^[a-f0-9]{64}$ ]]
+RS_KEY="$RS_DIR/key/recovery.key"
+rs() { (cd backend && uv run --locked python -m app.recovery_set "$@"); }
+# rs_expect STATUS REASON ARGS...: assert the exit status and (when given) a closed reason code.
+rs_expect() {
+  local expected=$1 reason=$2 out status=0
+  shift 2
+  out=$(rs "$@") || status=$?
+  [[ "$status" == "$expected" ]] || { echo "Recovery-set drill: unexpected exit status $status" >&2; exit 1; }
+  if [[ -n "$reason" ]]; then
+    printf '%s' "$out" | python3 -c 'import json,sys; sys.exit(0 if sys.argv[1] in json.load(sys.stdin)["reasons"] else 1)' "$reason" ||
+      { echo "Recovery-set drill: expected reason missing" >&2; exit 1; }
+  fi
+  RS_LAST_OUTPUT=$out
+}
+rs_field() { printf '%s' "$RS_LAST_OUTPUT" | python3 -c 'import json,sys; print(json.load(sys.stdin)[sys.argv[1]])' "$1"; }
+rs_generate() { # SET_DIR OUTPUT [expect-archive]
+  rs_expect 0 "" generate --set "$1" --output "$2" --recovery-key "$RS_KEY" \
+    --expected-key-fingerprint "$RS_FINGERPRINT" --installation-id "$RS_INSTALLATION_ID" \
+    --schema-head "$RS_DECLARED_HEAD" --expect-archive "${3:-present}"
+}
+rs_verify() { # STATUS REASON SET_DIR MANIFEST [extra args...]
+  local expected=$1 reason=$2 set_dir=$3 manifest=$4
+  shift 4
+  rs_expect "$expected" "$reason" verify --set "$set_dir" --manifest "$manifest" --recovery-key "$RS_KEY" \
+    --expected-key-fingerprint "$RS_FINGERPRINT" --expected-installation-id "$RS_INSTALLATION_ID" \
+    --expected-schema-head "$RS_DECLARED_HEAD" --expect-archive present "$@"
+}
+rs_generate "$RS_SET" "$RS_DIR/out/manifest.json"
+[[ "$(rs_field publication)" == published_durable ]]
+rs_verify 0 "" "$RS_SET" "$RS_DIR/out/manifest.json"
+[[ "$(rs_field integrity)" == integrity_valid && "$(rs_field authenticity)" == authenticity_valid ]]
+[[ "$(rs_field expectations)" == expectations_met && "$(rs_field freshness)" == freshness_not_evaluated ]]
+RS_VERIFY_MS=$(rs_field elapsed_ms)
+RS_OLD_HASH=$(rs_field manifest_hash)
+# Negative classes that need a real dump and a real archive: each mutated copy must fail.
+rs_mutated() { # NAME: fresh private copy of the valid set
+  rm -rf "$RS_DIR/mutated"
+  cp -a "$RS_SET" "$RS_DIR/mutated"
+  echo "$RS_DIR/mutated"
+}
+MUTATED=$(rs_mutated)
+python3 - "$MUTATED/database.dump" <<'PYFLIP'
+import sys
+with open(sys.argv[1], "r+b") as stream:
+    first = stream.read(1)
+    stream.seek(0)
+    stream.write(bytes([first[0] ^ 1]))
+PYFLIP
+rs_verify 1 set_member_hash_mismatch "$MUTATED" "$RS_DIR/out/manifest.json"
+MUTATED=$(rs_mutated)
+truncate -s -1 "$MUTATED/database.dump"
+rs_verify 1 set_member_size_mismatch "$MUTATED" "$RS_DIR/out/manifest.json"
+MUTATED=$(rs_mutated)
+unlink "$(find "$MUTATED/archive" -name '*.original' | sort | head -n 1)"
+rs_verify 1 set_member_missing "$MUTATED" "$RS_DIR/out/manifest.json"
+MUTATED=$(rs_mutated)
+(umask 077 && : > "$MUTATED/archive/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-v1.original")
+rs_verify 1 set_member_unexpected "$MUTATED" "$RS_DIR/out/manifest.json"
+# A different synthetic dump swapped into the set (the tool never parses the dump).
+MUTATED=$(rs_mutated)
+docker exec "$CONTAINER_ID" pg_dump -U postgres -d postgres --format=custom > "$MUTATED/database.dump"
+chmod 600 "$MUTATED/database.dump"
+rs_verify 1 "" "$MUTATED" "$RS_DIR/out/manifest.json"
+# An older manifest against a newer set, and an older manifest with the newer manifest's hash.
+NEWER="$RS_DIR/newer"
+cp -a "$RS_SET" "$NEWER"
+(umask 077 && printf 'synthetic' > "$NEWER/archive/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb-v1.original")
+rs_generate "$NEWER" "$RS_DIR/out/newer.json"
+RS_NEW_HASH=$(rs_field manifest_hash)
+rs_verify 1 "" "$RS_SET" "$RS_DIR/out/manifest.json" --expected-manifest-hash "$RS_NEW_HASH"
+[[ "$(rs_field freshness)" == freshness_mismatch ]]
+rs_verify 1 "" "$NEWER" "$RS_DIR/out/manifest.json"
+rs_verify 0 "" "$RS_SET" "$RS_DIR/out/manifest.json" --expected-manifest-hash "$RS_OLD_HASH"
+[[ "$(rs_field freshness)" == freshness_match ]]
+printf 'Recovery-set drill (synthetic): valid set verified, %s negative classes rejected; verify elapsed %s ms (informational synthetic timing, not a recovery time)\n' 7 "$RS_VERIFY_MS"
 BUTLER_SUPPRESSION_EXPECTED_HASH=$(
   (cd backend && uv run --locked python ../scripts/work-suppression-fixtures.py export) |
     python3 -c 'import json,sys; print(json.load(sys.stdin)["checkpoint"]["manifest_hash"])'
@@ -130,6 +229,11 @@ docker exec -i "$CONTAINER_ID" pg_restore -U postgres -d butler_test_restore --e
 RESULT=$(docker exec "$CONTAINER_ID" psql -U postgres -d butler_test_restore -Atc "SELECT value FROM recovery_sentinel WHERE id=1")
 [[ "$RESULT" == synthetic-recovery-ok ]]
 [[ "$(docker exec "$CONTAINER_ID" psql -U postgres -d butler_test_restore -Atc "SELECT version_num FROM alembic_version")" == 0038_work_status_audit_category ]]
+# Drill evidence for the declared fields on this synthetic dump only (spec 074 section 11.3). The
+# installation id was read from the same database that is restored here, so the match is circular
+# and shows tooling consistency, not provenance; `verify` itself never reads the dump.
+[[ "$(docker exec "$CONTAINER_ID" psql -U postgres -d butler_test_restore -Atc "SELECT version_num FROM alembic_version")" == "$RS_DECLARED_HEAD" ]]
+[[ "$(docker exec "$CONTAINER_ID" psql -U postgres -d butler_test_restore -Atc "SELECT installation_id FROM installation_config LIMIT 1")" == "$RS_INSTALLATION_ID" ]]
 [[ "$(docker exec "$CONTAINER_ID" psql -U postgres -d butler_test_restore -Atc "SELECT result_status FROM audit_events WHERE event_type='recovery.sentinel'")" == success ]]
 if docker exec "$CONTAINER_ID" psql -U postgres -d butler_test_restore -v ON_ERROR_STOP=1 -c "UPDATE audit_events SET result_status='tampered' WHERE event_type='recovery.sentinel'" >/dev/null 2>&1; then
   echo "Restored audit guard did not reject mutation" >&2
