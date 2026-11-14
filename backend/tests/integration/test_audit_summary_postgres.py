@@ -233,6 +233,77 @@ def test_function_guards_and_privileges(scenario, runtime_engine, postgres_engin
         grant(admin, uid, False)
 
 
+def test_window_end_must_be_current_for_the_restricted_runtime_role(scenario, runtime_engine):
+    """The function itself enforces the recent window; a direct caller cannot choose the end."""
+    client, _, _, admin, uid = scenario
+    token = token_of(client)
+    # A historical event that a moved window would reveal.
+    insert(admin, uid, "admin.scope_changed", "success", identity.now_utc() - timedelta(days=30))
+
+    def run(end, hours):
+        with runtime_engine.begin() as db:
+            return db.execute(text(CALL), {"a": token, "e": end, "h": hours}).all()
+
+    grant(admin, uid)
+    try:
+        # Legitimate current windows succeed, including inside the documented tolerance
+        # (60 s before, 5 s after the database clock).
+        for hours in (24, 168):
+            run(identity.now_utc(), hours)
+            run(identity.now_utc() - timedelta(seconds=45), hours)
+            run(identity.now_utc() + timedelta(seconds=2), hours)
+        # Old and future ends are refused for both windows; no count is returned.
+        offsets = (
+            timedelta(seconds=-75),
+            timedelta(hours=-1),
+            timedelta(days=-30, hours=1),
+            timedelta(days=-365),
+            timedelta(seconds=10),
+            timedelta(hours=1),
+            timedelta(days=30),
+        )
+        for hours in (24, 168):
+            for offset in offsets:
+                refuse(
+                    runtime_engine,
+                    CALL,
+                    "Audit summary window must end at the current time",
+                    a=token,
+                    e=identity.now_utc() + offset,
+                    h=hours,
+                )
+        # The fixed window lengths still apply with a current end.
+        for hours in (0, 23, 25, 167, 169, 720):
+            refuse(
+                runtime_engine,
+                CALL,
+                "Unsupported audit summary window",
+                a=token,
+                e=identity.now_utc(),
+                h=hours,
+            )
+        # A current end lends no authority to an unknown session.
+        refuse(
+            runtime_engine,
+            CALL,
+            "Technical administration is required",
+            a="x" * 64,
+            e=identity.now_utc(),
+            h=24,
+        )
+    finally:
+        grant(admin, uid, False)
+    # Without the grant, even a current end is refused.
+    refuse(
+        runtime_engine,
+        CALL,
+        "Technical administration is required",
+        a=token,
+        e=identity.now_utc(),
+        h=24,
+    )
+
+
 def test_actor_substitution_is_rejected_for_the_restricted_runtime_role(
     scenario, runtime_engine, postgres_engine
 ):

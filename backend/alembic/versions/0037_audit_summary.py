@@ -13,6 +13,13 @@ The stored token_hash alone (readable by the runtime role) is not accepted, and 
 be supplied. Limit: the runtime role is the application and may insert auth_sessions rows, so a
 fully compromised runtime role could mint a session; the function narrows, but cannot remove,
 that trust.
+
+Recent window: the function enforces the fixed recent window itself rather than trusting the
+caller's end time. p_end must lie within [clock_timestamp() - 60 s, clock_timestamp() + 5 s].
+60 s equals the summary's validity, so no caller can obtain a window that a fresh, valid summary
+could not show; 5 s matches the client's future-time tolerance and absorbs application/database
+clock skew. clock_timestamp(), not now(), is used so that a legitimate request whose transaction
+began earlier (authority lock waits) is judged by the actual time of the call.
 """
 
 from alembic import op
@@ -30,9 +37,15 @@ def upgrade():
       LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = pg_catalog AS $$
       DECLARE
         v_actor uuid;
+        v_now timestamptz := clock_timestamp();
       BEGIN
         IF p_end IS NULL OR p_hours IS NULL OR p_hours NOT IN (24, 168) THEN
           RAISE EXCEPTION 'Unsupported audit summary window' USING ERRCODE = '22023';
+        END IF;
+        -- Recent window only: the end must be the current time, within 60 s before (the
+        -- summary's own validity) or 5 s after (clock skew) the database's actual clock.
+        IF p_end < v_now - interval '60 seconds' OR p_end > v_now + interval '5 seconds' THEN
+          RAISE EXCEPTION 'Audit summary window must end at the current time' USING ERRCODE = '22023';
         END IF;
         IF p_token IS NULL OR length(p_token) NOT BETWEEN 40 AND 128 THEN
           RAISE EXCEPTION 'Technical administration is required' USING ERRCODE = '42501';

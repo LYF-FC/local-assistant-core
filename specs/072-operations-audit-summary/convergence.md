@@ -1,6 +1,6 @@
 # 072 convergence
 
-**Implemented on the local branch `codex/spec-072-operations-audit-summary` (from `main` at `0fbea4e`); locally tested; not pushed, not independently verified, not merged, not accepted.** Evidence below was produced in a disposable local environment with synthetic data. Gate 10, OPS-09, OPS-10 and every other status, count and gate are unchanged; the first slice of OPS-10 exists, the rest is open. Implementation, testing, verification and acceptance are separate facts; only the first two are claimed, locally.
+**Implemented on branch `codex/spec-072-operations-audit-summary` (from `main` at `0fbea4e`), pushed for review; locally tested; hosted CI recorded below; not independently verified, not merged, not accepted.** Local evidence was produced in a disposable environment with synthetic data; hosted evidence is from GitHub Actions on the pushed branch. Gate 10, OPS-09, OPS-10 and every other status, count and gate are unchanged; the first slice of OPS-10 exists, the rest is open. Implementation, testing, verification and acceptance are separate facts; only implementation and testing (local and hosted CI) are claimed.
 
 ## Requirement mapping
 
@@ -10,6 +10,7 @@
 | Closed category/outcome catalogue, exact window, content-domain and lookalike exclusion | spec §Categories | `test_mapping_window_and_exclusions_are_exact` (20 mapped cases, 5 excluded types, outside-window and future rows; mutation check: adding `documents.` to the function makes it fail) |
 | Function guards: definer, owner, fixed `search_path`, no PUBLIC execute, execute only for `butler_runtime`, single `(text, timestamptz, integer)` signature with no `uuid` overload, window only 24/168 | spec §Authorization | `test_function_guards_and_privileges` |
 | Actor bound inside the database: another administrator's UUID, a stored hash, a decorated token and revoked/expired/idle/inactive/grant-revoked sessions are refused through the restricted runtime role; both administrators succeed with their own tokens | spec §Authorization | `test_actor_substitution_is_rejected_for_the_restricted_runtime_role` (mutation checks below) |
+| Recent window enforced inside the function: `p_end` within 60 s before / 5 s after `clock_timestamp()`; old and future ends refused for both windows | spec §Authorization | `test_window_end_must_be_current_for_the_restricted_runtime_role` (mutation checks in the second review section) |
 | Strict request, current authority, CSRF/Origin, revoked grant | spec §Authorization | `tests/test_operations_audit_summary.py` (SQLite) and `test_api_shape_denials_and_metadata_only_audit`, `test_revoked_grant_and_migration_round_trip` (PostgreSQL) |
 | Exact response shape, totals equal column sums, no ids/actors/metadata | spec §Response | `test_api_shape_denials_and_metadata_only_audit`; client `parseAuditSummary` tests (16 rejection cases) |
 | Audit of the read is metadata-only; failure withholds the response | spec §Audit | `test_audit_failure_withholds_the_summary` (induced insert failure on the runtime engine; no payload, no row) |
@@ -38,17 +39,36 @@
 
 `frontend/test-harness/audit.tsx` + `.html` mount the real `AuditSummarySection` with mocked API routes (same pattern as the attention-inbox and meeting harnesses), and `frontend/browser/audit-summary.spec.ts` uses a controlled browser clock and held responses: nothing loads or polls before or after the explicit load; clears when the tab becomes hidden and stays cleared on return; clears at the 60-second limit (still shown at 59 s) and never refreshes; a response arriving after the tab was hidden is discarded; a response arriving after the expiry cleared the request is discarded; a late response from a superseded request never replaces the newer summary; a 503 shows sanitized text with no counts and an explicit retry works with no automatic retry; an invalid payload (foreign actor) shows no counts and a 401 signs out exactly once; a window change clears the table and no `localStorage`, `sessionStorage` or cookie is written. Mutation checks: disabling both the abort and the generation/hidden guard failed the three late-response tests; removing the hidden-tab clearing failed three tests. All 27 local browser specs pass (`playwright.local.config.ts`, with `BUTLER_LOCAL_UI_TESTS=1 BUTLER_ENV=test`). The real-stack Playwright spec (`e2e/calendars.spec.ts`) remains edited but not run.
 
+## Second review: recent-window boundary (blocker, fixed)
+
+**Finding.** The function validated the window length but accepted any non-null `p_end`. Because `butler_runtime` holds EXECUTE, a direct caller with a valid technical-administrator session could read the counts of an arbitrary historical (or future) 24-hour or 7-day period, contrary to the fixed recent window in the contract. The route always passed its own current time, so API behaviour did not show the gap.
+
+**Fix.** Migration 0037 (unmerged, edited in place; signature, ownership, `SECURITY DEFINER`, `search_path = pg_catalog`, PUBLIC revocation, runtime grant and downgrade unchanged) now captures `v_now := clock_timestamp()` and raises `22023` ("Audit summary window must end at the current time") unless `v_now - 60 s <= p_end <= v_now + 5 s`. Tolerance rationale: the route computes its checked time immediately before the call (milliseconds); 60 s equals the summary's validity, so no caller can obtain a window that a fresh, valid summary could not show; 5 s matches the client's existing future-time tolerance and absorbs application/database clock skew; `clock_timestamp()` rather than `now()` judges a legitimate request by the actual call time even when its transaction began earlier (authority lock waits). The window is still bounded by `p_hours` in `{24, 168}`.
+
+**Tests.** `test_window_end_must_be_current_for_the_restricted_runtime_role` runs on the restricted runtime role, with a planted 30-day-old event: current ends succeed for 24 h and 7 d, including 45 s in the past and 2 s in the future; ends 75 s, 1 hour, 30 days less 1 hour, and 365 days in the past, and 10 s, 1 hour and 30 days in the future are refused for both windows; other window lengths stay refused with a current end; an unknown token and a revoked grant stay refused with a current end. The actor-binding, privilege, category/outcome and round-trip tests are unchanged and pass. Mutation checks (applied, re-migrated, tested, restored byte-identical): replacing the predicate with `false`, removing only the lower bound, and removing only the upper bound each fail the new test.
+
+## Hosted CI evidence (GitHub Actions, `workflow_dispatch` on the branch)
+
+| Run | Head | Result |
+|---|---|---|
+| [43583023514](https://github.com/LYF-FC/local-assistant-core/actions/runs/43583023514) | `d62db6a` | failure: `containers` (one real-stack test), `ci` gate; scope, backend (1578 passed), frontend, postgres (1100 passed) succeeded |
+| [43584841853](https://github.com/LYF-FC/local-assistant-core/actions/runs/43584841853) | `821cc17` | **success**: scope, backend (1578 passed), frontend (793 passed, 33 files; build; 0 high vulnerabilities), postgres (1100 passed), containers, `ci` gate |
+
+- **First run failure.** `e2e/calendars.spec.ts` "operations clears hidden, expired and late view responses without polling" used `panel.getByRole('status')`; the new audit section adds its own status inside the Operations overview region, so the locator matched two elements and Playwright strict mode failed (the product behaved correctly: both views cleared). Fixed test-only in `821cc17`: overview assertions target the region's direct status child, and the audit status is asserted separately (loaded; hidden after the tab is hidden; still hidden past the overview expiry).
+- **Real-stack Playwright in run 43584841853** (`containers`, `scripts/test-containers.sh`, real TLS stack, one worker): six phases, 61 passed with 69 skipped (phase-gated tests that run in later phases, the same count as the previous run), then 4, 3, 5, 35 and 22 passed; no failures. All four operations-overview tests passed, including the one that loads the audit summary and checks its table, header and key set.
+- **Scope of that evidence.** Run 43584841853 tested `821cc17`, which **predates the recent-window fix**. The run on the new head is reported outside the repository (to be recorded in PR metadata, not by an evidence-only push). Hosted CI is not owner acceptance, independent verification or real-host evidence.
+
 ## Test evidence (local)
 
 - `ruff check` and `ruff format --check`: clean. `bandit -r app ../pdf-worker -q`: no findings.
 - Backend `pytest -m 'not integration' --allow-unix-socket`: 1578 passed.
-- PostgreSQL 16 (local, disposable, CI-shaped: user `postgres`, fresh database, single process): full `pytest -m integration --allow-hosts=127.0.0.1`: **1100 passed, 0 failed** (20 minutes), including the audit-summary tests (6 in `test_audit_summary_postgres.py`) and `test_operations_postgres.py`. A migration round trip (downgrade to 0036, upgrade to head) ran in `test_revoked_grant_and_migration_round_trip`, in `test_migrations.py`, and repeatedly during the mutation checks.
-- Frontend `npm test`: 793 passed (33 files); `npm run build` succeeded; `npm audit --audit-level=high`: 0 vulnerabilities; local browser specs: 27 passed.
+- PostgreSQL 16 (local, disposable, CI-shaped: user `postgres`, fresh database, single process): full `pytest -m integration --allow-hosts=127.0.0.1`: **1101 passed, 0 failed** (20 minutes, after the recent-window fix), including the audit-summary tests (7 in `test_audit_summary_postgres.py`) and `test_operations_postgres.py`. A migration round trip (downgrade to 0036, upgrade to head) ran in `test_revoked_grant_and_migration_round_trip`, in `test_migrations.py`, and repeatedly during the mutation checks.
+- Frontend `npm test`: 793 passed (33 files); `npm run build` succeeded; `npm audit --audit-level=high`: 0 vulnerabilities; local browser specs: 27 passed (at `821cc17`; no frontend change since).
 - `check_repository.py` passed; `test_ci_scope.py` 23 passed; `build_feature_overview.py --check` passed (155 references, 99 named, 155 reviews); the generated overview and dashboard are unchanged.
 
 ## Not run or not verified
 
-- Hosted CI, including the real-stack Playwright run that now exercises the audit summary in `e2e/calendars.spec.ts` (the existing operations test; its old "Audit review unavailable" assertion was replaced by the new heading, and it now loads the summary and checks the table, header and key set). That spec was edited but not run here: the container stack is unavailable locally.
+- The real-stack Playwright suite cannot run locally (no container stack); its evidence is hosted only (above). It covers loading and hidden-tab clearing of the audit summary, not its 60-second expiry or late-response suppression, which only the mocked component spec covers.
 - The component spec is a mocked-API harness; it is not real-stack evidence. The new browser harness specs are not wired into hosted CI by this branch (the existing local browser configuration is a local, opt-in check).
 - No concurrency or lock-wait test of the new route beyond the shared `authority` path it reuses; no oversize case exists because the projection returns at most 21 rows.
 - No real host, provider, private data or independent observer. Synthetic observations are not real-host evidence.
@@ -62,4 +82,4 @@
 
 ## Still required
 
-Independent review, owner review and acceptance; hosted CI; real-stack coverage of the clearing behaviour; the rest of OPS-10 (overdue jobs, capacity trends, periodic/scheduled reports, delivery, alerting); OPS-09 observations; Gate 6 recovery suppression and Gate 11 clean-host recovery.
+Independent review, owner review and acceptance; hosted CI on the final head (the passing run predates the window fix); real-stack coverage of audit-summary expiry and late-response clearing; the rest of OPS-10 (overdue jobs, capacity trends, periodic/scheduled reports, delivery, alerting); OPS-09 observations; Gate 6 recovery suppression and Gate 11 clean-host recovery.
