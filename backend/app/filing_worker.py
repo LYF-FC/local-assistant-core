@@ -17,10 +17,11 @@ purpose: the newer attempt, or the next lookup, resolves the filing.
 import argparse
 import time
 
-from sqlalchemy import and_, or_, select
+from sqlalchemy import or_, select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app import filing, identity
+from app import queue_eligibility as eligible
 from app.config import settings
 from app.db import SessionLocal
 from app.models import DocumentRecord, FilingExecution
@@ -38,7 +39,6 @@ def lock_row(db, execution_id, revision=None):
 
 def candidates(db, limit):
     now = identity.now_utc()
-    stale = now - filing.IN_FLIGHT_DEADLINE
     return list(
         db.execute(
             select(
@@ -47,19 +47,7 @@ def candidates(db, limit):
                 FilingExecution.scope_key,
                 FilingExecution.document_id,
             )
-            .where(
-                or_(
-                    and_(
-                        FilingExecution.state.in_(("pending", "unknown")),
-                        FilingExecution.next_attempt_at <= now,
-                        FilingExecution.attempt_started_at.is_(None),
-                    ),
-                    and_(
-                        FilingExecution.state == "pending",
-                        FilingExecution.attempt_started_at <= stale,
-                    ),
-                )
-            )
+            .where(or_(eligible.filing_due(now), eligible.filing_in_flight_expired(now)))
             .order_by(FilingExecution.next_attempt_at, FilingExecution.id)
             .limit(limit)
         )

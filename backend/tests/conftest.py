@@ -192,7 +192,12 @@ def scenario(postgres_engine, runtime_engine):
 
 
 # Explicit root registration shares the restricted login fixture across PG modules.
-pytest_plugins = ["work_storage_helpers", "work_credential_helpers", "work_review_helpers"]
+pytest_plugins = [
+    "work_storage_helpers",
+    "work_credential_helpers",
+    "work_review_helpers",
+    "work_status_support",
+]
 
 
 @pytest.fixture

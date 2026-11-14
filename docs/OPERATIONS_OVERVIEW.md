@@ -8,7 +8,7 @@ A successful authenticated API request and its database transaction were reachab
 
 The software inventory shows the declared API build, running Python version and installed FastAPI/SQLAlchemy/psycopg/Pydantic package metadata. Missing or unsupported metadata is unknown. Installed versions are distinct from latest available, supported stable and approved versions; no approval, license, advisory, compatibility or exception assessment is inferred. Full RND-01 catalogue, model/container/database/host inventory and dated official-source scouting remain required.
 
-Worker heartbeat, overdue work, storage/NAS headroom, backup age, independent restore, certificate validity, remote hardware and independent failure alerting remain **unknown**. Database/API reachability cannot report an outage of the application itself. Independent observation and actual-host procedures are separate retained MVP gates.
+Worker heartbeat, storage/NAS headroom, backup age, independent restore, certificate validity, remote hardware and independent failure alerting remain **unknown**. Database/API reachability cannot report an outage of the application itself. Independent observation and actual-host procedures are separate retained MVP gates. Overdue and stalled queue work is reported only as queue-level states by the separate **Work status** view below, which is not a worker-health check.
 
 ## Bounded private job sample
 
@@ -28,6 +28,17 @@ A technical administrator can choose a window (last 24 hours or 7 days) and **Lo
 - **What it cannot show:** that the system is healthy or secure; a complete security log (an unreviewed event type is grouped under an "other" category); anything about content activity; overdue work; capacity trends; periodic or scheduled reports; delivery or alerting. A zero is "no counted events in this window", also when the window predates retained history. Synthetic evidence only; no real host, provider or private data. These items stay open under OPS-10, and Gates 6, 10 and 11 are not changed.
 
 This supersedes the initial spec066 draft's direct audit-query idea, not the original requirement.
+
+## Work status (spec 073, overdue and stalled queue work; branch engineering, unmerged)
+
+A technical administrator can choose **Load work status**. Nothing loads with the overview and nothing polls. The result is one state per queue for approved jobs, reminders, notifications and filing: `none_observed`, `overdue` (eligible work has waited longer than a fixed 120-second grace period) or `stalled` (an attempt or lease expired and was not taken over; never for reminders). Calendar sync, routines and Work are listed as not observed, never as clear. Implementation was authorized by the owner on 14 November 2026; the contract and owner decisions D1–D4 are in [spec 073](../specs/073-overdue-stalled-work/spec.md).
+
+- **Disclosure (owner decision D1):** the states are derived from all household members' private records, so even they are sensitive operational metadata. No count, age, owner, member, scope, id, payload, recipient, destination, reason or attempt is returned. Accepted residual risk: repeated reloads while a worker is stopped can reveal approximately when another member's private work in a queue became due and, in a small household, whose. Each load is audited, which records but does not prevent such probing.
+- **Eligibility:** workers keep their own selection exactly: the shared rules E1–E8 in `backend/app/queue_eligibility.py` restate each worker's existing condition, and workers evaluate them at their own `now`. The observer evaluates the same rules at `now − 120 s` and adds eligible-since guards (`updated_at`, `delivered_at` and preference timestamps) that exist only in the observer, so the grace period never delays or reorders a worker.
+- **Limits:** the timing assumes a non-decreasing application clock; after a backward clock step a state can appear early. A notification `overdue` can mean a delivered reminder awaits enqueue: enqueueing is not permission to send, and the delivery may later be paused, deferred or cancelled. An overdue approved job with exhausted attempts may be dead-lettered rather than executed. In the default Compose stack the approved-job, notification and filing workers are not deployed, so those queues can show `overdue`.
+- **Request and audit:** protected POST `/api/v1/operations/work-status`, strict `{scope:"technical_admin"}`, the same HTTPS/Origin/session/CSRF/grant/installation-lock path as the overview; lock and statement timeouts (2 s, 5 s). One metadata-only `operations.work_status` event is committed before release (classified as an operations read by migration 0038); any failure, including the audit write, withholds the whole response. Existing SELECT grants only: no new grant or `SECURITY DEFINER` function.
+- **Client:** explicit load, strict parsing (exact keys, fixed queue order, closed states, exact not-observed and excluded lists, 60-second validity); clears on hidden tab, expiry, session or grant change and failure; late responses are discarded; no browser persistence.
+- **What it cannot show:** worker liveness or health, why work is waiting, capacity, backups or restore. Synthetic evidence only; no real-host verification.
 
 ## Privacy and failure
 

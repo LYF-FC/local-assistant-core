@@ -5,10 +5,11 @@ import time
 from datetime import timedelta
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from sqlalchemy import func, or_, select, text
+from sqlalchemy import select, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app import identity
+from app import queue_eligibility as eligible
 from app import task_reminders as reminders
 from app.config import settings
 from app.db import SessionLocal
@@ -50,16 +51,8 @@ def candidates(db, limit):
             select(
                 TaskReminder.id, TaskReminder.owner_id, TaskReminder.task_id, TaskReminder.scope_key
             )
-            .outerjoin(ReminderPreferences, ReminderPreferences.owner_id == TaskReminder.owner_id)
-            .where(
-                TaskReminder.state == "scheduled",
-                TaskReminder.scheduled_at <= now,
-                or_(ReminderPreferences.owner_id.is_(None), ReminderPreferences.enabled.is_(True)),
-                or_(
-                    TaskReminder.next_attempt_at <= now,
-                    TaskReminder.policy_revision != func.coalesce(ReminderPreferences.revision, 0),
-                ),
-            )
+            .outerjoin(ReminderPreferences, eligible.preferences_on_reminder())
+            .where(eligible.reminder_due(now))
             .order_by(TaskReminder.next_attempt_at, TaskReminder.id)
             .limit(limit)
         )

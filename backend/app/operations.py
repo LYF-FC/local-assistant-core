@@ -8,12 +8,20 @@ from platform import python_version
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy import select, text
+from sqlalchemy import or_, select, text
 
 from app import identity
+from app import queue_eligibility as eligible
 from app.config import settings
 from app.manual_tasks import authority, stamp
-from app.models import DurableJob
+from app.models import (
+    DurableJob,
+    FilingExecution,
+    JobOutbox,
+    NotificationDelivery,
+    ReminderPreferences,
+    TaskReminder,
+)
 
 COMPONENTS = (
     "api",
@@ -55,6 +63,31 @@ class AuditSummaryRead(BaseModel):
     model_config = ConfigDict(extra="forbid", hide_input_in_errors=True)
     scope: Literal["technical_admin"]
     window: Literal["24h", "7d"]
+
+
+# Spec 073: queue-level overdue/stalled observation. States only; never counts, ages, owners,
+# scopes, ids, payloads, recipients, destinations, reasons or attempts.
+WORK_GRACE = timedelta(seconds=120)
+WORK_LOCK_TIMEOUT = "2s"
+WORK_STATEMENT_TIMEOUT = "5s"
+WORK_QUEUES = ("approved_jobs", "reminders", "notifications", "filing")
+WORK_STATES = ("none_observed", "overdue", "stalled")
+WORK_NOT_OBSERVED = ("calendar_sync", "routines", "work")
+WORK_EXCLUDES = (
+    "counts",
+    "ages",
+    "owners_and_scopes",
+    "items",
+    "worker_liveness",
+    "capacity",
+    "backups",
+    "restore",
+)
+
+
+class WorkStatusRead(BaseModel):
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True)
+    scope: Literal["technical_admin"]
 
 
 def safe_version(value):
@@ -228,4 +261,126 @@ def audit_summary(db, token, csrf, body):
         scope="technical_admin",
         metadata={"window": body.window},
     )
+    return identity.Result(200, payload)
+
+
+def work_queries(c):
+    """Observer rules at cutoff ``c = now - WORK_GRACE`` (spec 073 §1.4).
+
+    Each queue maps to its stalled and overdue existence queries. They reuse the workers' own
+    eligibility rules E1–E8 and add observer-only eligible-since guards: the row's eligibility
+    inputs (and, where preferences decide eligibility, the owner's preferences) must not have
+    changed since ``c``. These guards exist only here; workers never use them, so the grace
+    period cannot delay or reorder worker selection. The inference assumes a non-decreasing
+    application clock (spec 073 §1.4.1).
+    """
+    unchanged_preferences = or_(
+        ReminderPreferences.owner_id.is_(None), ReminderPreferences.updated_at <= c
+    )
+    return {
+        "approved_jobs": {
+            "stalled": [select(JobOutbox.id).where(eligible.job_lease_expired(c))],
+            "overdue": [select(JobOutbox.id).where(eligible.job_pending(c))],
+        },
+        "reminders": {
+            # Reminder processing has no lease or in-flight marker: never stalled.
+            "stalled": [],
+            "overdue": [
+                select(TaskReminder.id)
+                .outerjoin(ReminderPreferences, eligible.preferences_on_reminder())
+                .where(
+                    eligible.reminder_due(c),
+                    TaskReminder.updated_at <= c,
+                    unchanged_preferences,
+                )
+            ],
+        },
+        "notifications": {
+            "stalled": [
+                select(NotificationDelivery.id)
+                .outerjoin(ReminderPreferences, eligible.preferences_on_delivery())
+                .where(eligible.notification_in_flight_expired(c))
+            ],
+            "overdue": [
+                # Stage 1 (enqueue) only: eligibility to enqueue is not permission to send.
+                select(TaskReminder.id)
+                .outerjoin(NotificationDelivery, eligible.enqueue_on())
+                .where(eligible.notification_enqueue_eligible(), TaskReminder.delivered_at <= c),
+                select(NotificationDelivery.id)
+                .outerjoin(ReminderPreferences, eligible.preferences_on_delivery())
+                .where(
+                    eligible.notification_due(c),
+                    NotificationDelivery.updated_at <= c,
+                    # A resumed paused delivery became eligible when preferences changed.
+                    or_(
+                        NotificationDelivery.reason.is_distinct_from("paused"),
+                        ReminderPreferences.updated_at <= c,
+                    ),
+                ),
+            ],
+        },
+        "filing": {
+            "stalled": [select(FilingExecution.id).where(eligible.filing_in_flight_expired(c))],
+            "overdue": [
+                select(FilingExecution.id).where(
+                    eligible.filing_due(c), FilingExecution.updated_at <= c
+                )
+            ],
+        },
+    }
+
+
+def observe_work(db, c):
+    """Return one state per queue in WORK_QUEUES order: stalled, else overdue, else none."""
+    rules = work_queries(c)
+    states = []
+    for key in WORK_QUEUES:
+        if any(db.scalar(select(query.exists())) for query in rules[key]["stalled"]):
+            state = "stalled"
+        elif any(db.scalar(select(query.exists())) for query in rules[key]["overdue"]):
+            state = "overdue"
+        else:
+            state = "none_observed"
+        states.append({"key": key, "state": state})
+    return states
+
+
+def work_status(db, token, csrf, body):
+    """Queue-level overdue/stalled work observation for a technical administrator (spec 073).
+
+    Household-wide and derived from members' private records, so it returns one state per
+    queue and nothing else (owner decision D1). It is not a worker-health check.
+    """
+    current = authority(
+        db, token, csrf, body.scope, event_prefix="operations", scope_lock="installation"
+    )
+    if isinstance(current, identity.Result):
+        return current
+    user, _ = current
+    if db.get_bind().dialect.name == "postgresql":
+        # Transaction-local, bound values (equivalent to SET LOCAL).
+        db.execute(text("SELECT set_config('lock_timeout', :v, true)"), {"v": WORK_LOCK_TIMEOUT})
+        db.execute(
+            text("SELECT set_config('statement_timeout', :v, true)"),
+            {"v": WORK_STATEMENT_TIMEOUT},
+        )
+    checked = identity.now_utc()
+    queues = observe_work(db, checked - WORK_GRACE)
+    now = identity.now_utc()
+    if identity.resolve(db, token, refresh_session=True) is None or now >= checked + timedelta(
+        seconds=60
+    ):
+        return identity.denied(db, 401, "operations.session_denied", user=user)
+    payload = {
+        "schema_version": 1,
+        "scope": "technical_admin",
+        "actor_id": str(user.id),
+        "checked_at": stamp(checked),
+        "valid_until": stamp(checked + timedelta(seconds=60)),
+        "queues": queues,
+        "not_observed": list(WORK_NOT_OBSERVED),
+        "excludes": list(WORK_EXCLUDES),
+    }
+    # Metadata stays empty: no queue state is persisted, so no cross-member signal is kept.
+    identity.audit(db, "operations.work_status", "success", user=user, scope="technical_admin")
     return identity.Result(200, payload)

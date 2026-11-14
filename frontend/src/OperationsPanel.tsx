@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Session } from "./api";
 import AuditSummarySection from "./AuditSummarySection";
+import WorkStatusSection from "./WorkStatusSection";
 import { jobStates, OperationsError, readOperations, type Snapshot } from "./operations-api";
 
 const labels = {
@@ -46,6 +47,7 @@ export default function OperationsPanel({ session, onUnauthorized }: { session: 
     {session.user.scopes.includes("technical_admin") && <button disabled={busy} onClick={() => void reload()}>Reload operations observations</button>}
     <p>Observations clear within 60 seconds of the request, on hidden tab or when you leave. No polling or automatic action.</p>
     <AuditSummarySection session={session} onUnauthorized={onUnauthorized} />
+    <WorkStatusSection session={session} onUnauthorized={onUnauthorized} />
     {snapshot && <>
       <p>Checked {snapshot.checked_at}. Valid no later than {snapshot.valid_until}.</p>
       <section aria-label="Service observations"><h3>Service observations</h3><ul>{snapshot.components.map(row => <li key={row.key}><strong>{labels[row.key]}</strong>: {stateLabels[row.state]}</li>)}</ul>

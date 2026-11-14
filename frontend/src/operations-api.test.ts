@@ -66,3 +66,57 @@ it("rejects a 200 whose body is malformed rather than showing zeros",async()=>{
   mock({});
   await expect(api.readAuditSummary(session,"24h",new AbortController().signal)).rejects.toThrow();
 });
+
+// Spec 073 test 21: strict work-status parser (mocked; unit level).
+const workFixture=()=>({schema_version:1,scope:"technical_admin",actor_id:actor,checked_at:now,valid_until:"2026-11-10T12:01:00Z",queues:[{key:"approved_jobs",state:"stalled"},{key:"reminders",state:"overdue"},{key:"notifications",state:"overdue"},{key:"filing",state:"none_observed"}],not_observed:["calendar_sync","routines","work"],excludes:["counts","ages","owners_and_scopes","items","worker_liveness","capacity","backups","restore"]});
+it("accepts the exact work status shape with queue-level states only",()=>{
+  const parsed=api.parseWorkStatus(workFixture(),session);
+  expect(parsed.queues.map(q=>q.state)).toEqual(["stalled","overdue","overdue","none_observed"]);
+  expect(parsed.not_observed).toEqual(["calendar_sync","routines","work"]);
+});
+it.each([
+  ["another actor",(v:any)=>{v.actor_id="22222222-2222-4222-8222-222222222222";}],
+  ["extra top-level key",(v:any)=>{v.counts={approved_jobs:3};}],
+  ["missing key",(v:any)=>{delete v.excludes;}],
+  ["extra queue key",(v:any)=>{v.queues[0].count=2;}],
+  ["queue id",(v:any)=>{v.queues[1].id="33333333-3333-4333-8333-333333333333";}],
+  ["queue age",(v:any)=>{v.queues[1].oldest="2026-11-10T11:00:00Z";}],
+  ["owner breakdown",(v:any)=>{v.queues[1].owners=["member_a"];}],
+  ["reordered queues",(v:any)=>{v.queues.reverse();}],
+  ["missing queue",(v:any)=>{v.queues.pop();}],
+  ["extra queue",(v:any)=>{v.queues.push({key:"calendar_sync",state:"none_observed"});}],
+  ["unknown state",(v:any)=>{v.queues[0].state="healthy";}],
+  ["stalled reminders",(v:any)=>{v.queues[1].state="stalled";}],
+  ["changed not observed",(v:any)=>{v.not_observed=["calendar_sync","routines"];}],
+  ["state for an unobserved queue",(v:any)=>{v.not_observed=[{key:"routines",state:"none_observed"},"calendar_sync","work"];}],
+  ["changed exclusions",(v:any)=>{v.excludes=["counts"];}],
+  ["wrong validity",(v:any)=>{v.valid_until="2026-11-10T12:02:00Z";}],
+  ["expired",(v:any)=>{v.valid_until="2026-11-10T11:59:00Z";}],
+  ["future check",(v:any)=>{v.checked_at="2026-11-10T13:00:00Z";v.valid_until="2026-11-10T13:01:00Z";}],
+  ["health claim",(v:any)=>{v.healthy=true;}],
+  ["schema version",(v:any)=>{v.schema_version=2;}],
+])("rejects a work status with %s",(_name,mutate)=>{
+  const value:any=workFixture();mutate(value);
+  expect(()=>api.parseWorkStatus(value,session)).toThrow();
+});
+it("sends one protected no-store POST with only the scope",async()=>{
+  const fetch=mock(workFixture());
+  await api.readWorkStatus(session,new AbortController().signal);
+  expect(fetch).toHaveBeenCalledTimes(1);
+  const [path,init]=fetch.mock.calls[0] as unknown as [string,RequestInit];
+  expect(path).toBe("/api/v1/operations/work-status");
+  expect(init).toMatchObject({method:"POST",credentials:"same-origin",cache:"no-store",redirect:"error"});
+  expect(JSON.parse(String(init.body))).toEqual({scope:"technical_admin"});
+  expect((init.headers as Record<string,string>)["X-CSRF-Token"]).toBe("synthetic-csrf");
+});
+it("makes no work status request without the current technical_admin grant",async()=>{
+  const fetch=mock(workFixture());
+  await expect(api.readWorkStatus({...session,user:{...session.user,scopes:["finance_private"]}},new AbortController().signal)).rejects.toMatchObject({status:403});
+  expect(fetch).not.toHaveBeenCalled();
+});
+it.each([401,403,404,410,422,429,500,503])("sanitizes work status %s and never retries",async status=>{
+  const fetch=mock({detail:"synthetic private traceback"},status);
+  const error=await api.readWorkStatus(session,new AbortController().signal).catch(e=>e);
+  expect(error).toMatchObject({status});expect(String(error.message)).not.toContain("synthetic");
+  expect(fetch).toHaveBeenCalledTimes(1);
+});

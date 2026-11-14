@@ -43,6 +43,8 @@ CASES = [
     ("admin.brand_new_event", "success", "other_admin", "success"),
     ("operations.read", "success", "operations_read", "success"),
     ("operations.audit_summary", "success", "operations_read", "success"),
+    # Spec 073 / owner decision D3 (migration 0038): the work-status view is an operations read.
+    ("operations.work_status", "success", "operations_read", "success"),
     ("auth.scope_read", "success", "other_security", "success"),
     ("auth.brand_new_event", "success", "other_security", "success"),
     ("operations.brand_new_event", "success", "other_security", "success"),
@@ -541,3 +543,52 @@ def test_revoked_grant_and_migration_round_trip(scenario, postgres_engine):
                 )
             )
     assert exists() == 1
+
+
+def test_0038_round_trip_moves_only_the_work_status_mapping(scenario, postgres_engine):
+    """Spec 073 test 19: 0038 <-> 0037 changes one mapping and keeps every function guard."""
+    client, _, _, admin, uid = scenario
+    grant(admin, uid)
+    token = token_of(client)
+
+    def migrate(*args):
+        result = subprocess.run(
+            ["alembic", *args], cwd=BACKEND, capture_output=True, text=True, check=False
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+
+    def guards():
+        with postgres_engine.connect() as db:
+            return db.execute(
+                text(
+                    "SELECT pg_get_userbyid(p.proowner), p.prosecdef, p.proconfig,"
+                    " has_function_privilege('butler_runtime', p.oid, 'EXECUTE'),"
+                    " EXISTS (SELECT 1 FROM aclexplode(p.proacl) AS a"
+                    " WHERE a.grantee = 0 AND a.privilege_type = 'EXECUTE')"
+                    " FROM pg_proc p WHERE p.oid ="
+                    " 'public.butler_audit_summary(text,timestamptz,integer)'::regprocedure"
+                )
+            ).one()
+
+    def category_of_work_status():
+        end = identity.now_utc()
+        before = summary(admin, token, end)
+        insert(admin, uid, "operations.work_status", "success", end - timedelta(minutes=1))
+        after = summary(admin, token, end)
+        return {
+            key[0] for key in set(after) | set(before) if after.get(key, 0) != before.get(key, 0)
+        }
+
+    expected = guards()
+    assert expected[1] is True and expected[2] == ["search_path=pg_catalog"]
+    assert expected[3] is True and expected[4] is False  # runtime may execute; PUBLIC may not
+    assert category_of_work_status() == {"operations_read"}
+    try:
+        migrate("downgrade", "0037_audit_summary")
+        assert guards() == expected  # CREATE OR REPLACE kept owner, definer, path and grants
+        assert category_of_work_status() == {"other_security"}
+    finally:
+        migrate("upgrade", "head")
+    assert guards() == expected
+    assert category_of_work_status() == {"operations_read"}
+    grant(admin, uid, False)
