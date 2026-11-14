@@ -1,16 +1,18 @@
 # Tasks
 
-Checking a box below records only that the named work was done on the implementation branch. It records no independent verification or owner acceptance of any feature or gate, and no merged delivery.
+Checking a box below records only that the named work was done on the implementation branch. It records no independent verification or owner acceptance of any feature or gate, and by itself no merged delivery.
+
+> **Current status (14 November 2026):** implemented in PR #34, merged as `0fbea4e`, 13 November 2026 (see the merge record in [convergence.md](convergence.md)). The merge is integration only. Independent verification and owner acceptance are not recorded in this file. Statements below that call owner review, approval or merge "outstanding" or "pending" are historical snapshots from before the merge.
 
 - [x] Specify: [spec.md](spec.md) drafted for the bounded first slice; revised after owner review (approvals evidence-only, task mapping, audit evidence).
 - [x] Clarify: owner decisions 1–3 recorded in the spec; requirement mappings CORE-10, DOC-03, CORE-11, REM-01 and ORG-03 confirmed by the owner.
 - [x] Plan / analyze: [plan.md](plan.md) written with constitution, data and permission analysis.
-- [ ] Owner review of spec, plan and tasks; owner confirms the slice is ready to implement. (Does not approve the five-priority order.)
+- [ ] Owner review of spec, plan and tasks; owner confirms the slice is ready to implement. (Does not approve the five-priority order.) *(Left unchecked as the original record. PR #34 was subsequently merged; this box records no owner review or acceptance.)*
 - [x] Checklist: acceptance scenarios A–S in the spec were reviewed against this task list before implementation; none required a change to authority, scope, acceptance criteria, an approvals screen or an unapproved field.
 
 Review follow-up (PR #34) done on the branch: section-specific more-records wording, in-inbox approvals paging, revision-tie fix, real-stack e2e, and the owner-approved record-level navigation (filing failure → related document by identity, notification failure → related reminder via a verified `task_id`; convergence finding 2). Hosted CI run 43521167626 passed on the current head, including the real-stack browser spec. The owner-review box above stays unchecked.
 
-Implementation (one coherent batch, one grouped push). Items marked done were completed and run locally on the branch, and hosted CI run 43521167626 passed all six jobs on head `6488588` (including the real-stack `e2e/inbox.spec.ts`, 4 passed); owner review and acceptance are outstanding:
+Implementation (one coherent batch, one grouped push). Items marked done were completed and run locally on the branch, and hosted CI run 43521167626 passed all six jobs on head `6488588` (including the real-stack `e2e/inbox.spec.ts`, 4 passed); owner review and acceptance were outstanding at that time (historical; PR #34 is now merged, acceptance is still not recorded):
 
 - [x] Recheck at implementation time that no migration or code restricts `public.audit_events.event_type`; fix the final event name (`approval.query` is proposed) and pin it with a test; add a migration only if a constraint is found. Done: `event_type` is an unrestricted varchar(128); no constraint, so `approval.query` is used and pinned; no migration.
 - [x] Backend: `POST /api/v1/approvals/query` (pending, unexpired, bound; allow-listed fields; `requested_by_you`; cursor paging; no row writes; one audit event per request; audit failure withholds results).
@@ -21,4 +23,13 @@ Implementation (one coherent batch, one grouped push). Items marked done were co
 - [x] Check whether the existing task response identifies routine origin; show origin only if it already does. Done: the response does not provide origin, so none is shown and no field was added.
 - [x] Playwright workflows at 390×844, including the no-state-changing-request network assertion and storage/URL privacy checks. Harness (mocked) spec done. Review follow-up: a real-stack spec `frontend/e2e/inbox.spec.ts` with `scripts/inbox-browser-fixtures.py` is added and wired into `scripts/test-containers.sh`; hosted run 43521167626 executed it in the `containers` job (4 passed, aggregate result).
 - [x] Contract document, master gate entry, register rows and regenerated overview/dashboard in the same PR, without changing any acceptance criterion; Gate 2 remains the owner's to accept.
-- [ ] Required local checks once, one grouped push and one PR, then stop without merge. Final convergence per [convergence.md](convergence.md). Local checks ran; PR #34 is open for owner review; hosted CI passed on the current head; owner review, approval and merge are pending and are the owner's.
+- [ ] Required local checks once, one grouped push and one PR, then stop without merge. Final convergence per [convergence.md](convergence.md). Local checks ran; PR #34 is open for owner review; hosted CI passed on the current head; owner review, approval and merge are pending and are the owner's. *(Historical record as written before the merge, left unchecked as originally recorded. The delivery facts are in the status list below.)*
+
+## Status by phase (14 November 2026)
+
+The boxes above are the historical task record and are not edited to imply otherwise. Current facts, kept distinct:
+
+- [ ] **Historical specification review before implementation** (the "Owner review of spec, plan and tasks" box above): unchecked as originally recorded. This file holds no record that it was completed and does not claim it.
+- [x] **Implementation delivered and merged:** PR #34, merge `0fbea4e`, 13 November 2026. Pull-request-head CI passed on `7c31105` (run 43527723181); the push to `main` at `0fbea4e` passed (run 43530042389). Merge is integration only. An implementation authorization is not recorded in this file.
+- [ ] **Independent verification:** not done, not claimed.
+- [ ] **Owner acceptance** (Gate 2 and the related requirements; private-host, mobile-device and real-provider acceptance are separate): not done, not claimed.

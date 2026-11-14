@@ -16,7 +16,7 @@ Only jobs requested by the current administrator in `technical_admin`, created i
 
 Audit review: the runtime role intentionally has INSERT-only audit access and still does. The overview itself reads no audit data. A separate, explicit **Audit summary** is described below. Reading this view still appends metadata-only access audit, committed before release; an audit failure withholds the entire response.
 
-## Audit summary (spec 072, first OPS-10 slice; branch engineering, unmerged)
+## Audit summary (spec 072, first OPS-10 slice; merged, PR #35, merge `41aa5f3`)
 
 A technical administrator can choose a window (last 24 hours or 7 days) and **Load audit summary**. Nothing loads with the overview and nothing polls. The result is a count table of security and administrative audit events by a fixed category (sign-in/out, denied or rate-limited access, access changes, recovery administration, other administrative, operations views, other security) and outcome (succeeded, denied, other).
 
@@ -29,7 +29,7 @@ A technical administrator can choose a window (last 24 hours or 7 days) and **Lo
 
 This supersedes the initial spec066 draft's direct audit-query idea, not the original requirement.
 
-## Work status (spec 073, overdue and stalled queue work; branch engineering, unmerged)
+## Work status (spec 073, overdue and stalled queue work; merged, PR #37, merge `4a7e624`)
 
 A technical administrator can choose **Load work status**. Nothing loads with the overview and nothing polls. The result is one state per queue for approved jobs, reminders, notifications and filing: `none_observed`, `overdue` (eligible work has waited longer than a fixed 120-second grace period) or `stalled` (an attempt or lease expired and was not taken over; never for reminders). Calendar sync, routines and Work are listed as not observed, never as clear. Implementation was authorized by the owner on 14 November 2026; the contract and owner decisions D1–D4 are in [spec 073](../specs/073-overdue-stalled-work/spec.md).
 

@@ -1,6 +1,8 @@
 # Spec 073 convergence
 
-**Implemented on branch `codex/impl-073-work-status` from `main` at `2e04ff8` (merge of PR #36), under the owner's implementation authorization of 14 November 2026. Locally tested; not merged, not independently verified, not accepted.** Local evidence uses disposable PostgreSQL 16 databases and synthetic data only. Implementation, testing, verification and acceptance are separate facts; only implementation and local testing are claimed here. No OPS-09, OPS-10, Gate 10 or other gate, priority or acceptance status changes.
+**Historical snapshot (branch snapshot from `main` at `2e04ff8`, before PR #37 merged); superseded. Current status is in the merge record below and in [PROJECT_MASTER.md](../../PROJECT_MASTER.md).** **Original status: implemented on branch `codex/impl-073-work-status` from `main` at `2e04ff8` (merge of PR #36), under the owner's implementation authorization of 14 November 2026. Locally tested; not merged, not independently verified, not accepted.** Local evidence uses disposable PostgreSQL 16 databases and synthetic data only. Implementation, testing, verification and acceptance are separate facts; only implementation and local testing are claimed here. No OPS-09, OPS-10, Gate 10 or other gate, priority or acceptance status changes.
+
+> **Current status and merge record (added 14 November 2026, after the merge; the text above is retained as written at the time):** implemented and **merged**, integration only. the implementation merged as [PR #37](https://github.com/LYF-FC/local-assistant-core/pull/37) (merge `4a7e624`, 14 November 2026). Pull-request-head CI passed on `2408a68` (run 43615751104) and the push to `main` at the merge commit `4a7e624` passed all six jobs (run 43624054196, attempt 1). Merging is integration only: it is not independent verification or owner acceptance, and no requirement, gate, count or priority changed because of it. Statements elsewhere in this document that describe the work as not yet implemented, not merged, awaiting hosted CI or awaiting merge are historical snapshots of the baseline at which they were written.
 
 ## Contract to code
 
@@ -54,5 +56,7 @@
 
 ## Not verified / remaining
 
-- Hosted CI and real-stack Playwright on the PR head; independent review; owner acceptance. No real-host, restart or clock behaviour is claimed; synthetic process evidence (test 16) is synthetic-channel only.
-- Pre-existing wording outside this change remains as it was: the `OPERATIONS_OVERVIEW.md` spec 072 heading ("branch engineering, unmerged"), the master snapshot header and `FEATURE_PROGRESS.json` at `5096134`, and the Operations overview's "Worker heartbeat / overdue work" component label (still `unknown`, now alongside the separate Work status view).
+*(Historical, as written on the open branch. Since then: hosted CI on the PR head `2408a68` passed all six jobs including real-stack Playwright (run 43615751104) and the push to `main` at `4a7e624` passed (run 43624054196). Those are CI results only. Independent review and owner acceptance remain outstanding.)*
+
+- Hosted CI and real-stack Playwright on the PR head (historical; now recorded above); independent review; owner acceptance. No real-host, restart or clock behaviour is claimed; synthetic process evidence (test 16) is synthetic-channel only.
+- *(Historical snapshot: these were the stale statements at the time of this branch; the documentation reconciliation PR #38 corrects them, see PROJECT_MASTER.md for its status.)* Pre-existing wording outside this change remains as it was: the `OPERATIONS_OVERVIEW.md` spec 072 heading ("branch engineering, unmerged"), the master snapshot header and `FEATURE_PROGRESS.json` at `5096134`, and the Operations overview's "Worker heartbeat / overdue work" component label (still `unknown`, now alongside the separate Work status view).

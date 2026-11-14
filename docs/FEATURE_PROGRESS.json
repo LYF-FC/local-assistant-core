@@ -1,17 +1,17 @@
 {
   "schema_version": 1,
   "snapshot": {
-    "date": "2026-11-13",
-    "main_sha": "5096134687fd1c03805977a1681b415395a046f0",
-    "merged_through_pr": 31,
+    "date": "2026-11-14",
+    "main_sha": "4a7e62468196fff913df02ac4fb6f60ae7759b83",
+    "merged_through_pr": 37,
     "register_rows_sha256": "977ac2cd45c4b06983f87f2152c4a2bed2e744b4d6db1fc44cf349e0435bb8ad",
     "ci_evidence": {
-      "run_id": 43493750600,
+      "run_id": 43624054196,
       "event": "push",
       "branch": "main",
-      "head_sha": "5096134687fd1c03805977a1681b415395a046f0",
+      "head_sha": "4a7e62468196fff913df02ac4fb6f60ae7759b83",
       "conclusion": "success",
-      "note": "Hosted CI run for the push to main at the snapshot revision. Attempt 1 failed in the postgres job on a lock timeout in an unrelated work-adapter test (test_work_source_checkpoint_postgres, LockNotAvailable on work_workspaces); rerunning the failed jobs (attempt 2) succeeded, so all six jobs succeeded only after that rerun. Recorded as CI evidence only: it is not reviewer-signed verification of any gate and not owner acceptance."
+      "note": "Hosted CI run for the push to main at the snapshot revision (the merge of PR #37): attempt 1, all six jobs succeeded. Other main pushes since the previous snapshot (5096134, run 43493750600): 41aa5f3 (PR #35 merge) failed in the postgres integration step (run 43592529868; failing test not established here); f617330 (a calendar test determinism fix, no associated PR found) succeeded (run 43603362335); 2e04ff8 (PR #36 merge) succeeded (run 43611079243). A passing pull-request-head run does not establish merge-commit CI. Recorded as CI evidence only: it is not reviewer-signed verification of any gate and not owner acceptance."
     }
   },
   "stages": {
@@ -420,6 +420,24 @@
       "title": "PR #31 · Process-restart recovery evidence (synthetic)",
       "description": "Real worker subprocesses killed with SIGKILL and recovered by fresh processes against PostgreSQL and a durable synthetic destination/delivery ledger; ambiguous outcomes reconciled by lookup, stale workers fenced (fence added to the notification worker) and migration 0036 for notification rechecks. Testing evidence for Gates 5 and 7 against synthetic collaborators only: no real provider, destination or inbox, not exactly-once, no status count changes and no gate accepted.",
       "path": "pull/31",
+      "baseline": false
+    },
+    {
+      "title": "PR #34 · Unified attention inbox",
+      "description": "An explicit read-and-link Inbox for one granted scope composing tasks, reminders, documents needing review and filing and notification failures, with evidence-only pending approvals; no approvals screen, live provider or infrastructure status, and no gate accepted.",
+      "path": "pull/34",
+      "baseline": false
+    },
+    {
+      "title": "PR #35 · Operations audit summary",
+      "description": "An explicit, audited, count-only summary of security and administrative audit events for a technical administrator through a reviewed SECURITY DEFINER projection (migration 0037); a first slice of OPS-10 only, with no status change.",
+      "path": "pull/35",
+      "baseline": false
+    },
+    {
+      "title": "PR #37 · Overdue and stalled work observation",
+      "description": "An explicit, audited, queue-level overdue/stalled observation of the approved-job, reminder, notification and filing queues for a technical administrator (migration 0038), reusing the workers' own selection rules; not a worker-health check, with OPS-09 and OPS-10 statuses unchanged.",
+      "path": "pull/37",
       "baseline": false
     }
   ],
