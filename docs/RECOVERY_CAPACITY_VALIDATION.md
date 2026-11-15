@@ -50,18 +50,23 @@ Required available space on the recovery host is therefore at least D + A + M + 
 
 ## 5. Metadata to record
 
-Host or VM model, CPU and cores, RAM, swap, kernel, operating system, Python version, git SHA under test, storage device type, filesystem type and mount options, free space before and after, cache state and how it was set, concurrent load, dataset descriptor (size, generator, seed, sparse or not), the tool's closed JSON output verbatim, operator and reviewer roles.
+A reference to the host or VM profile (model and CPU description are kept in that referenced record, not in the log), CPU cores, RAM, swap, kernel, operating system and Python version as constrained version tokens, git SHA under test, storage device type and filesystem type from closed lists, mount options from a closed list, free space before and after, cache state, dataset descriptor (size, opaque generator and seed references, sparse or not, entry count), an opaque reference to the stored tool output together with its exit status and reason codes, operator and reviewer roles. Verbatim tool output and free-text descriptions are **not** embedded in the log, so an entry cannot become a channel for arbitrary data.
 
 ## 6. Evidence-log entry (JSON lines; synthetic data; no key material or real paths)
 
 ```
-{ "run_id": "", "date_utc": "", "git_sha": "", "env_class": "disposable-nonprod",
-  "host": {"model":"", "cpu":"", "cores":0, "ram_bytes":0, "swap_bytes":0, "kernel":"", "os":"", "python":""},
-  "storage": {"device_type":"", "fs_type":"", "mount_options":"", "free_before":0, "free_after":0},
-  "dataset": {"size_bytes":0, "generator":"", "seed":"", "sparse":false, "entries":0},
+{ "run_id": "<ref>", "date_utc": "<complete UTC or offset timestamp>", "git_sha": "<40 hex>",
+  "env_class": "disposable-nonprod",
+  "host": {"profile_ref": "<ref>", "cores": 0, "ram_bytes": 0, "swap_bytes": 0,
+           "kernel": "<token>", "os": "<token>", "python": "<token>"},
+  "storage": {"device_type": "<closed list>", "fs_type": "<closed list>",
+              "mount_options": ["<closed list>"], "free_before": 0, "free_after": 0},
+  "dataset": {"size_bytes": 0, "generator": "<ref>", "seed": "<ref>", "sparse": false, "entries": 0},
   "cache_state": "cold|warm|unknown", "command_shape": "generate|verify",
-  "tool_output_verbatim": {}, "measurements": {"wall_ms":0, "peak_rss_bytes":0, "throughput_bytes_s":0},
-  "anomalies": [], "operator": "<role>", "reviewer": "<role>", "disposition": "informational" }
+  "tool_output_ref": "<ref>", "tool_exit_status": 0, "tool_reason_codes": ["<code>"],
+  "measurements": {"wall_ms": 0, "peak_rss_bytes": 0, "throughput_bytes_s": 0},
+  "anomalies": ["<code>"], "operator": "<ref>", "reviewer": "<ref>",
+  "disposition": "informational" }
 ```
 
 Each entry carries the statement "informational; not an RPO/RTO or recovery-readiness measure". Nothing is classed "measured operational capacity" until the owner decides (spec 3.8).
