@@ -69,7 +69,7 @@ The boxes below stay unchecked: PR #42 delivered drafts, not the owner decisions
 - [ ] C4 Measured resource testing and a separate owner decision on the real operational dump ceiling (O8); 64 GiB is not approved. A validation plan was delivered in PR #42; no measurement or ceiling decision has occurred, and measurement remains unauthorized.
 - [ ] C5 Key-generation requirements and design preparation only (O9). Requirements preparation is included in the PR #42 draft; key-generation tooling and any provisioning workflow remain unauthorized and deferred until custody is decided.
 
-Outstanding record (not a Phase C task and not a checkbox): the independent-verification record against the exact post-reconciliation `main` revision, with full coverage (spec section 11.7, step 3). It is not complete and remains a prerequisite for any real-key or real-set use.
+Outstanding record (not a Phase C task and not a checkbox): the independent-verification record against the exact `main` revision selected for review, with full coverage (spec section 11.7, step 3). It is not complete and remains a prerequisite for any real-key or real-set use.
 
 ## Not tasks of this spec
 
