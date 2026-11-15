@@ -91,3 +91,7 @@ Migration 0019 and its non-public fixed-search-path helpers are part of checked 
 
 
 Spec060 [installation configuration](INSTALLATION_SETUP.md) participates in full logical backup/restore: UUID, defaults, revision snapshots and attribution are retained without reinitialization or activation. The synthetic restore harness compares the restored record/history with a private temporary manifest. A sanitized setup template excludes identity/history and is not a recovery backup. Downgrading0030 destroys the new state; reviewed backup recovery is required.
+
+## Recovery-set manifest verification — spec 074 (cross-reference, synthetic-only)
+
+[RECOVERY_SET](RECOVERY_SET.md) documents an offline manifest check (`python -m app.recovery_set generate|verify`) of the integrity and authenticity of a defined backup set, with a synthetic drill in `scripts/test-db-restore.sh`. It does not restore or stage data, observe backup freshness, schedule backups, manage keys or reconcile forgetting, and it delivers no recovery procedure, clean-host recovery or RPO/RTO. A manifest that verifies is not permission to restore: older backups can still reintroduce forgotten data, and the reconciliation procedures on this page remain required. The boundaries stated elsewhere on this page are unchanged.

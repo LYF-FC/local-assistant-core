@@ -1,4 +1,4 @@
-**Specification FROZEN (owner decision of 14 November 2026; frozen revision is the content of commit `f903237a69e6e2eeeef8b057abef3fc618a27630`). Phase A is closed and the specification remains frozen. The owner separately authorized Phase B synthetic-only implementation, which was implemented and merged in PR #40 (merge commit `47b949e61c96a2e3c2fd883e1784a2856946146c`). B050 and B052 are complete on the recorded synthetic-only validation evidence. The owner formally accepted synthetic-only Phase B on 15 November 2026. Phase C remains deferred, unchecked and unauthorized; no real-key or real-set use is authorized.** Authorization, implementation, verification, merge and acceptance are distinct. The phases are distinct and each needs its own explicit owner decision; the freeze is not an implementation authorization.
+**Specification FROZEN (owner decision of 14 November 2026; frozen revision is the content of commit `f903237a69e6e2eeeef8b057abef3fc618a27630`). Phase A is closed and the specification remains frozen. The owner separately authorized Phase B synthetic-only implementation, which was implemented and merged in PR #40 (merge commit `47b949e61c96a2e3c2fd883e1784a2856946146c`). B050 and B052 are complete on the recorded synthetic-only validation evidence. The owner formally accepted synthetic-only Phase B on 15 November 2026. The owner acknowledged and accepted the two documented implementation interpretations (only the first violation is reported under the closed output schema; a stale temporary link after confirmed durability leaves the resulting set unverifiable until it is removed). On 15 November 2026 the owner authorized Phase C design and preparatory work only; the Phase C tasks stay unchecked, and Phase C implementation and any real-key or real-set use are not authorized.** Authorization, implementation, verification, merge and acceptance are distinct. The phases are distinct and each needs its own explicit owner decision; the freeze is not an implementation authorization.
 
 
 
@@ -47,13 +47,27 @@
 - [x] B051 Documentation page (integrity, authenticity, freshness and expectations; trust inputs; generation-host trust boundary; HMAC limitation; filesystem assumptions; custody responsibilities) and cross-references, with no status change.
 - [x] B052 Quality gates, mutation checks of plan 1.4, hosted CI on the PR head and, separately, on the merge commit. _Evidence: local quality gates and mutation checks were completed and reported; hosted PR-head Foundation CI run 43643717067 passed all six jobs (scope, backend, postgres, containers, frontend, ci), with none skipped or cancelled, and its hosted PostgreSQL job ran the synthetic logical backup and isolated restore drill successfully. Hosted merge-commit Foundation CI run 43647391844, attempt 3, completed successfully on exact merge commit `47b949e61c96a2e3c2fd883e1784a2856946146c`: all six jobs (scope, backend, postgres, containers, frontend, ci) passed, with none skipped, cancelled or failed; the PostgreSQL integration tests and synthetic logical backup/isolated restore step passed, as did the container tests and aggregate CI gate. This is synthetic CI evidence only and does not establish real NAS recovery, independent verification, clean-host recovery, RPO/RTO or recovery readiness._
 
-## Phase C: before any real-key or real-set use (deferred, not part of this slice)
+## Phase C: before any real-key or real-set use (design and preparation authorized; implementation and operational work not authorized)
+
+Authorization boundaries, from the owner decisions of 15 November 2026 (the Phase B acceptance and the Phase C design-only authorization):
+
+| Category | State |
+|---|---|
+| Authorized | Design, policy-drafting and requirements work for C1 to C5: reviewable drafts, alternatives, risks, owner-decision lists and acceptance criteria (C5: requirements preparation only) |
+| Pending owner approval | Every Phase C proposal and design (roles, storage design, hash-governance option, retention periods, capacity thresholds, key-generation requirements). A proposal is not a decision |
+| Not authorized: measurements and tests | Capacity measurements, large-data runs, NAS or production-storage access, and synthetic-key test runs for governance or capacity demonstrations |
+| Not authorized: implementation and operations | Key-generation or key-management tooling, generating, provisioning, storing or rotating a real key, custody activation, creating or operating a real recovery set, operational recovery or restore, and any migration, schema or configuration change |
+
+The boxes below stay unchecked until the exact task is complete and its evidence exists; a draft, a proposal or an authorization to design completes none of them.
+
 
 - [ ] C1 Key holder, custody, storage, access, backup and loss-recovery procedure (O1b).
 - [ ] C2 Governance of the independently retained expected manifest hash (O5).
 - [ ] C3 Retention policy for manifests, backups and archives, expected-hash records, and forgetting reconciliation (O2).
 - [ ] C4 Measured resource testing and a separate owner decision on the real operational dump ceiling (O8); 64 GiB is not approved.
 - [ ] C5 Real key-generation tooling and provisioning workflow, after custody is decided (O9).
+
+Outstanding record (not a Phase C task and not a checkbox): the independent-verification record against the exact post-reconciliation `main` revision, with full coverage (spec section 11.7, step 3). It is not complete and remains a prerequisite for any real-key or real-set use.
 
 ## Not tasks of this spec
 

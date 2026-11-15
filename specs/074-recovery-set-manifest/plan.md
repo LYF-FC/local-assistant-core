@@ -1,6 +1,6 @@
 # Spec 074 plan, checklist and analysis
 
-**Companion plan for the FROZEN specification (owner freeze decision of 14 November 2026; frozen revision is the content of commit `f903237a69e6e2eeeef8b057abef3fc618a27630`, see the freeze record in [spec.md](spec.md)). Phase A is complete. Phase B synthetic-only implementation was separately authorized by the owner, implemented and merged in PR #40 (merge commit `47b949e61c96a2e3c2fd883e1784a2856946146c`); B050 and B052 validation tasks are complete as recorded in [tasks.md](tasks.md). The owner formally accepted synthetic-only Phase B on 15 November 2026. A separate independent-verification record against the exact post-reconciliation `main` revision remains outstanding. Phase C remains deferred and unauthorized; real-key and real-set use remain outside this authorization.** This document retains the original plan, checklist and analysis; it does not expand the frozen requirements or authorize further work.
+**Companion plan for the FROZEN specification (owner freeze decision of 14 November 2026; frozen revision is the content of commit `f903237a69e6e2eeeef8b057abef3fc618a27630`, see the freeze record in [spec.md](spec.md)). Phase A is complete. Phase B synthetic-only implementation was separately authorized by the owner, implemented and merged in PR #40 (merge commit `47b949e61c96a2e3c2fd883e1784a2856946146c`); B050 and B052 validation tasks are complete as recorded in [tasks.md](tasks.md). The owner formally accepted synthetic-only Phase B on 15 November 2026. A separate independent-verification record against the exact post-reconciliation `main` revision remains outstanding. Phase C design and preparatory work only was authorized by the owner on 15 November 2026; Phase C implementation, real-key and real-set use remain unauthorized, and every design proposal stays a proposal until the owner decides it.** This document retains the original plan, checklist and analysis; it does not expand the frozen requirements or authorize further work.
 
 ## 1. Plan and implementation record (original plan, delivered within the separately authorized Phase B scope)
 
@@ -41,9 +41,10 @@ New: `backend/app/recovery_set/*`, `backend/tests/test_recovery_set_*.py`, a syn
 |---|---|---|
 | Specification | **Frozen** 14 November 2026 (revision of commit `f903237a69e6e2eeeef8b057abef3fc618a27630`) | Done. Owner review and freeze decision recorded |
 | Synthetic-only implementation | **Merged and owner-accepted (15 November 2026)** | Separately authorized by the owner; delivered in PR #40. B050 and B052 validation evidence is recorded in tasks.md. A separate independent-verification record against the exact post-reconciliation `main` revision remains outstanding |
+| Phase C design and preparation | **Authorized (design and preparatory work only)** | Owner approval of each proposal. No implementation, key operation, measurement or test run is authorized |
 | Real-key or real-set use | **Not authorized; deferred** | The deferred decisions of spec 10.2 and further owner decisions/procedures |
 | Restore and staging | **Out of scope** | A later restore specification and separate authorization |
-| Phase B owner acceptance | **Pending** | Separate owner decision after independent verification at an exact `main` revision and acknowledgement of documented limitations |
+| Phase B owner acceptance | **Accepted 15 November 2026** (synthetic-only scope; the two documented interpretations were acknowledged) | Owner decision, bounded to the synthetic-only Phase B scope. The independent-verification record at an exact `main` revision remains outstanding and is a prerequisite for any real-key or real-set use (spec 11.7) |
 
 ## 3. Checklist (requirements quality)
 
