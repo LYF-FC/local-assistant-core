@@ -4,6 +4,7 @@ import json
 import os
 import re
 import stat
+from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
@@ -16,6 +17,10 @@ SCHEMA_HEAD = re.compile(r"[A-Za-z0-9_]{1,64}")
 # or deletion-evidence records (spec 9.4): they would re-disclose what was forgotten.
 OBJECT_NAME = re.compile(r"[a-f0-9]{32}-v[1-9][0-9]{0,8}\.original")
 BARE_32HEX = re.compile(r"[a-f0-9]{32}")
+# Long hexadecimal strings are indistinguishable from key material, so opaque references and
+# identifiers may not look like one. (Public hashes are the unavoidable exception: see hash_record.)
+KEY_LIKE = re.compile(r"[0-9A-Fa-f]{32,}")
+TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})")
 MAX_INPUT_BYTES = 1024 * 1024
 
 CODES = frozenset(
@@ -39,6 +44,7 @@ CODES = frozenset(
         "evidence_environment_rejected",
         "role_register_invalid",
         "key_event_invalid",
+        "input_out_of_range",
     }
 )
 
@@ -102,6 +108,30 @@ def read_json_file(path, limit=MAX_INPUT_BYTES):
         return loads_strict(data.decode("utf-8"))
     except UnicodeDecodeError:
         raise GovernanceError("json_malformed") from None
+
+
+def is_ref(value):
+    """An opaque, non-secret reference: closed character set, bounded, and not key-like."""
+    return (
+        isinstance(value, str)
+        and REF.fullmatch(value) is not None
+        and KEY_LIKE.fullmatch(value) is None
+    )
+
+
+def is_schema_one(value):
+    """True only for the integer 1 (a Boolean ``True`` compares equal to 1 and is rejected)."""
+    return type(value) is int and value == 1
+
+
+def valid_timestamp(value):
+    """A complete, timezone-aware ISO 8601 timestamp (date, time and offset or Z)."""
+    if not isinstance(value, str) or not TIMESTAMP.fullmatch(value):
+        return False
+    try:
+        return datetime.fromisoformat(value).tzinfo is not None
+    except ValueError:
+        return False
 
 
 def scan_strings(value):

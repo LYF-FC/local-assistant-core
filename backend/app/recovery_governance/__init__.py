@@ -7,4 +7,7 @@ change the closed output of that tool. Every owner decision that is still open (
 periods, capacity ratios and margins, the dump ceiling) must be supplied explicitly or stays the
 literal ``undecided``; no default is invented here. Nothing in this package is verification,
 acceptance or an operational-readiness claim.
+
+The boundary tests that watch this package are static regression guards, not a security sandbox.
+References (owner acceptance, approval processes) are format-checked only: no authority is verified.
 """
