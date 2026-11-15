@@ -241,3 +241,34 @@ def test_file_loader_is_bounded_read_only_and_refuses_links_and_non_files(tmp_pa
     bad = tmp_path / "bad.json"
     bad.write_bytes(b"\xff\xfe")
     assert code(lambda: read_json_file(str(bad))) == "json_malformed"
+
+
+@pytest.mark.parametrize("version", [True, 1.0, "1", 0, 2, None])
+def test_boolean_and_non_integer_schema_versions_are_rejected(version):
+    bad_policy = dict(UNDECIDED, schema_version=version)
+    assert code(lambda: parse_policy(bad_policy)) == "policy_period_invalid"
+    bad_inventory = dict(inventory([item("SET-1")]), schema_version=version)
+    assert code(lambda: parse_inventory(bad_inventory)) == "inventory_invalid"
+
+
+@pytest.mark.parametrize("value", ["0123456789abcdef" * 4, "0123456789abcdef" * 2, "A" * 40])
+def test_key_like_references_are_rejected_in_every_reference_field(value):
+    rejected = {"inventory_invalid", "object_identifier_rejected"}
+    assert code(lambda: parse_inventory(inventory([item(value)]))) in rejected
+    with_evidence = inventory([item("SET-1", evidence_ref=value)])
+    assert code(lambda: parse_inventory(with_evidence)) in rejected
+    obligation = {"obligation_ref": value, "applies_to": ["SET-1"], "status": "open"}
+    assert code(lambda: parse_inventory(inventory([item("SET-1")], [obligation]))) in rejected
+    assert code(lambda: parse_destruction_record(destruction(method_ref=value))) in {
+        "record_malformed",
+        "object_identifier_rejected",
+    }
+
+
+def test_reports_state_that_references_are_format_checked_not_verified():
+    report = run(UNDECIDED, inventory([item("SET-1")]))
+    assert report["references"] == "format_checked_only_not_verified"
+    assert (
+        parse_destruction_record(destruction())["authority_verification"]
+        == "not_performed_by_this_package"
+    )

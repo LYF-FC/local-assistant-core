@@ -17,10 +17,11 @@ from pydantic import field_validator
 from app.recovery_governance.common import (
     DATE,
     HEX64,
-    REF,
     UUID,
     Closed,
     GovernanceError,
+    is_ref,
+    is_schema_one,
     reject_object_identifiers,
     require_mapping,
 )
@@ -60,7 +61,7 @@ def _check_date(value):
 def parse_policy(raw):
     """Return {class: None | days}; None means undecided. Every class is required."""
     raw = require_mapping(raw, "policy_period_invalid")
-    if set(raw) != {"schema_version", "periods"} or raw["schema_version"] != 1:
+    if set(raw) != {"schema_version", "periods"} or not is_schema_one(raw["schema_version"]):
         raise GovernanceError("policy_period_invalid")
     periods = require_mapping(raw["periods"], "policy_period_invalid")
     for name in periods:
@@ -106,7 +107,7 @@ class InventoryItem(Closed):
     @field_validator("artifact_id", "evidence_ref")
     @classmethod
     def _ref(cls, value):
-        if value is not None and not REF.fullmatch(value):
+        if value is not None and not is_ref(value):
             raise ValueError("ref")
         return value
 
@@ -125,21 +126,23 @@ class Obligation(Closed):
     @field_validator("obligation_ref", "evidence_ref")
     @classmethod
     def _ref(cls, value):
-        if value is not None and not REF.fullmatch(value):
+        if value is not None and not is_ref(value):
             raise ValueError("ref")
         return value
 
     @field_validator("applies_to")
     @classmethod
     def _targets(cls, value):
-        if not value or not all(isinstance(i, str) and REF.fullmatch(i) for i in value):
+        if not value or not all(is_ref(i) for i in value):
             raise ValueError("applies_to")
         return value
 
 
 def parse_inventory(raw):
     raw = require_mapping(raw, "inventory_invalid")
-    if set(raw) - {"schema_version", "items", "obligations"} or raw.get("schema_version") != 1:
+    if set(raw) - {"schema_version", "items", "obligations"} or not is_schema_one(
+        raw.get("schema_version")
+    ):
         raise GovernanceError("inventory_invalid")
     if not isinstance(raw.get("items"), list) or not isinstance(raw.get("obligations", []), list):
         raise GovernanceError("inventory_invalid")
@@ -195,6 +198,7 @@ def reconcile(policy, items, obligations, as_of):
         "basis": "policy_and_inventory_only",
         "actions_taken": "none",
         "blockers": list(BLOCKERS),
+        "references": "format_checked_only_not_verified",
         "items": report,
         "summary": dict(sorted(counts.items())),
     }
@@ -233,7 +237,7 @@ class DestructionRecord(Closed):
     @field_validator("set_id", "authorized_by_ref", "method_ref", "copy_inventory_ref")
     @classmethod
     def _ref(cls, value):
-        if not REF.fullmatch(value):
+        if not is_ref(value):
             raise ValueError("ref")
         return value
 
@@ -250,5 +254,6 @@ def parse_destruction_record(raw):
     return {
         "valid": True,
         "record_id": record.record_id,
+        "authority_verification": "not_performed_by_this_package",
         "note": "evidence_record_only; no_deletion_performed_or_authorized_by_validation",
     }
