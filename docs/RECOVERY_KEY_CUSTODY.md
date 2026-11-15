@@ -1,6 +1,6 @@
 # Recovery-set key custody policy and key-generation requirements — spec 074 Phase C (C1, C5)
 
-**Status: DRAFT design proposal for owner review. Nothing here is decided, implemented, operating or approved.** On 15 November 2026 the owner authorized Phase C design and preparatory work only. No key exists or is created by this document; no person, medium or location is selected; no custody is activated; no tooling is implemented. This page distinguishes **design proposals** from **implemented controls**: the only implemented controls are those of [RECOVERY_SET.md](RECOVERY_SET.md). It changes no gate, register row or acceptance status. The frozen [spec 074](../specs/074-recovery-set-manifest/spec.md) is the authority for sections 6.1 to 6.7 cited below; this draft does not amend it.
+**Status: DRAFT design proposal for owner review. Nothing here is decided, implemented, operating or approved.** On 15 November 2026 the owner authorized Phase C design and preparatory work only; the owner later authorized implementation of the non-operational portions ([RECOVERY_PHASE_C_IMPLEMENTATION.md](RECOVERY_PHASE_C_IMPLEMENTATION.md)). This draft remains a proposal. No key exists or is created by this document; no person, medium or location is selected; no custody is activated; no tooling is implemented. This page distinguishes **design proposals** from **implemented controls**: the only implemented controls are those of [RECOVERY_SET.md](RECOVERY_SET.md). It changes no gate, register row or acceptance status. The frozen [spec 074](../specs/074-recovery-set-manifest/spec.md) is the authority for sections 6.1 to 6.7 cited below; this draft does not amend it.
 
 ## 1. What is fixed by the specification
 
@@ -100,7 +100,7 @@ Key generation is deferred until the custody decisions of section 10 exist; thes
 | KG-5 | Exclusive creation, owner-only mode at creation, no overwrite or replace, to a path chosen by the custodian outside any recovery set | Existing target refused; created mode has no group or other bits |
 | KG-6 | Material never printed, logged, placed in an argument or environment, or included in an exception, repr or traceback | The same absence tests as spec 6.3, over every output stream and log |
 | KG-7 | Durable and atomic: flush the file and its directory; an interruption leaves no partial key file | Kill-point tests (synthetic) |
-| KG-8 | Metadata-only generation record (key id, fingerprint, creation time, installation id, ceremony identifier, role), never the material | Record schema review; absence tests |
+| KG-8 | Metadata-only generation record (key id, an opaque reference to the keeper's fingerprint record, creation time, installation id, ceremony identifier, role), never the material and never the 64-hex fingerprint itself, which cannot be told apart from key material by syntax | Record schema review; absence tests |
 | KG-9 | Lifecycle states generated, provisioned, active, rotated, retired, destroyed, each transition logged and tied to the retention matrix | State table and transition tests |
 | KG-10 | Generation happens only in a custodian-authorized session on a host the custodian designates; a second copy is a second holder and is logged as such | Procedure review; tabletop |
 | KG-11 | Two generations never yield the same key or `key_id` | Test with synthetic runs only |

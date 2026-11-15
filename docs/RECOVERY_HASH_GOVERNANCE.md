@@ -1,6 +1,6 @@
 # Expected-manifest-hash governance — spec 074 Phase C (C2)
 
-**Status: DRAFT design proposal for owner review. No control described here is implemented, approved or operating.** On 15 November 2026 the owner authorized Phase C design and preparatory work only. The only implemented behaviour is that of [RECOVERY_SET.md](RECOVERY_SET.md): `verify` accepts an optional `--expected-manifest-hash`, compares it with the computed `manifest_hash` after authenticity is valid, and a supplied mismatch always fails (spec 5.1, 5.2, 10.1; O5). Governance of the retained hash (who records, retains and updates it) is deferred (spec 10.2). Synthetic example values only. No status changes.
+**Status: DRAFT design proposal for owner review. No control described here is implemented, approved or operating.** On 15 November 2026 the owner authorized Phase C design and preparatory work only; the owner later authorized implementation of the non-operational portions ([RECOVERY_PHASE_C_IMPLEMENTATION.md](RECOVERY_PHASE_C_IMPLEMENTATION.md)). This draft remains a proposal. The only implemented behaviour is that of [RECOVERY_SET.md](RECOVERY_SET.md): `verify` accepts an optional `--expected-manifest-hash`, compares it with the computed `manifest_hash` after authenticity is valid, and a supplied mismatch always fails (spec 5.1, 5.2, 10.1; O5). Governance of the retained hash (who records, retains and updates it) is deferred (spec 10.2). Synthetic example values only. No status changes.
 
 ## 1. Purpose and the anchoring principle
 
@@ -27,7 +27,7 @@ A second person **cannot** independently rerun the HMAC verification without the
 | **B. Additional authenticity check by a key holder** | In an authorized session a key holder runs `verify`; the keeper records the reported `manifest_hash`. | The running holder, as already | Adds that an HMAC-valid manifest produced that hash. **The key holder is not an independent verifier**, and a custodian-run check is not independent. The keeper only observes. |
 | C. Second verifier holds the key | Another person holds the key to verify independently. | One more holder | Real redundancy, but each additional holder can forge. Not proposed. |
 | D. Keyless hash tool | A new command computes `manifest_hash` from the manifest. | None | Gives a second person an independent hash check (not an HMAC check). Needs its own specification; see section 2. |
-| **E. Owner approval of the record** | The owner records approval of each entry through an out-of-band signature or witness process. | None | Authenticates the approver **only where that process is defined and trusted** (who signs, how a signature is checked, where it is kept); until then it adds nothing. The repository has no asymmetric signing library (spec 6.4, 12). |
+| **E. Owner approval of the record** (an approval-process reference in a record is format-checked only and proves no authority; the implemented validator never verifies authority) | The owner records approval of each entry through an out-of-band signature or witness process. | None | Authenticates the approver **only where that process is defined and trusted** (who signs, how a signature is checked, where it is kept); until then it adds nothing. The repository has no asymmetric signing library (spec 6.4, 12). |
 
 ### 3.1 Initial recording versus a later comparison
 
