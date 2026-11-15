@@ -3,25 +3,36 @@
 The model is arithmetic over caller-supplied assumptions. Every figure that is still an owner
 decision (restore-size ratio, restore working space, safety margin, available disk) is a required
 input with no default. The result is stamped as a model calculation: not measured, not
-validated, not approved. The 64 GiB dump ceiling is an unapproved placeholder, reproduced here
-only so the model can say when a dump size exceeds it; it is pinned by a test against
+validated, not approved. The bounds on the inputs are engineering sanity limits that keep the
+arithmetic well-defined; they are not capacity thresholds and nothing here is an approved limit.
+The 64 GiB dump ceiling is an unapproved placeholder, reproduced here only so the model can say
+when a dump size exceeds it; it is pinned by a test against
 ``app.recovery_set.format.PROVISIONAL_UNAPPROVED_DUMP_CEILING_BYTES`` and is not changed here.
+
+Evidence-log entries are closed: every field is a number within bounds, a closed vocabulary value,
+a constrained token or an opaque reference. There is no free-text field and no embedded tool
+output, so an entry cannot become a channel for arbitrary or sensitive data. Verbatim tool output
+and host descriptions live outside the record and are referenced by opaque references only.
 """
 
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
 
 from app.recovery_governance.common import (
-    DATE,
-    REF,
     Closed,
     GovernanceError,
+    is_ref,
+    is_schema_one,
     require_mapping,
+    valid_timestamp,
 )
 
 PROVISIONAL_UNAPPROVED_DUMP_CEILING_BYTES = 64 * 1024**3
-_MAX = 2**63 - 1
+MAX_BYTES = 2**60  # sanity bound (1 EiB), not a capacity limit
+MAX_MODEL_BYTES = 2**63 - 1  # every intermediate and the total must stay within this
+MAX_RATIO_PER_MILLE = 100_000  # 100x, sanity bound
+MAX_MARGIN_PER_MILLE = 1_000_000  # 1000 percent, sanity bound
 INPUT_FIELDS = (
     "schema_version",
     "threshold_status",
@@ -35,44 +46,33 @@ INPUT_FIELDS = (
 )
 STATEMENT = "informational; not an RPO/RTO or recovery-readiness measure"
 
+PositiveBytes = Annotated[int, Field(ge=1, le=MAX_BYTES)]
+Bytes = Annotated[int, Field(ge=0, le=MAX_BYTES)]
+Ratio = Annotated[int, Field(ge=1, le=MAX_RATIO_PER_MILLE)]
+WorkingRatio = Annotated[int, Field(ge=0, le=MAX_RATIO_PER_MILLE)]
+Margin = Annotated[int, Field(ge=0, le=MAX_MARGIN_PER_MILLE)]
+
 
 def _ceil_div(numerator, denominator):
     return -(-numerator // denominator)
 
 
+def _bounded(value):
+    if value > MAX_MODEL_BYTES:
+        raise GovernanceError("input_out_of_range")
+    return value
+
+
 class CapacityInputs(Closed):
     schema_version: Literal[1]
     threshold_status: Literal["provisional-unapproved"]
-    dump_bytes: int
-    archive_bytes: int
-    manifest_bytes: int
-    restore_ratio_per_mille: int
-    restore_working_per_mille: int
-    margin_per_mille: int
-    available_disk_bytes: int
-
-    @field_validator(
-        "dump_bytes",
-        "manifest_bytes",
-        "restore_ratio_per_mille",
-    )
-    @classmethod
-    def _positive(cls, value):
-        if not 1 <= value <= _MAX:
-            raise ValueError("range")
-        return value
-
-    @field_validator(
-        "archive_bytes",
-        "restore_working_per_mille",
-        "margin_per_mille",
-        "available_disk_bytes",
-    )
-    @classmethod
-    def _non_negative(cls, value):
-        if not 0 <= value <= _MAX:
-            raise ValueError("range")
-        return value
+    dump_bytes: PositiveBytes
+    archive_bytes: Bytes
+    manifest_bytes: PositiveBytes
+    restore_ratio_per_mille: Ratio
+    restore_working_per_mille: WorkingRatio
+    margin_per_mille: Margin
+    available_disk_bytes: Bytes
 
 
 def parse_inputs(raw):
@@ -80,6 +80,8 @@ def parse_inputs(raw):
     raw = require_mapping(raw)
     if any(name not in raw for name in INPUT_FIELDS):
         raise GovernanceError("input_missing")
+    if not is_schema_one(raw["schema_version"]):
+        raise GovernanceError("record_malformed")
     try:
         return CapacityInputs.model_validate(raw)
     except ValueError:
@@ -87,12 +89,12 @@ def parse_inputs(raw):
 
 
 def model(inputs):
-    staged = inputs.dump_bytes + inputs.archive_bytes
-    restored = _ceil_div(inputs.dump_bytes * inputs.restore_ratio_per_mille, 1000)
-    working = _ceil_div(restored * inputs.restore_working_per_mille, 1000)
-    subtotal = staged + inputs.manifest_bytes + restored + working
-    margin = _ceil_div(subtotal * inputs.margin_per_mille, 1000)
-    required = subtotal + margin
+    staged = _bounded(inputs.dump_bytes + inputs.archive_bytes)
+    restored = _bounded(_ceil_div(inputs.dump_bytes * inputs.restore_ratio_per_mille, 1000))
+    working = _bounded(_ceil_div(restored * inputs.restore_working_per_mille, 1000))
+    subtotal = _bounded(staged + inputs.manifest_bytes + restored + working)
+    margin = _bounded(_ceil_div(subtotal * inputs.margin_per_mille, 1000))
+    required = _bounded(subtotal + margin)
     return {
         "basis": "model_calculation",
         "measured": False,
@@ -120,68 +122,90 @@ def model(inputs):
     }
 
 
+Token = Annotated[str, Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$")]
+Code = Annotated[str, Field(pattern=r"^[a-z][a-z0-9_]{0,63}$")]
+Count = Annotated[int, Field(ge=0, le=2**32)]
+Millis = Annotated[int, Field(ge=0, le=2**40)]
+MountOption = Literal["rw", "ro", "noatime", "relatime", "nodev", "nosuid", "noexec", "sync"]
+
+
 class _Host(Closed):
-    model: str
-    cpu: str
-    cores: int
-    ram_bytes: int
-    swap_bytes: int
-    kernel: str
-    os: str
-    python: str
+    profile_ref: str
+    cores: Annotated[int, Field(ge=1, le=65536)]
+    ram_bytes: PositiveBytes
+    swap_bytes: Bytes
+    kernel: Token
+    os: Token
+    python: Token
+
+    @field_validator("profile_ref")
+    @classmethod
+    def _ref(cls, value):
+        if not is_ref(value):
+            raise ValueError("ref")
+        return value
 
 
 class _Storage(Closed):
-    device_type: str
-    fs_type: str
-    mount_options: str
-    free_before: int
-    free_after: int
+    device_type: Literal["nvme", "ssd", "hdd", "virtual", "tmpfs", "other", "unknown"]
+    fs_type: Literal["ext4", "xfs", "btrfs", "tmpfs", "overlayfs", "other"]
+    mount_options: Annotated[list[MountOption], Field(max_length=8)]
+    free_before: Bytes
+    free_after: Bytes
 
 
 class _Dataset(Closed):
-    size_bytes: int
+    size_bytes: PositiveBytes
     generator: str
     seed: str
     sparse: bool
-    entries: int
+    entries: Count
+
+    @field_validator("generator", "seed")
+    @classmethod
+    def _ref(cls, value):
+        if not is_ref(value):
+            raise ValueError("ref")
+        return value
 
 
 class _Measurements(Closed):
-    wall_ms: int
-    peak_rss_bytes: int
-    throughput_bytes_s: int
+    wall_ms: Millis
+    peak_rss_bytes: Bytes
+    throughput_bytes_s: Bytes
 
 
 class EvidenceLogEntry(Closed):
     run_id: str
     date_utc: str
-    git_sha: str
+    git_sha: Annotated[str, Field(pattern=r"^[0-9a-f]{40}$")]
     env_class: Literal["disposable-nonprod"]
     host: _Host
     storage: _Storage
     dataset: _Dataset
     cache_state: Literal["cold", "warm", "unknown"]
     command_shape: Literal["generate", "verify"]
-    tool_output_verbatim: dict
+    tool_output_ref: str
+    tool_exit_status: Annotated[int, Field(ge=0, le=2)]
+    tool_reason_codes: Annotated[list[Code], Field(max_length=8)]
     measurements: _Measurements
-    anomalies: list
+    anomalies: Annotated[list[Code], Field(max_length=16)]
     operator: str
     reviewer: str
     disposition: Literal["informational"]
 
-    @field_validator("operator", "reviewer", "run_id")
+    @field_validator("run_id", "tool_output_ref", "operator", "reviewer")
     @classmethod
     def _ref(cls, value):
-        if not REF.fullmatch(value):
+        if not is_ref(value):
             raise ValueError("ref")
         return value
 
     @field_validator("date_utc")
     @classmethod
-    def _date(cls, value):
-        if not DATE.fullmatch(value[:10]):
-            raise ValueError("date")
+    def _timestamp(cls, value):
+        if not valid_timestamp(value):
+            raise ValueError("timestamp")
         return value
 
 
