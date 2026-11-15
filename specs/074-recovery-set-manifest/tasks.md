@@ -65,7 +65,7 @@ The boxes below stay unchecked until the exact task is complete and its evidence
 - [ ] C2 Governance of the independently retained expected manifest hash (O5).
 - [ ] C3 Retention policy for manifests, backups and archives, expected-hash records, and forgetting reconciliation (O2).
 - [ ] C4 Measured resource testing and a separate owner decision on the real operational dump ceiling (O8); 64 GiB is not approved.
-- [ ] C5 Real key-generation tooling and provisioning workflow, after custody is decided (O9).
+- [ ] C5 Key-generation requirements and design preparation only (O9). Key-generation tooling and any provisioning workflow remain unauthorized and deferred until custody is decided.
 
 Outstanding record (not a Phase C task and not a checkbox): the independent-verification record against the exact post-reconciliation `main` revision, with full coverage (spec section 11.7, step 3). It is not complete and remains a prerequisite for any real-key or real-set use.
 
