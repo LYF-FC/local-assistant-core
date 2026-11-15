@@ -33,6 +33,8 @@ from app.recovery_governance.common import (
     Closed,
     GovernanceError,
     is_ref,
+    not_key_like,
+    reject_object_identifiers,
     require_mapping,
 )
 
@@ -99,7 +101,7 @@ class HashRecordEntry(Closed):
     @field_validator("schema_head")
     @classmethod
     def _head(cls, value):
-        return _pattern(value, SCHEMA_HEAD)
+        return not_key_like(_pattern(value, SCHEMA_HEAD))
 
     @field_validator("recorded_on")
     @classmethod
@@ -164,6 +166,7 @@ def _reject_independence_claims(raw):
 def _parse(model, raw):
     require_mapping(raw)
     _reject_independence_claims(raw)
+    reject_object_identifiers(raw)
     try:
         return model.model_validate(raw)
     except GovernanceError:

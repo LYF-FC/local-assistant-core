@@ -24,6 +24,7 @@ from app.recovery_governance.common import (
     GovernanceError,
     is_ref,
     is_schema_one,
+    reject_object_identifiers,
     require_mapping,
 )
 
@@ -44,6 +45,7 @@ def parse_role_register(raw, verified_decisions=None):
     against an owner-decision record outside this package (default: none).
     """
     raw = require_mapping(raw, "role_register_invalid")
+    reject_object_identifiers(raw)
     if set(raw) != {"schema_version", "assignments", "degraded_arrangement_acceptance_ref"}:
         raise GovernanceError("role_register_invalid")
     if not is_schema_one(raw["schema_version"]):
@@ -151,6 +153,7 @@ class KeyEventRecord(Closed):
 def validate_key_events(raw_events):
     if not isinstance(raw_events, (list, tuple)):
         raise GovernanceError("key_event_invalid")
+    reject_object_identifiers(raw_events)
     try:
         events = [KeyEventRecord.model_validate(item) for item in raw_events]
     except ValueError:

@@ -254,7 +254,8 @@ def test_key_like_values_are_not_accepted_as_references(field):
 
 def test_comparison_actor_may_not_be_key_like():
     assert (
-        code(lambda: parse_comparison(comparison(who="0123456789abcdef" * 2))) == "record_malformed"
+        code(lambda: parse_comparison(comparison(who="0123456789abcdef" * 2 + "ab")))
+        == "record_malformed"
     )
 
 

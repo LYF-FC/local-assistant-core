@@ -10,20 +10,23 @@ when a dump size exceeds it; it is pinned by a test against
 ``app.recovery_set.format.PROVISIONAL_UNAPPROVED_DUMP_CEILING_BYTES`` and is not changed here.
 
 Evidence-log entries are closed: every field is a number within bounds, a closed vocabulary value,
-a constrained token or an opaque reference. There is no free-text field and no embedded tool
+a constrained token or an opaque reference, and no token or reference may contain a run of 32 or
+more hexadecimal characters (the Git commit SHA is the one explicit, fixed-format exception). There is no free-text field and no embedded tool
 output, so an entry cannot become a channel for arbitrary or sensitive data. Verbatim tool output
 and host descriptions live outside the record and are referenced by opaque references only.
 """
 
 from typing import Annotated, Literal
 
-from pydantic import Field, field_validator
+from pydantic import AfterValidator, Field, field_validator
 
 from app.recovery_governance.common import (
     Closed,
     GovernanceError,
     is_ref,
     is_schema_one,
+    not_key_like,
+    reject_object_identifiers,
     require_mapping,
     valid_timestamp,
 )
@@ -122,8 +125,10 @@ def model(inputs):
     }
 
 
-Token = Annotated[str, Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$")]
-Code = Annotated[str, Field(pattern=r"^[a-z][a-z0-9_]{0,63}$")]
+Token = Annotated[
+    str, Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$"), AfterValidator(not_key_like)
+]
+Code = Annotated[str, Field(pattern=r"^[a-z][a-z0-9_]{0,63}$"), AfterValidator(not_key_like)]
 Count = Annotated[int, Field(ge=0, le=2**32)]
 Millis = Annotated[int, Field(ge=0, le=2**40)]
 MountOption = Literal["rw", "ro", "noatime", "relatime", "nodev", "nosuid", "noexec", "sync"]
@@ -214,6 +219,10 @@ def parse_evidence_entry(raw):
     raw = require_mapping(raw)
     if raw.get("env_class") not in (None, "disposable-nonprod"):
         raise GovernanceError("evidence_environment_rejected")
+    # Over the complete nested input, before anything is accepted: archive object names and bare
+    # 32-hex document identifiers must not pass through any field (spec 9.4). Git commit SHAs
+    # (40 hex) and the fixed-format fields are unaffected.
+    reject_object_identifiers(raw)
     try:
         EvidenceLogEntry.model_validate(raw)
     except ValueError:

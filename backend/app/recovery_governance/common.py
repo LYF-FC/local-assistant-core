@@ -17,8 +17,11 @@ SCHEMA_HEAD = re.compile(r"[A-Za-z0-9_]{1,64}")
 # or deletion-evidence records (spec 9.4): they would re-disclose what was forgotten.
 OBJECT_NAME = re.compile(r"[a-f0-9]{32}-v[1-9][0-9]{0,8}\.original")
 BARE_32HEX = re.compile(r"[a-f0-9]{32}")
-# Long hexadecimal strings are indistinguishable from key material, so opaque references and
-# identifiers may not look like one. (Public hashes are the unavoidable exception: see hash_record.)
+# Long hexadecimal runs are indistinguishable from key material, so opaque references, tokens and
+# identifiers may not contain one anywhere (prefix, suffix or middle). Explicit exceptions, each
+# validated by its own fixed-format pattern and never claimed to be distinguishable from key
+# material: manifest hashes (64 hex, hash_record), Git commit SHAs (40 hex, capacity) and the
+# fixed-format UUID fields.
 KEY_LIKE = re.compile(r"[0-9A-Fa-f]{32,}")
 TIMESTAMP = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})")
 MAX_INPUT_BYTES = 1024 * 1024
@@ -110,13 +113,21 @@ def read_json_file(path, limit=MAX_INPUT_BYTES):
         raise GovernanceError("json_malformed") from None
 
 
+def is_key_like(value):
+    """True if the string contains a run of 32 or more hexadecimal characters anywhere."""
+    return isinstance(value, str) and KEY_LIKE.search(value) is not None
+
+
+def not_key_like(value):
+    """Validator for token-like fields that are not exceptions: reject key-like substrings."""
+    if is_key_like(value):
+        raise ValueError("key-like")
+    return value
+
+
 def is_ref(value):
     """An opaque, non-secret reference: closed character set, bounded, and not key-like."""
-    return (
-        isinstance(value, str)
-        and REF.fullmatch(value) is not None
-        and KEY_LIKE.fullmatch(value) is None
-    )
+    return isinstance(value, str) and REF.fullmatch(value) is not None and not is_key_like(value)
 
 
 def is_schema_one(value):

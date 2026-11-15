@@ -110,7 +110,7 @@ def test_operator_may_share_an_actor_without_becoming_a_conflict():
         register(primary_custodian="bad value"),
         register(primary_custodian="0123456789abcdef" * 4),
         {**register(), "schema_version": True},
-        {**register(), "degraded_arrangement_acceptance_ref": "0123456789abcdef" * 2},
+        {**register(), "degraded_arrangement_acceptance_ref": "0123456789abcdef" * 2 + "ab"},
         register(primary_custodian=7),
         {**register(), "degraded_arrangement_acceptance_ref": "bad ref"},
     ],
@@ -153,7 +153,7 @@ def validate_ok(events):
         [key_event(1, key_fingerprint="0" * 64)],  # the 64-hex field no longer exists
         [key_event(1, fingerprint_record_ref="0" * 64)],
         [key_event(1, fingerprint_record_ref="A" * 40)],
-        [key_event(1, actor_ref="0123456789abcdef" * 2)],
+        [key_event(1, actor_ref="0123456789abcdef" * 2 + "ab")],
         [key_event(1, ceremony_ref="0123456789abcdef" * 4)],
         [key_event(1, occurred_on="2026-02-30")],
         [key_event(1, role="auditor")],
