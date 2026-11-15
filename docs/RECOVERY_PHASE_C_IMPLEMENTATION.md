@@ -1,0 +1,54 @@
+# Spec 074 Phase C — non-operational implementation (C1 to C5)
+
+**Status: implemented on a pull-request branch; not merged, not independently verified, not accepted.** This page separates what is implemented, what is still a proposal, what is blocked on an owner decision and what remains prohibited. The frozen [spec 074](../specs/074-recovery-set-manifest/spec.md) is unchanged, and so is the accepted synthetic-only Phase B implementation (`backend/app/recovery_set`, its tests and `scripts/test-db-restore.sh`). The closed Phase B output schema and its first-violation behaviour are untouched. The design drafts ([custody](RECOVERY_KEY_CUSTODY.md), [hash governance](RECOVERY_HASH_GOVERNANCE.md), [retention](RECOVERY_RETENTION.md), [capacity](RECOVERY_CAPACITY_VALIDATION.md), [independent verification](RECOVERY_INDEPENDENT_VERIFICATION.md)) remain proposals; nothing here decides an open owner decision. No gate, register row or status changes.
+
+## 1. What is implemented
+
+One new offline package, `backend/app/recovery_governance/`. It validates **records** and computes **models**. It never generates, stores, reads or rotates a key, never reads a recovery set or key file, opens no network or database connection, never writes or deletes any file, does not import `app.recovery_set`, and has no command-line entry point (a second `verify`-like command would invite confusion with the frozen tool; adding one is an owner decision). It is a Python library used by tests and by future authorized tooling.
+
+| Stream | Module | Implemented behavior | Enforced by |
+|---|---|---|---|
+| C2 hash governance | `hash_record.py` | Closed ledger entry (initial witnessed recording) and a separate `ComparisonEvent` (later comparison). The comparison basis can only be `key_holder_check`; its results are exactly the frozen freshness states; there is no field or value that can express independence and any independence claim is rejected (`independence_claim_rejected`). Witness must differ from recorder; an approver needs a defined approval process reference. Ledger must be contiguous, dated in order and supersede within one set without forks. A comparison is accepted only from a known key holder and fails closed if the holder set is not supplied. Reports label every comparison `key_holder_check_not_independent`. | `test_recovery_governance_hash_record.py` |
+| C3 retention | `retention.py` | A policy file must give **every** artifact class an explicit period: `"undecided"` or `{"days": n}`; a missing, unknown or malformed class is an error and nothing is defaulted. Report-only reconciliation (`actions_taken: none`): an elapsed period means "owner review required", never deletion. Open forgetting obligations take precedence; closed ones need evidence. Sets and manifests always report `restore_eligibility: not_established_doc_x02_open`, so a verifying manifest can never turn into permission to restore. Records may carry opaque ids only: archive object names and bare document identifiers are rejected. A deletion-evidence record validator has no free text. | `test_recovery_governance_retention.py` |
+| C4 capacity | `capacity.py` | A model over required caller-supplied assumptions (dump, archive, manifest, restore-size ratio, restore working space, margin, available disk), covering staged copy, manifest and temporary link, restored database, working space and margin. Output is stamped `model_calculation`, `measured: false`, `validated: false`, `approved: false`; inputs must declare `provisional-unapproved`. The 64 GiB ceiling is an unapproved placeholder pinned to the Phase B constant by a test. An evidence-log entry validator accepts only `disposable-nonprod` environments and `informational` disposition. No measurement is made. | `test_recovery_governance_capacity.py` |
+| C1 custody | `custody.py` | Role-register validator: roles may be `null` (undecided); both custodians are reported as key holders able to forge; the operator's access is reported as temporary; conflicts (custodian with recovery custodian, record keeper with either custodian) report `degraded_not_accepted` unless an owner reference is given; the note states procedural separation only, no non-repudiation. A metadata-only `KeyEventRecord` has no field that can carry key material. | `test_recovery_governance_custody.py` |
+| C5 key generation (requirements) | `custody.py` (`FutureKeyOperations`) and section 3 below | An interface-only `Protocol` with no implementation: any future key operation must emit a `KeyEventRecord`. Requirements (KG-1 to KG-11) are in the [custody draft](RECOVERY_KEY_CUSTODY.md), section 9. | `test_recovery_governance_custody.py`, boundary tests |
+| Boundary | all modules | Static checks fail the build if the package gains key generation or handling, forbidden imports, network or database access, writes or deletions, concrete key-operation functions, environment access or a dependency on the Phase B tool. | `test_recovery_governance_boundary.py` |
+
+Limits stated plainly: key material and public hashes are both 64 hex characters, so no syntactic check can tell them apart. The records are closed and have no free-text field, which is the only protection; a hash field holding key material by mistake would not be detected.
+
+## 2. Input conventions
+
+Input files are JSON read through a bounded, read-only, no-follow loader (regular files only, 1 MiB, duplicate keys and non-finite numbers rejected). Errors expose only a closed code, never a path or value. Persons are never named: actors are opaque references. Example shapes: a retention policy is `{"schema_version": 1, "periods": {<class>: "undecided" | {"days": n}}}` for all eight classes listed in `retention.ARTIFACT_CLASSES`; a role register is `{"schema_version": 1, "assignments": {<role>: <ref> | null}, "degraded_arrangement_acceptance_ref": <ref> | null}`. Capacity inputs have no defaults: every field in `capacity.INPUT_FIELDS` must be supplied by the owner or the caller.
+
+## 3. Control expectations for future key operations (C1, C5; proposals, not implemented)
+
+These describe how a future, separately authorized implementation would be controlled. None is implemented and none is authorized.
+
+- **Generation, provisioning, storage, rotation, loss handling:** each requires an owner decision on custody (people, medium, location) first, a custodian-authorized session, and a `KeyEventRecord` per operation; the requirements KG-1 to KG-11 and the rotation/loss/compromise table of the custody draft apply.
+- **Separation of duties:** procedural only. Both custodians can forge; the operator has the key temporarily; the recovery custodian's copy improves availability and does not protect authenticity against a compromised primary custodian.
+- **Lifecycle:** the draft's states (generated, provisioned, active, rotated, retired, destroyed) are a proposal. No state machine is implemented, because the owner has not decided them.
+- **Dependencies:** key generation (C5) depends on the C1 custody decisions; deletion evidence (C3) depends on the owner-decided deletion standard; retention periods depend on owner decisions and on DOC-X02.
+
+## 4. Unresolved owner decisions and how each stays safely blocked
+
+| Decision | How it stays blocked or configurable |
+|---|---|
+| People for each custody role | Register entries stay `null`; status reports `undecided` |
+| Degraded arrangement acceptance | Reported `degraded_not_accepted` until an owner reference is supplied |
+| Storage medium, locations, key-file presentation | Not represented anywhere in code |
+| Every retention period | Literal `undecided` is required in the policy; no default exists |
+| Deletion standard and authority | A destruction record needs method and authority references that exist only once decided |
+| Capacity ratios, working space, margin, disk | Required explicit inputs; no defaults; results are model-only and stamped unapproved |
+| Real dump ceiling | The 64 GiB placeholder is unapproved and unchanged |
+| Hash-record option beyond A, approval process for E | Approver entries require a defined process reference |
+| Reviewer independence and verification revision | Outside the code; see the verification template |
+| DOC-X02 reconciliation for older non-Work sets | A blocker in every reconciliation report; restore eligibility is never established |
+
+## 5. Evidence
+
+Tests run locally (see the pull request for exact commands and results) are unit tests with synthetic data. They create no key, read no key file and run no recovery tool. **Not run:** the Phase B recovery-set tests and restore drill (they create synthetic keys), any capacity measurement or large-data run, any NAS or production access, and any full-coverage CI run. Implementation, test evidence, independent verification and operational readiness are separate facts: this page claims only the first two, and only as stated in the pull request.
+
+## 6. Still prohibited without further owner authorization
+
+Generating, provisioning, storing, rotating or activating a real recovery key; creating or operating a real recovery set; real recovery or restore; NAS or production-storage access; capacity measurements or large-data runs; synthetic-key test runs for governance or capacity; key-generation or key-management tooling; migrations, schema or configuration changes; claiming operational readiness or independent verification; promoting Gate 6, Gate 10, Gate 11, OPS-09, OPS-10 or MVP-05; merging any pull request.

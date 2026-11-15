@@ -1,6 +1,6 @@
 # Expected-manifest-hash governance — spec 074 Phase C (C2)
 
-**Status: DRAFT design proposal for owner review. No control described here is implemented, approved or operating.** On 15 November 2026 the owner authorized Phase C design and preparatory work only. The only implemented behaviour is that of [RECOVERY_SET.md](RECOVERY_SET.md): `verify` accepts an optional `--expected-manifest-hash`, compares it with the computed `manifest_hash` after authenticity is valid, and a supplied mismatch always fails (spec 5.1, 5.2, 10.1; O5). Governance of the retained hash (who records, retains and updates it) is deferred (spec 10.2). Synthetic example values only. No status changes.
+**Status: DRAFT design proposal for owner review. No control described here is implemented, approved or operating.** On 15 November 2026 the owner authorized Phase C design and preparatory work only; the owner later authorized implementation of the non-operational portions ([RECOVERY_PHASE_C_IMPLEMENTATION.md](RECOVERY_PHASE_C_IMPLEMENTATION.md)). This draft remains a proposal. The only implemented behaviour is that of [RECOVERY_SET.md](RECOVERY_SET.md): `verify` accepts an optional `--expected-manifest-hash`, compares it with the computed `manifest_hash` after authenticity is valid, and a supplied mismatch always fails (spec 5.1, 5.2, 10.1; O5). Governance of the retained hash (who records, retains and updates it) is deferred (spec 10.2). Synthetic example values only. No status changes.
 
 ## 1. Purpose and the anchoring principle
 
