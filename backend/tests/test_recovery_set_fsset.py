@@ -2,11 +2,15 @@
 """Spec 074 B020 to B023: closed-set enumeration, invariants, limits (T2 to T7, T35, T36, T49,
 T50, T52). All data is synthetic; limits are exercised with injected test limits only."""
 
+import builtins
+import io
 import os
+import socket
 import stat
 import subprocess
 import sys
 import uuid
+from contextlib import contextmanager
 from dataclasses import replace
 from pathlib import Path
 
@@ -129,6 +133,11 @@ def test_t6_symlink_members_and_directories(world):
 
 
 def test_t6_special_files_and_hard_links(world):
+    """Unprivileged T6 cases: FIFO, socket, hard-linked member, non-directory SET root.
+
+    The privilege-dependent device-node case is a separate test below, so a missing privilege
+    can never suppress these assertions.
+    """
     victim = objects(world)[0]
     victim.unlink()
     os.mkfifo(victim)
@@ -138,14 +147,6 @@ def test_t6_special_files_and_hard_links(world):
     victim.unlink()
     os.mknod(victim, stat.S_IFSOCK | 0o600)
     assert reasons(sock.verify()[0]) == ["set_member_not_regular"]
-    dev = fresh(world, "dev")
-    victim = objects(dev)[0]
-    victim.unlink()
-    try:
-        os.mknod(victim, stat.S_IFCHR | 0o600, os.makedev(1, 3))
-    except PermissionError:
-        pytest.skip("device nodes need privilege")
-    assert reasons(dev.verify()[0]) == ["set_member_not_regular"]
     linked = fresh(world, "hard")
     os.link(objects(linked)[0], linked.root / "alias")
     assert reasons(linked.verify()[0]) == ["set_member_hardlinked"]
@@ -156,6 +157,21 @@ def test_t6_special_files_and_hard_links(world):
     assert reasons(run(verify_args(plain, nested.key, nested.manifest))[0]) == [
         "set_member_not_regular"
     ]
+
+
+def test_t6_device_node_member_is_rejected(world):
+    """T6 device-node case. Creating a device node needs privilege.
+
+    Without it the test skips with an explicit reason and the device case is an evidence gap;
+    it must stay separate from the unprivileged T6 assertions.
+    """
+    victim = objects(world)[0]
+    victim.unlink()
+    try:
+        os.mknod(victim, stat.S_IFCHR | 0o600, os.makedev(1, 3))
+    except PermissionError:
+        pytest.skip("device nodes need privilege")
+    assert reasons(world.verify()[0]) == ["set_member_not_regular"]
 
 
 def trust_of(arguments):
@@ -389,6 +405,248 @@ def test_no_database_or_network_modules_are_loaded_by_the_tool():
         cwd=Path(fsset.__file__).parents[2],
     )
     assert done.returncode == 0, done.stderr[-300:]
+
+
+# --- A10: explicit fail-on-attempt guards -------------------------------------------------------
+# Frozen A10: the verifier uses no database, no network and never writes inside SET. The import and
+# snapshot tests above show the absence of modules and unchanged bytes; they would not notice an
+# attempt that is caught, retried or undone. These guards record every attempt at the Python-level
+# entry points below while verify runs, and the tests assert the record is empty.
+#
+# What is intercepted: socket creation and name resolution (socket.socket, create_connection,
+# getaddrinfo, gethostbyname*, socketpair, fromfd, create_server); process creation
+# (subprocess.Popen, os.system, os.fork, os.posix_spawn*, os.exec*); database entry points
+# (psycopg.connect and Connection.connect, sqlalchemy.create_engine, Engine.connect/begin and
+# DefaultDialect.connect); every write-capable os.open (O_WRONLY, O_RDWR, O_CREAT, O_TRUNC,
+# O_APPEND, O_EXCL, O_TMPFILE) with or without dir_fd (the descriptor-relative interface the
+# verifier actually uses); write-mode builtins.open and io.open (and so Path.open/write_text);
+# os.write (except fds 1 and 2) and the other descriptor writers; and namespace or metadata
+# mutation (unlink, remove, rmdir, rename, replace, link, symlink, mkdir, mkfifo, mknod, chmod,
+# fchmod, chown, fchown, lchown, utime, setxattr, removexattr).
+#
+# Limits: Python-level attribute interception only. It cannot see references bound before it was
+# installed, C extensions, ctypes or raw system calls, or other process APIs; it checks the write
+# intent of an open, not its path, so it is stricter than "inside SET" (any write-capable open
+# anywhere is a violation). It proves that this implementation, exercised on the cases below, makes
+# no such attempt; it is not a sandbox.
+
+WRITE_OPEN_FLAGS = os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_TRUNC | os.O_APPEND | os.O_EXCL
+O_TMPFILE = getattr(os, "O_TMPFILE", 0)  # on Linux this includes the O_DIRECTORY bit
+
+
+def is_write_open(flags):
+    """True for any write-capable open; O_TMPFILE only counts when all of its bits are set."""
+    return bool(flags & WRITE_OPEN_FLAGS) or (O_TMPFILE != 0 and flags & O_TMPFILE == O_TMPFILE)
+
+
+class ProhibitedAttempt(Exception):
+    pass
+
+
+class Guards:
+    def __init__(self):
+        self.attempts = []  # (kind, detail) of every prohibited call
+        self.read_opens = []  # (used dir_fd, flags) of every permitted read-only os.open
+
+    def trip(self, kind, detail=""):
+        self.attempts.append((kind, str(detail)[:80]))
+        raise ProhibitedAttempt(kind)
+
+    def _always(self, kind):
+        def guard(*args, **kwargs):
+            self.trip(kind, args[:1])
+
+        return guard
+
+
+@contextmanager
+def prohibited_effects():
+    """Install the A10 guards for the duration of the block and yield the ``Guards`` record."""
+    import psycopg
+    import sqlalchemy
+    import sqlalchemy.engine.default
+
+    guards = Guards()
+    real_open, real_builtin_open, real_write = os.open, builtins.open, os.write
+
+    def guarded_os_open(path, flags, mode=0o777, *, dir_fd=None):
+        if is_write_open(flags):
+            guards.trip("os.open write-capable", (path, hex(flags)))
+        guards.read_opens.append((dir_fd is not None, flags))
+        return real_open(path, flags, mode, dir_fd=dir_fd)
+
+    def guarded_open(file, mode="r", *args, **kwargs):
+        if set(str(kwargs.get("mode", mode))) & set("wax+"):
+            guards.trip("open write mode", file)
+        return real_builtin_open(file, mode, *args, **kwargs)
+
+    def guarded_write(descriptor, data):
+        if descriptor not in (1, 2):
+            guards.trip("os.write", descriptor)
+        return real_write(descriptor, data)
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(os, "open", guarded_os_open)
+        patch.setattr(os, "write", guarded_write)
+        patch.setattr(builtins, "open", guarded_open)
+        patch.setattr(io, "open", guarded_open)
+        for name in (
+            "pwrite", "writev", "pwritev", "ftruncate", "truncate", "sendfile", "copy_file_range",
+            "unlink", "remove", "rmdir", "rename", "replace", "link", "symlink", "mkdir", "mkfifo",
+            "mknod", "chmod", "fchmod", "chown", "fchown", "lchown", "utime", "setxattr",
+            "removexattr", "system", "fork", "posix_spawn", "posix_spawnp", "execv", "execve",
+        ):  # fmt: skip
+            if hasattr(os, name):
+                patch.setattr(os, name, guards._always(f"os.{name}"))
+        for name in (
+            "socket", "create_connection", "getaddrinfo", "gethostbyname", "gethostbyname_ex",
+            "socketpair", "fromfd", "create_server",
+        ):  # fmt: skip
+            patch.setattr(socket, name, guards._always(f"socket.{name}"))
+        patch.setattr(subprocess, "Popen", guards._always("subprocess.Popen"))
+        patch.setattr(psycopg, "connect", guards._always("psycopg.connect"))
+        patch.setattr(
+            psycopg.Connection, "connect", staticmethod(guards._always("psycopg.connect"))
+        )
+        patch.setattr(sqlalchemy, "create_engine", guards._always("sqlalchemy.create_engine"))
+        patch.setattr(
+            sqlalchemy.engine, "create_engine", guards._always("sqlalchemy.create_engine")
+        )
+        patch.setattr(sqlalchemy.engine.Engine, "connect", guards._always("Engine.connect"))
+        patch.setattr(sqlalchemy.engine.Engine, "begin", guards._always("Engine.begin"))
+        patch.setattr(
+            sqlalchemy.engine.default.DefaultDialect, "connect", guards._always("dialect.connect")
+        )
+        yield guards
+
+
+def test_a10_guards_intercept_each_prohibited_entry_point(tmp_path):
+    """Positive controls: a guard that never fires would make the A10 tests below vacuous."""
+    import psycopg
+    import sqlalchemy
+
+    engine = sqlalchemy.create_engine("sqlite://")  # created before the guards: Engine.connect only
+    target = tmp_path / "file"
+    target.write_bytes(b"x")
+    read_end, write_end = os.pipe()
+    directory_fd = os.open(tmp_path, os.O_RDONLY)  # held explicitly; closed in the finally below
+    probes = {
+        "socket.socket": lambda: socket.socket(),
+        "socket.create_connection": lambda: socket.create_connection(("127.0.0.1", 9)),
+        "socket.getaddrinfo": lambda: socket.getaddrinfo("example.invalid", 80),
+        "psycopg.connect": lambda: psycopg.connect("dbname=none"),
+        "sqlalchemy.create_engine": lambda: sqlalchemy.create_engine("sqlite://"),
+        "Engine.connect": lambda: engine.connect(),
+        "os.open O_WRONLY": lambda: os.open(target, os.O_WRONLY),
+        "os.open O_RDONLY|O_CREAT": lambda: os.open(target, os.O_RDONLY | os.O_CREAT),
+        "os.open O_TMPFILE": lambda: os.open(tmp_path, O_TMPFILE | os.O_WRONLY),
+        "os.open O_TRUNC dir_fd": lambda: os.open(
+            target.name, os.O_RDWR | os.O_TRUNC, dir_fd=directory_fd
+        ),
+        "open w": lambda: open(target, "w"),  # noqa: SIM115
+        "open ab keyword": lambda: open(target, mode="ab"),  # noqa: SIM115
+        "io.open r+": lambda: io.open(target, "r+"),  # noqa: SIM115, UP020
+        "Path.write_text": lambda: target.write_text("y"),
+        "os.write": lambda: os.write(write_end, b"x"),
+        "os.ftruncate": lambda: os.ftruncate(write_end, 0),
+        "os.unlink": lambda: os.unlink(target),
+        "os.rename": lambda: os.rename(target, tmp_path / "other"),
+        "os.mkdir": lambda: os.mkdir(tmp_path / "dir"),
+        "os.chmod": lambda: os.chmod(target, 0o600),
+        "os.utime": lambda: os.utime(target),
+        "subprocess.Popen": lambda: subprocess.Popen(["true"]),
+        "os.system": lambda: os.system("true"),
+    }
+    try:
+        with prohibited_effects() as guards:
+            for name, probe in probes.items():
+                before = len(guards.attempts)
+                with pytest.raises(ProhibitedAttempt):
+                    probe()
+                assert len(guards.attempts) == before + 1, name
+            # permitted: read-only opens, including descriptor-relative ones
+            directory = os.open(tmp_path, os.O_RDONLY | os.O_DIRECTORY)
+            descriptor = os.open(target.name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=directory)
+            os.close(descriptor)
+            os.close(directory)
+            with open(target, "rb") as handle:
+                assert handle.read() == b"x"
+            assert os.write(2, b"") == 0  # fds 1 and 2 stay usable for the test runner
+        assert len(guards.attempts) == len(probes)
+        assert (True, os.O_RDONLY | os.O_NOFOLLOW) in guards.read_opens
+    finally:
+        os.close(directory_fd)
+        os.close(read_end)
+        os.close(write_end)
+        engine.dispose()
+    assert target.read_bytes() == b"x"  # nothing the probes attempted took effect
+
+
+def make_read_only(world):
+    """Owner-read-only set: members 0400, SET and archive/ 0500. Returns a restore callback."""
+    set_dir = world.synthetic.set_dir
+    paths = [p for p in set_dir.rglob("*") if p.is_file()]
+    directories = [set_dir / "archive", set_dir]
+    original = {p: stat.S_IMODE(p.stat().st_mode) for p in paths + directories}
+    for path in paths:
+        path.chmod(0o400)
+    for directory in directories:
+        directory.chmod(0o500)
+
+    def restore():
+        for directory in reversed(directories):
+            directory.chmod(original[directory])
+        for path in paths:
+            path.chmod(original[path])
+
+    return restore
+
+
+def tamper(world, case):
+    set_dir = world.synthetic.set_dir
+    if case == "hash_mismatch":
+        dump = set_dir / "database.dump"
+        data = bytearray(dump.read_bytes())
+        data[0] ^= 1
+        dump.write_bytes(bytes(data))
+    elif case == "missing_member":
+        objects(world)[0].unlink()
+    elif case == "unexpected_member":
+        write_private(set_dir / "notes.txt", b"x")
+
+
+@pytest.mark.parametrize(
+    "case,status,expected",
+    [
+        ("valid", 0, []),
+        ("hash_mismatch", 1, ["set_member_hash_mismatch"]),
+        ("missing_member", 1, ["set_member_missing"]),
+        ("unexpected_member", 1, ["set_member_unexpected"]),
+    ],
+)
+def test_a10_verify_attempts_no_database_network_or_write_on_a_read_only_set(
+    world, case, status, expected
+):
+    tamper(world, case)  # fixtures are assembled before the guards are installed
+    restore = make_read_only(world)
+    try:
+        if os.geteuid() != 0:  # unprivileged: the kernel itself refuses writes to the set
+            with pytest.raises(PermissionError):
+                open(world.synthetic.set_dir / "database.dump", "ab")  # noqa: SIM115
+        with prohibited_effects() as guards:
+            output, code = world.verify()
+        assert guards.attempts == [], guards.attempts
+        # the guards were on the real path: the verifier opened set members through them,
+        # including descriptor-relative opens (dir_fd), and only ever read-only
+        assert any(used_dir_fd for used_dir_fd, _ in guards.read_opens)
+        assert len(guards.read_opens) >= 4
+        assert all(not is_write_open(flags) for _, flags in guards.read_opens)
+        assert (code, reasons(output)) == (status, expected)
+        if case == "valid":
+            assert output["integrity"] == "integrity_valid"
+            assert output["authenticity"] == "authenticity_valid"
+    finally:
+        restore()
 
 
 def test_modification_during_a_read_with_unchanged_size_is_detected(world, monkeypatch):
