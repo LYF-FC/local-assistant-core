@@ -210,3 +210,58 @@ def test_the_comparison_model_cannot_express_any_basis_but_a_key_holder_check():
 
     assert get_args(ComparisonEvent.model_fields["basis"].annotation) == ("key_holder_check",)
     assert get_args(ComparisonEvent.model_fields["result"].annotation) == FRESHNESS_STATES
+
+
+def approved(number=1, process="process-1", **extra):
+    return entry(number, approved_by="role-owner", approval_process_ref=process, **extra)
+
+
+def test_approval_process_reference_is_format_checked_only_and_never_authority():
+    report = validate_ledger([approved()])
+    assert report["approvals"] == [
+        {
+            "entry": 1,
+            "approval_process": "reference_unverified",
+            "authority_verification": "not_performed_by_this_package",
+        }
+    ]
+    assert (
+        validate_ledger([approved()], verified_approval_processes={"other"})["approvals"][0][
+            "approval_process"
+        ]
+        == "reference_unverified"
+    )
+
+
+def test_only_a_process_the_caller_states_was_verified_is_reported_as_such():
+    report = validate_ledger([approved()], verified_approval_processes={"process-1"})
+    assert report["approvals"][0]["approval_process"] == "reference_caller_verified"
+    assert report["approvals"][0]["authority_verification"] == "not_performed_by_this_package"
+
+
+def test_entries_without_an_approver_report_no_approval():
+    assert validate_ledger([entry(1)])["approvals"] == []
+
+
+@pytest.mark.parametrize(
+    "field", ["recorded_by", "witnessed_by", "set_id", "approved_by", "approval_process_ref"]
+)
+def test_key_like_values_are_not_accepted_as_references(field):
+    base = entry(1, approved_by="role-owner", approval_process_ref="process-1")
+    base[field] = "0123456789abcdef" * 4
+    assert code(lambda: parse_entry(base)) == "record_malformed"
+
+
+def test_comparison_actor_may_not_be_key_like():
+    assert (
+        code(lambda: parse_comparison(comparison(who="0123456789abcdef" * 2))) == "record_malformed"
+    )
+
+
+def test_the_manifest_hash_field_is_the_documented_residual_limitation():
+    # A 64-hex manifest hash is required by design and cannot be told apart from key material by
+    # syntax; this test pins that the field exists and stays the only 64-hex typed field.
+    from app.recovery_governance.hash_record import HashRecordEntry
+
+    assert "manifest_hash" in HashRecordEntry.model_fields
+    assert parse_entry(entry(1))

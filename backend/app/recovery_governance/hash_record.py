@@ -9,8 +9,15 @@ Two acts are kept apart (docs/RECOVERY_HASH_GOVERNANCE.md):
   check* and never independent verification.
 
 The models have no field that can express independence, and any independence claim is rejected.
-Persons are never named: actors are opaque references. This module reads and writes nothing and
-touches no key material. It does not change the closed output of ``app.recovery_set``.
+Persons are never named: actors are opaque references (closed characters, bounded, never
+key-like). Approval-process references are format-checked only: a reference proves no authority,
+and every report states that authority verification was not performed here.
+
+Residual limitation: ``manifest_hash`` is a 64-character hexadecimal field, which is
+indistinguishable from key material by syntax. The records are closed and have no free-text
+field, and that is the only protection; a hash field holding key material by mistake would not be
+detected. This module reads and writes nothing and touches no key material. It does not change
+the closed output of ``app.recovery_set``.
 """
 
 from datetime import date
@@ -21,11 +28,11 @@ from pydantic import field_validator, model_validator
 from app.recovery_governance.common import (
     DATE,
     HEX64,
-    REF,
     SCHEMA_HEAD,
     UUID,
     Closed,
     GovernanceError,
+    is_ref,
     require_mapping,
 )
 
@@ -36,6 +43,12 @@ EVIDENCE_CLASS = "key_holder_check_not_independent"
 def _pattern(value, pattern):
     if not pattern.fullmatch(value):
         raise ValueError("pattern")
+    return value
+
+
+def _opaque(value):
+    if not is_ref(value):
+        raise ValueError("ref")
     return value
 
 
@@ -96,7 +109,7 @@ class HashRecordEntry(Closed):
     @field_validator("set_id", "recorded_by", "witnessed_by", "approved_by", "approval_process_ref")
     @classmethod
     def _ref(cls, value):
-        return value if value is None else _pattern(value, REF)
+        return value if value is None else _opaque(value)
 
     @model_validator(mode="after")
     def _roles(self):
@@ -129,7 +142,7 @@ class ComparisonEvent(Closed):
     @field_validator("performed_by")
     @classmethod
     def _ref(cls, value):
-        return _pattern(value, REF)
+        return _opaque(value)
 
     @field_validator("presented_manifest_hash")
     @classmethod
@@ -167,12 +180,18 @@ def parse_comparison(raw):
     return _parse(ComparisonEvent, raw)
 
 
-def validate_ledger(entries_raw, comparisons_raw=(), key_holders=None):
+def validate_ledger(
+    entries_raw, comparisons_raw=(), key_holders=None, verified_approval_processes=None
+):
     """Validate an append-only ledger and any later comparisons; return a closed report.
 
     ``key_holders`` is the set of actor references known to hold the verification key (for
     example from the role register). Comparisons cannot be validated without it, so a ledger
     with comparisons and no ``key_holders`` fails closed rather than assuming.
+
+    ``verified_approval_processes`` is the set of approval-process references that the caller
+    states were verified against an authority record *outside this package*. This package never
+    verifies authority: without that set every approval is reported as an unverified reference.
     """
     if not isinstance(entries_raw, (list, tuple)):
         raise GovernanceError("record_malformed")
@@ -197,6 +216,20 @@ def validate_ledger(entries_raw, comparisons_raw=(), key_holders=None):
     superseded = {item.supersedes for item in entries if item.supersedes is not None}
     if comparisons and key_holders is None:
         raise GovernanceError("input_missing")
+    verified = frozenset(verified_approval_processes or ())
+    approvals = [
+        {
+            "entry": item.entry,
+            "approval_process": (
+                "reference_caller_verified"
+                if item.approval_process_ref in verified
+                else "reference_unverified"
+            ),
+            "authority_verification": "not_performed_by_this_package",
+        }
+        for item in entries
+        if item.approved_by is not None
+    ]
     reported = []
     for event in comparisons:
         target = by_number.get(event.entry)
@@ -221,6 +254,7 @@ def validate_ledger(entries_raw, comparisons_raw=(), key_holders=None):
         "valid": True,
         "entries": len(entries),
         "latest_entry_by_set": dict(sorted(last_for_set.items())),
+        "approvals": approvals,
         "comparisons": reported,
         "note": "recording_is_not_hmac_verification; comparisons_are_key_holder_checks",
     }
