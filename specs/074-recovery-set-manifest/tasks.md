@@ -58,14 +58,16 @@ Authorization boundaries, from the owner decisions of 15 November 2026 (the Phas
 | Not authorized: measurements and tests | Capacity measurements, large-data runs, NAS or production-storage access, and synthetic-key test runs for governance or capacity demonstrations |
 | Not authorized: implementation and operations | Key-generation or key-management tooling, generating, provisioning, storing or rotating a real key, custody activation, creating or operating a real recovery set, operational recovery or restore, and any migration, schema or configuration change |
 
-The boxes below stay unchecked until the exact task is complete and its evidence exists; a draft, a proposal or an authorization to design completes none of them.
+The Phase C design/preparation drafts were delivered in documentation-only [PR #42](https://github.com/LYF-FC/local-assistant-core/pull/42) (merge `b081c12`): C1 [key custody and key-generation requirements](../../docs/RECOVERY_KEY_CUSTODY.md), C2 [expected-hash governance](../../docs/RECOVERY_HASH_GOVERNANCE.md), C3 [retention and forgetting](../../docs/RECOVERY_RETENTION.md), C4 [capacity-validation plan](../../docs/RECOVERY_CAPACITY_VALIDATION.md), and C5 requirements preparation within the key-custody draft. The independent-verification document is a blank record template, not a completed review. All five are proposals/preparation artifacts only; no proposal has been approved. C4 measurements and a ceiling decision have not occurred. No implementation, synthetic-key test run, key operation, NAS access or recovery operation was performed or authorized.
+
+The boxes below stay unchecked: PR #42 delivered drafts, not the owner decisions, measured evidence or implementation outcomes represented by these tasks. A draft, a proposal or an authorization to design does not complete a task.
 
 
-- [ ] C1 Key holder, custody, storage, access, backup and loss-recovery procedure (O1b).
-- [ ] C2 Governance of the independently retained expected manifest hash (O5).
-- [ ] C3 Retention policy for manifests, backups and archives, expected-hash records, and forgetting reconciliation (O2).
-- [ ] C4 Measured resource testing and a separate owner decision on the real operational dump ceiling (O8); 64 GiB is not approved.
-- [ ] C5 Key-generation requirements and design preparation only (O9). Key-generation tooling and any provisioning workflow remain unauthorized and deferred until custody is decided.
+- [ ] C1 Key holder, custody, storage, access, backup and loss-recovery procedure (O1b). Draft proposal delivered in PR #42; owner decision and any later authorized procedure/implementation remain open.
+- [ ] C2 Governance of the independently retained expected manifest hash (O5). Draft proposal delivered in PR #42; owner decision remains open.
+- [ ] C3 Retention policy for manifests, backups and archives, expected-hash records, and forgetting reconciliation (O2). Draft matrix delivered in PR #42; every retention duration and policy decision remains open.
+- [ ] C4 Measured resource testing and a separate owner decision on the real operational dump ceiling (O8); 64 GiB is not approved. A validation plan was delivered in PR #42; no measurement or ceiling decision has occurred, and measurement remains unauthorized.
+- [ ] C5 Key-generation requirements and design preparation only (O9). Requirements preparation is included in the PR #42 draft; key-generation tooling and any provisioning workflow remain unauthorized and deferred until custody is decided.
 
 Outstanding record (not a Phase C task and not a checkbox): the independent-verification record against the exact post-reconciliation `main` revision, with full coverage (spec section 11.7, step 3). It is not complete and remains a prerequisite for any real-key or real-set use.
 
