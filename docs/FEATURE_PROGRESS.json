@@ -2,16 +2,16 @@
   "schema_version": 1,
   "snapshot": {
     "date": "2026-11-14",
-    "main_sha": "4a7e62468196fff913df02ac4fb6f60ae7759b83",
-    "merged_through_pr": 37,
-    "register_rows_sha256": "977ac2cd45c4b06983f87f2152c4a2bed2e744b4d6db1fc44cf349e0435bb8ad",
+    "main_sha": "47b949e61c96a2e3c2fd883e1784a2856946146c",
+    "merged_through_pr": 40,
+    "register_rows_sha256": "0c95b837632524c571a3486493a1407ed6ea319d88b7bddbb11962beb9db583e",
     "ci_evidence": {
-      "run_id": 43624054196,
+      "run_id": 43647391844,
       "event": "push",
       "branch": "main",
-      "head_sha": "4a7e62468196fff913df02ac4fb6f60ae7759b83",
+      "head_sha": "47b949e61c96a2e3c2fd883e1784a2856946146c",
       "conclusion": "success",
-      "note": "Hosted CI run for the push to main at the snapshot revision (the merge of PR #37): attempt 1, all six jobs succeeded. Other main pushes since the previous snapshot (5096134, run 43493750600): 41aa5f3 (PR #35 merge) failed in the postgres integration step (run 43592529868; failing test not established here); f617330 (a calendar test determinism fix, no associated PR found) succeeded (run 43603362335); 2e04ff8 (PR #36 merge) succeeded (run 43611079243). A passing pull-request-head run does not establish merge-commit CI. Recorded as CI evidence only: it is not reviewer-signed verification of any gate and not owner acceptance."
+      "note": "Hosted CI run for the push to main at the snapshot revision, which is the last merged delivery (the merge of PR #40) and not necessarily the current tip of main (verified main was 395d458 when this snapshot was prepared, with documentation-only commits after the snapshot revision and identical backend, scripts and workflow trees): run 43647391844, attempt 3, all six jobs succeeded, including the postgres job's synthetic logical backup and isolated restore step; the outcome of attempts 1 and 2 is not characterised here. The PR-head run 43643717067 (implementation head b48798875c8a8891b53a7c6dac4697d7641a0fd6) passed all six jobs; the later PR head d5f8b0abb6b648a345fbccb7e8579f4b371f8228 differs from it only in specs/074-recovery-set-manifest/tasks.md. Documentation-only pushes after the snapshot (run 43651904631 at 5b5a301 and run 43652211367 at 395d458) passed only the scope and aggregate ci jobs; backend, frontend, containers and postgres were skipped (not passed), so they are not test evidence, and no full-coverage run exists at the verified current main. The previous snapshot (4a7e624, PR #37) recorded run 43624054196, attempt 1, all six jobs. A passing pull-request-head run does not establish merge-commit CI. Recorded as CI evidence only: it is not reviewer-signed verification of any gate and not owner acceptance."
     }
   },
   "stages": {
@@ -438,6 +438,12 @@
       "title": "PR #37 · Overdue and stalled work observation",
       "description": "An explicit, audited, queue-level overdue/stalled observation of the approved-job, reminder, notification and filing queues for a technical administrator (migration 0038), reusing the workers' own selection rules; not a worker-health check, with OPS-09 and OPS-10 statuses unchanged.",
       "path": "pull/37",
+      "baseline": false
+    },
+    {
+      "title": "PR #40 · Recovery-set manifest verification (synthetic)",
+      "description": "A synthetic-only offline command that verifies the integrity and authenticity of a defined backup set against an HMAC-authenticated manifest with independently supplied trust inputs, plus a synthetic PostgreSQL restore drill (no migration); it restores and stages nothing, establishes no backup freshness, clean-host recovery or RPO/RTO, and uses no real key or recovery set. Owner-accepted for the synthetic-only scope only; Gate 11 and MVP-05 are not accepted and no status changes.",
+      "path": "pull/40",
       "baseline": false
     }
   ],

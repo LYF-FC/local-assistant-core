@@ -1,6 +1,6 @@
 # Feature overview
 
-Snapshot: **14 November 2026**, merged main [`4a7e624`](https://github.com/LYF-FC/local-assistant-core/commit/4a7e62468196fff913df02ac4fb6f60ae7759b83) through PR #37. This view does not query CI or certify exact-main/host/provider acceptance.
+Snapshot: **14 November 2026**, merged main [`47b949e`](https://github.com/LYF-FC/local-assistant-core/commit/47b949e61c96a2e3c2fd883e1784a2856946146c) through PR #40. This view does not query CI or certify exact-main/host/provider acceptance.
 
 [Critical review of every feature](FEATURE_REVIEW.md) · [Interactive dashboard — download HTML](FEATURE_DASHBOARD.html) · [Source metadata](FEATURE_PROGRESS.json)
 
@@ -39,7 +39,7 @@ A feature is counted once at its first stage; later expansions remain retained. 
 
 ## Delivered building blocks
 
-24 public feature batches have merged after the imported engineering foundation. Documentation PRs are not feature deliveries; building blocks are not added to the original-feature denominator.
+25 public feature batches have merged after the imported engineering foundation. Documentation PRs are not feature deliveries; building blocks are not added to the original-feature denominator.
 
 | Evidence | Working engineering subset |
 |---|---|
@@ -68,6 +68,7 @@ A feature is counted once at its first stage; later expansions remain retained. 
 | [PR #34 · Unified attention inbox](https://github.com/LYF-FC/local-assistant-core/pull/34) | An explicit read-and-link Inbox for one granted scope composing tasks, reminders, documents needing review and filing and notification failures, with evidence-only pending approvals; no approvals screen, live provider or infrastructure status, and no gate accepted. |
 | [PR #35 · Operations audit summary](https://github.com/LYF-FC/local-assistant-core/pull/35) | An explicit, audited, count-only summary of security and administrative audit events for a technical administrator through a reviewed SECURITY DEFINER projection (migration 0037); a first slice of OPS-10 only, with no status change. |
 | [PR #37 · Overdue and stalled work observation](https://github.com/LYF-FC/local-assistant-core/pull/37) | An explicit, audited, queue-level overdue/stalled observation of the approved-job, reminder, notification and filing queues for a technical administrator (migration 0038), reusing the workers' own selection rules; not a worker-health check, with OPS-09 and OPS-10 statuses unchanged. |
+| [PR #40 · Recovery-set manifest verification (synthetic)](https://github.com/LYF-FC/local-assistant-core/pull/40) | A synthetic-only offline command that verifies the integrity and authenticity of a defined backup set against an HMAC-authenticated manifest with independently supplied trust inputs, plus a synthetic PostgreSQL restore drill (no migration); it restores and stages nothing, establishes no backup freshness, clean-host recovery or RPO/RTO, and uses no real key or recovery set. Owner-accepted for the synthetic-only scope only; Gate 11 and MVP-05 are not accepted and no status changes. |
 
 ## All original named features
 
