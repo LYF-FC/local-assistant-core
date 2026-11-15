@@ -49,7 +49,7 @@
 
 ## Phase C: before any real-key or real-set use (design, preparation and non-operational implementation authorized; operational work not authorized)
 
-Authorization boundaries, from the owner decisions of 15 November 2026 (the Phase B acceptance and the Phase C design-only authorization):
+Authorization boundaries, from three separate owner decisions of 15 November 2026: (1) Phase B was formally accepted (synthetic-only scope); (2) Phase C design and documentation work was authorized; (3) a subsequent, separate owner decision authorized implementation of the non-operational portions of C1 to C5. The third decision does not authorize real-key operations, key-custody activation, NAS or production-storage access, recovery operations, capacity measurements, synthetic-key governance or capacity demonstrations, or any claim of operational readiness:
 
 | Category | State |
 |---|---|
