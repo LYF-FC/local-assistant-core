@@ -42,7 +42,7 @@ def test_distinct_register_lists_both_custodians_as_key_holders_and_no_independe
     assert custody.key_holders(full) == {"p1", "p2"}
 
 
-def test_conflicting_roles_are_degraded_until_the_owner_reference_is_given():
+def test_conflicting_roles_are_degraded_and_a_reference_alone_is_not_an_owner_decision():
     shared = register(
         primary_custodian="p1", recovery_custodian="p1", operator="p3", record_keeper="p4"
     )
@@ -55,8 +55,37 @@ def test_conflicting_roles_are_degraded_until_the_owner_reference_is_given():
         report["status"] == "degraded_not_accepted"
         and ["record_keeper", "recovery_custodian"] in report["conflicts"]
     )
-    shared["degraded_arrangement_acceptance_ref"] = "owner-decision-ref"
-    assert custody.parse_role_register(shared)["status"] == "degraded_accepted_by_owner_reference"
+    shared["degraded_arrangement_acceptance_ref"] = "any-well-formed-ref"
+    unverified = custody.parse_role_register(shared)
+    assert unverified["status"] == "degraded_reference_unverified"
+    assert unverified["acceptance_reference"] == "format_checked_only_authority_not_verified"
+    assert unverified["authority_verification"] == "not_performed_by_this_package"
+    assert "owner_decision" not in unverified["status"]
+
+
+def test_only_a_reference_the_caller_states_was_verified_changes_the_status():
+    shared = register(
+        primary_custodian="p1", recovery_custodian="p1", operator="p3", record_keeper="p4"
+    )
+    shared["degraded_arrangement_acceptance_ref"] = "decision-ref-1"
+    assert (
+        custody.parse_role_register(shared, {"other-ref"})["status"]
+        == "degraded_reference_unverified"
+    )
+    assert custody.parse_role_register(shared, set())["status"] == "degraded_reference_unverified"
+    verified = custody.parse_role_register(shared, {"decision-ref-1"})
+    assert verified["status"] == "degraded_owner_decision_caller_verified"
+    assert verified["authority_verification"] == "not_performed_by_this_package"
+
+
+def test_verified_references_do_not_change_non_degraded_statuses():
+    distinct = register(
+        primary_custodian="p1", recovery_custodian="p2", operator="p3", record_keeper="p4"
+    )
+    distinct["degraded_arrangement_acceptance_ref"] = "decision-ref-1"
+    assert (
+        custody.parse_role_register(distinct, {"decision-ref-1"})["status"] == "complete_distinct"
+    )
 
 
 def test_operator_may_share_an_actor_without_becoming_a_conflict():
@@ -79,6 +108,9 @@ def test_operator_may_share_an_actor_without_becoming_a_conflict():
             "degraded_arrangement_acceptance_ref": None,
         },
         register(primary_custodian="bad value"),
+        register(primary_custodian="0123456789abcdef" * 4),
+        {**register(), "schema_version": True},
+        {**register(), "degraded_arrangement_acceptance_ref": "0123456789abcdef" * 2},
         register(primary_custodian=7),
         {**register(), "degraded_arrangement_acceptance_ref": "bad ref"},
     ],
@@ -92,7 +124,7 @@ def key_event(number=1, **extra):
         "event_id": f"00000000-0000-4000-8000-{number:012d}",
         "event": "released_for_session",
         "key_id": "00000000-0000-4000-8000-00000000000a",
-        "key_fingerprint": "0" * 64,
+        "fingerprint_record_ref": "fingerprint-record-1",
         "installation_id": "11111111-1111-4111-8111-111111111111",
         "occurred_on": "2026-01-01",
         "role": "primary_custodian",
@@ -118,7 +150,11 @@ def validate_ok(events):
         [key_event(1, material="0" * 64)],
         [key_event(1, secret="x")],
         [key_event(1, event="exported")],
-        [key_event(1, key_fingerprint="g" * 64)],
+        [key_event(1, key_fingerprint="0" * 64)],  # the 64-hex field no longer exists
+        [key_event(1, fingerprint_record_ref="0" * 64)],
+        [key_event(1, fingerprint_record_ref="A" * 40)],
+        [key_event(1, actor_ref="0123456789abcdef" * 2)],
+        [key_event(1, ceremony_ref="0123456789abcdef" * 4)],
         [key_event(1, occurred_on="2026-02-30")],
         [key_event(1, role="auditor")],
         "not a list",
@@ -140,3 +176,13 @@ def test_future_operations_interface_is_a_protocol_with_no_implementation():
     assert [n for n in vars(custody.FutureKeyOperations) if not n.startswith("_")] == [
         "record_event"
     ]
+
+
+def test_key_event_has_no_fingerprint_or_hex_typed_field_and_accepts_only_opaque_references():
+    names = set(custody.KeyEventRecord.model_fields)
+    assert "key_fingerprint" not in names and "fingerprint_record_ref" in names
+    assert custody.validate_key_events([key_event(1)])["valid"]
+    assert (
+        code(lambda: custody.validate_key_events([key_event(1, key_fingerprint="0" * 64)]))
+        == "key_event_invalid"
+    )

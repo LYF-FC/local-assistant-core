@@ -6,6 +6,10 @@ names a person, or activates a custody arrangement. Roles that the owner has not
 can each forge a valid HMAC; the operator holds the key only temporarily, during an authorized
 session. Procedural separation is reported as such: it is never cryptographic separation, and no
 output claims non-repudiation or independent verification.
+
+An owner-acceptance reference is format-checked only. Its presence proves no owner decision, and
+this package has no authority record to check it against: the report says so, and a status of
+"caller verified" only reflects what the caller states it verified outside this package.
 """
 
 from datetime import date
@@ -15,11 +19,11 @@ from pydantic import field_validator
 
 from app.recovery_governance.common import (
     DATE,
-    HEX64,
-    REF,
     UUID,
     Closed,
     GovernanceError,
+    is_ref,
+    is_schema_one,
     require_mapping,
 )
 
@@ -33,21 +37,25 @@ CONFLICTS = (
 SEPARATION_NOTE = "procedural_separation_only; every_key_holder_can_forge; not_non_repudiation"
 
 
-def parse_role_register(raw):
-    """Validate a role register and report; assignments may be ``null`` (undecided)."""
+def parse_role_register(raw, verified_decisions=None):
+    """Validate a role register and report; assignments may be ``null`` (undecided).
+
+    ``verified_decisions`` is the set of owner-decision references the caller states were verified
+    against an owner-decision record outside this package (default: none).
+    """
     raw = require_mapping(raw, "role_register_invalid")
     if set(raw) != {"schema_version", "assignments", "degraded_arrangement_acceptance_ref"}:
         raise GovernanceError("role_register_invalid")
-    if raw["schema_version"] != 1:
+    if not is_schema_one(raw["schema_version"]):
         raise GovernanceError("role_register_invalid")
     assignments = require_mapping(raw["assignments"], "role_register_invalid")
     if set(assignments) != set(ROLES):
         raise GovernanceError("role_register_invalid")
     for value in assignments.values():
-        if value is not None and not (isinstance(value, str) and REF.fullmatch(value)):
+        if value is not None and not is_ref(value):
             raise GovernanceError("role_register_invalid")
     acceptance = raw["degraded_arrangement_acceptance_ref"]
-    if acceptance is not None and not (isinstance(acceptance, str) and REF.fullmatch(acceptance)):
+    if acceptance is not None and not is_ref(acceptance):
         raise GovernanceError("role_register_invalid")
     undecided = [role for role in ROLES if assignments[role] is None]
     conflicts = [
@@ -59,10 +67,12 @@ def parse_role_register(raw):
         status = "undecided"
     elif not conflicts:
         status = "complete_distinct"
-    elif acceptance is not None:
-        status = "degraded_accepted_by_owner_reference"
-    else:
+    elif acceptance is None:
         status = "degraded_not_accepted"
+    elif acceptance in frozenset(verified_decisions or ()):
+        status = "degraded_owner_decision_caller_verified"
+    else:
+        status = "degraded_reference_unverified"
     holders = sorted(
         {assignments[role] for role in KEY_HOLDER_ROLES if assignments[role] is not None}
     )
@@ -70,20 +80,30 @@ def parse_role_register(raw):
         "status": status,
         "undecided_roles": undecided,
         "conflicts": conflicts,
+        "acceptance_reference": (
+            "none" if acceptance is None else "format_checked_only_authority_not_verified"
+        ),
+        "authority_verification": "not_performed_by_this_package",
         "key_holders_at_rest": holders,
         "operator_key_access": "temporary_during_authorized_session_only",
         "note": SEPARATION_NOTE,
     }
 
 
-def key_holders(register_raw):
+def key_holders(register_raw, verified_decisions=None):
     """Actors who hold the verification key at rest (both custodians), for ledger checks."""
-    report = parse_role_register(register_raw)
+    report = parse_role_register(register_raw, verified_decisions)
     return set(report["key_holders_at_rest"])
 
 
 class KeyEventRecord(Closed):
-    """Metadata-only audit record. There is no field that can carry key material."""
+    """Metadata-only audit record. There is no field that can carry key material.
+
+    The key's keyed fingerprint is a 64-character hexadecimal tag, which cannot be told apart
+    from key material by syntax, so it is deliberately **not** a field here: the record carries
+    only an opaque reference to the keeper's fingerprint record. References may not look like
+    key material (long hexadecimal strings are rejected).
+    """
 
     event_id: str
     event: Literal[
@@ -98,7 +118,7 @@ class KeyEventRecord(Closed):
         "compromise_declared",
     ]
     key_id: str
-    key_fingerprint: str
+    fingerprint_record_ref: str
     installation_id: str
     occurred_on: str
     role: Literal["primary_custodian", "recovery_custodian", "operator", "record_keeper"]
@@ -112,13 +132,6 @@ class KeyEventRecord(Closed):
             raise ValueError("uuid")
         return value
 
-    @field_validator("key_fingerprint")
-    @classmethod
-    def _fingerprint(cls, value):
-        if not HEX64.fullmatch(value):
-            raise ValueError("fingerprint")
-        return value
-
     @field_validator("occurred_on")
     @classmethod
     def _date(cls, value):
@@ -127,10 +140,10 @@ class KeyEventRecord(Closed):
         date.fromisoformat(value)
         return value
 
-    @field_validator("actor_ref", "ceremony_ref")
+    @field_validator("fingerprint_record_ref", "actor_ref", "ceremony_ref")
     @classmethod
     def _ref(cls, value):
-        if value is not None and not REF.fullmatch(value):
+        if value is not None and not is_ref(value):
             raise ValueError("ref")
         return value
 
