@@ -25,8 +25,9 @@ Assignments are **unresolved owner decisions**. The keeper must be a different p
 
 - Separation here is **procedural only**: role assignment, witnessed release, a log, and an independently held record. It is **not cryptographic separation**.
 - **Both the primary and the recovery custodian are key holders and can each forge a valid MAC.** Adding the recovery custodian therefore increases the number of parties able to forge; that is the price of availability and must be stated in any approval.
+- **The recovery custodian's second copy improves availability only; it does not protect authenticity against a compromised primary custodian.** Both holders possess the same symmetric HMAC key, so either can forge a valid manifest, and a compromise or defection of either one undermines every manifest under that key. A second copy helps if the primary medium is lost; it does not help if a holder is compromised.
 - A custodian-run or operator-run `verify` is **not an independent verification**: the party running it holds the verification secret. No procedure in this draft provides independent HMAC verification, non-repudiation or public-key verification.
-- The honest benefit is detective and deterrent: a substituted manifest is caught only if the independent records are intact and compared; a holder who also controls those records defeats it.
+- The honest benefit is detective and deterrent: a substituted manifest is caught only if the independent records are intact and a later comparison is made, which with the current tooling is a key-holder-run `verify` ([RECOVERY_HASH_GOVERNANCE.md](RECOVERY_HASH_GOVERNANCE.md), section 3.1); a holder who also controls those records defeats it.
 
 ## 4. Storage design baseline and alternatives
 
@@ -65,7 +66,8 @@ Assignments are **unresolved owner decisions**. The keeper must be a different p
 |---|---|---|
 | Theft of the medium | Encryption; passphrase held separately; off-site storage | Passphrase compromise or coercion |
 | Key exposed on the generation or verifier host during a session | Dedicated minimal host, session log, removal after use (owner decision) | A compromised host during the session can attest anything (spec 6.5) |
-| Custodian unavailable or lost | Recovery custodian and copy | Both lost together if co-located |
+| Custodian unavailable or lost | Recovery custodian and copy (availability only) | Both lost together if co-located |
+| Compromised primary custodian | None from the second copy: both holders have the same key, so the recovery copy does not protect authenticity; the independent records and the compromise procedure of section 6 apply | The compromised holder can forge; detection depends on the independent records |
 | A key holder forges a manifest | Independent hash and fingerprint records, compared | A forger who also controls the records; HMAC cannot prevent this |
 | Key loss | Second copy and rehearsal | Gap until a new key is attested (spec 6.7) |
 | Record tampering | Append-only, separately held records | Trust in the keeper |
