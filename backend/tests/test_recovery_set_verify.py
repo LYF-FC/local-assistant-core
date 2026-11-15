@@ -540,3 +540,73 @@ def test_a2_every_output_uses_the_closed_vocabulary(world, bare_world):
     ]
     for output in outputs:
         check_closed(output)
+
+
+@pytest.mark.parametrize(
+    "flag",
+    [
+        "--set", "--recovery-key", "--expected-key-fingerprint", "--expect-archive",
+        "--output", "--installation-id", "--schema-head",
+    ],
+)  # fmt: skip
+def test_every_required_generate_input_is_mandatory_before_any_file_access(world, flag):
+    from recovery_set_support import generate_args
+
+    output_path = world.out_dir / "new-manifest"
+    before = sorted(path.name for path in world.out_dir.iterdir())  # holds the fixture manifest
+    args = generate_args(world.synthetic, world.key, output_path)
+    index = args.index(flag)
+    del args[index : index + 2]
+    output, status = run(args)
+    assert status == 2 and reasons(output) == ["trust_input_missing"]
+    assert not output_path.exists()
+    assert sorted(path.name for path in world.out_dir.iterdir()) == before
+
+
+def test_a2_authentic_altered_file_reports_freshness_per_supplied_hash(world):
+    """Section 2.5 row "Authentic, one file altered": freshness follows the supplied hash."""
+    expected = world.hash()
+    dump = world.synthetic.set_dir / "database.dump"
+    dump.write_bytes(dump.read_bytes()[:-1] + b"X")
+    cases = [
+        ([], "freshness_not_evaluated"),
+        (["--expected-manifest-hash", expected], "freshness_match"),
+        (["--expected-manifest-hash", "b" * 64], "freshness_mismatch"),
+    ]
+    for extra, freshness in cases:
+        output, status = world.verify(extra=extra)
+        check_closed(output)
+        assert status == 1 and output["freshness"] == freshness, extra
+        assert states(output)[:3] == ("integrity_invalid", "authenticity_valid", "expectations_met")
+        assert "set_member_hash_mismatch" in reasons(output)
+        assert "verified_references" not in output
+
+
+def test_t33_key_material_is_absent_from_generate_output_and_files(world):
+    """T33 for ``generate``: stdout, stderr and every written file, including a crashing key."""
+    from recovery_set_support import generate_args
+
+    material = world.key.material
+    forms = [
+        material.encode(),
+        base64.b64encode(bytes.fromhex(material)),
+        base64.urlsafe_b64encode(bytes.fromhex(material)),
+        repr(bytes.fromhex(material)).encode(),
+        material.upper().encode(),
+    ]
+    leak_key = write_private(world.root / "k" / "leak2.key", json.dumps({"material": material}))
+    scenarios = [
+        generate_args(world.synthetic, world.key, world.out_dir / "generated"),
+        [
+            *generate_args(world.synthetic, world.key, world.out_dir / "crashing"),
+        ],
+    ]
+    scenarios[1][scenarios[1].index("--recovery-key") + 1] = str(leak_key)
+    for args in scenarios:
+        done = run_cli(args)
+        for form in forms:
+            assert form not in done.stdout and form not in done.stderr
+    written = [path for path in world.out_dir.iterdir() if path.is_file()]
+    assert (world.out_dir / "generated").exists() and written
+    for path in written:
+        assert all(form not in path.read_bytes() for form in forms), path.name

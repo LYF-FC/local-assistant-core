@@ -311,3 +311,38 @@ def test_mac_fingerprint_and_hash_use_their_own_domains(world):
     assert key.fingerprint() == expected == document["payload"]["key_fingerprint"]
     assert world.hash() == hashlib.sha256(HASH_DOMAIN + payload).hexdigest()
     assert world.hash() != hashlib.sha256(payload).hexdigest()
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root can read a mode 000 file")
+def test_t13_unreadable_key_file_is_unsafe(world):  # pragma: no cover - needs a non-root user
+    world.key.path.chmod(0o000)
+    try:
+        out = world.verify()[0]
+    finally:
+        world.key.path.chmod(0o600)
+    assert reasons(out) == ["key_file_unsafe"] and out["authenticity"] == "authenticity_invalid"
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        ("application",),
+        ("application", "packages"),
+        ("archive",),
+        ("generator",),
+        ("schema",),
+        ("work_references",),
+    ],
+)
+def test_t9_unknown_field_in_every_remaining_nested_object(world, path):
+    """T9 "at every depth": the closed objects not covered by the test above."""
+
+    def mutate(document):
+        node = document["payload"]["body"]
+        for name in path:
+            node = node[name]
+        node["extra"] = 1
+
+    fresh = build_world(world.root.parent / uuid.uuid4().hex)
+    fresh.rewrite(mutate)
+    assert reasons(fresh.verify()[0]) == ["manifest_unknown_field"], path

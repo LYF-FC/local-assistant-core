@@ -328,6 +328,9 @@ def test_t52_mode_and_link_invariants(world):
         (set_dir, 0o720, "set_member_unsafe_mode"),
         (set_dir / "archive", 0o750, "set_member_unsafe_mode"),
         (set_dir / "archive", 0o702, "set_member_unsafe_mode"),
+        (set_dir, 0o702, "set_member_unsafe_mode"),  # remaining group/other read/write combinations
+        (set_dir / "archive", 0o720, "set_member_unsafe_mode"),
+        (set_dir / "archive", 0o705, "set_member_unsafe_mode"),
         (world.manifest, 0o640, "manifest_file_unsafe"),
         (world.manifest, 0o604, "manifest_file_unsafe"),
         (world.manifest, 0o620, "manifest_file_unsafe"),
@@ -665,3 +668,14 @@ def test_modification_during_a_read_with_unchanged_size_is_detected(world, monke
     output = world.verify()[0]
     assert output["reasons"] == ["set_changed_during_read"]
     assert output["integrity"] == "integrity_invalid"
+
+
+def test_t7_case_variant_names_on_disk_are_ambiguous(world):
+    """T7 "case-variant duplicate": two names that differ only in case are never guessed between."""
+    root_variant = fresh(world, "case-root")
+    write_private(root_variant.synthetic.set_dir / "Database.dump", b"x")
+    assert reasons(root_variant.verify()[0]) == ["set_enumeration_ambiguous"]
+    archive_variant = fresh(world, "case-archive")
+    first = objects(archive_variant)[0]
+    write_private(first.with_name(first.name.upper()), b"x")
+    assert reasons(archive_variant.verify()[0]) == ["set_enumeration_ambiguous"]

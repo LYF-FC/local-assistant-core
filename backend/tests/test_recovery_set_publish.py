@@ -45,9 +45,12 @@ class Case:
     def args(self, output=None):
         return generate_args(self.synthetic, self.key, output or self.output)
 
-    def generate(self, faults=None, output=None, **kwargs):
+    def run(self, faults=None, output=None, **kwargs):
         _, trust = parse_trust(self.args(output))
-        return generate(trust, faults=faults, **kwargs).to_dict()
+        return generate(trust, faults=faults, **kwargs)
+
+    def generate(self, faults=None, output=None, **kwargs):
+        return self.run(faults, output, **kwargs).to_dict()
 
     def temporaries(self):
         return sorted(p.name for p in self.out_dir.iterdir() if p.name.startswith(TEMP_PREFIX))
@@ -212,14 +215,14 @@ def test_t31_read_only_output_directory(tmp_path):  # pragma: no cover - needs a
 )
 def test_t37_failure_before_publication(tmp_path, point, action):
     case = Case(tmp_path)
-    result = case.generate(faults(**{point: action}))
+    outcome = case.run(faults(**{point: action}))
+    result = outcome.to_dict()
     assert result["publication"] == "not_published" and result["reasons"] in (
         ["io_error"],
         ["filesystem_unsupported"],
     )
     assert not case.output.exists() and case.temporaries() == []
-    run_status = 1 if result["reasons"] else 0
-    assert run_status == 1
+    assert outcome.exit_status() == 1
 
 
 def test_t37_validation_failure_publishes_nothing(tmp_path):
@@ -456,3 +459,45 @@ def test_the_containing_directory_is_flushed_after_publication(tmp_path, monkeyp
     monkeypatch.setattr(os, "fsync", fsync)
     assert case.generate()["publication"] == "published_durable"
     assert flushed == [False, True]  # the temporary file first, then the directory
+
+
+def test_t31_member_removed_during_the_run_publishes_nothing(tmp_path):
+    case = Case(tmp_path)
+    original = fsset.OpenSet.hash_member
+    state = {"done": False}
+
+    def remove(self, found, keep=False):
+        if not state["done"]:
+            state["done"] = True
+            (case.synthetic.set_dir / "database.dump").unlink()
+        return original(self, found, keep)
+
+    fsset.OpenSet.hash_member = remove
+    try:
+        result = case.generate()
+    finally:
+        fsset.OpenSet.hash_member = original
+    assert result["reasons"] in (["set_changed_during_read"], ["io_error"])
+    assert result["publication"] == "not_published" and not case.output.exists()
+    assert case.temporaries() == []
+
+
+@pytest.mark.parametrize("error", DIRECTORY_FAULTS)
+def test_t38_printed_hash_and_published_bytes_match_the_temporary(tmp_path, error):
+    """T38: the final manifest is byte-identical to the temporary and its printed hash is its own."""
+    from app.recovery_set.format import manifest_hash
+
+    case = Case(tmp_path)
+    captured = {}
+
+    def capture():  # after the link: the temporary and the final path are the same inode
+        (name,) = case.temporaries()
+        captured["bytes"] = (case.out_dir / name).read_bytes()
+
+    result = case.generate(faults(after_link=capture, before_dir_fsync=raising(error)))
+    assert result["publication"] == "published_durability_uncertain"
+    published = case.output.read_bytes()
+    assert published == captured["bytes"]  # the run did not alter the published content
+    payload = json.loads(published)["payload"]
+    assert result["manifest_hash"] == manifest_hash(payload)
+    assert case.verify()[0]["manifest_hash"] == result["manifest_hash"]
