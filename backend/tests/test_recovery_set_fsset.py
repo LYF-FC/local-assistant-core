@@ -29,7 +29,7 @@ from recovery_set_support import (  # noqa: F401
 )
 
 from app.recovery_set import fsset
-from app.recovery_set.cli import build_parser, parse_trust, run
+from app.recovery_set.cli import GENERATE_OPTIONS, VERIFY_FLAGS, VERIFY_OPTIONS, parse_trust, run
 from app.recovery_set.format import Limits
 from app.recovery_set.generate import generate
 from app.recovery_set.publish import InjectedFaults
@@ -229,13 +229,7 @@ def test_t35_dump_ceiling_is_a_labelled_unapproved_placeholder():
 
 
 def test_limit_injection_is_unreachable_from_cli_environment_or_configuration(world, monkeypatch):
-    options = {option for action in build_parser()._actions for option in action.option_strings} | {
-        option
-        for action in build_parser()._subparsers._group_actions
-        for sub in action.choices.values()
-        for sub_action in sub._actions
-        for option in sub_action.option_strings
-    }
+    options = {*GENERATE_OPTIONS, *VERIFY_OPTIONS, *VERIFY_FLAGS}
     assert not any("limit" in option or "fault" in option for option in options)
     package = Path(fsset.__file__).parent
     for source in package.glob("*.py"):

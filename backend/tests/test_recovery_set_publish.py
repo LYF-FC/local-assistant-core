@@ -105,19 +105,54 @@ def test_t27_kill_before_publication_leaves_no_final_manifest(tmp_path, point):
     assert case.verify()[1] == 0
 
 
-@pytest.mark.parametrize("point", ["after_link", "before_dir_fsync"])
+@pytest.mark.parametrize("point", ["after_link", "after_publish", "before_dir_fsync"])
 def test_t27_kill_after_publication_before_the_directory_flush(tmp_path, point):
+    """T27 third point: SIGKILL after publication, before the directory flush.
+
+    The final path holds the complete valid manifest and a retry is refused with ``output_exists``
+    without touching it. A temporary left behind is preserved and reported by the note: at
+    ``after_link`` the tool has not yet removed its own temporary, so it survives as a second hard
+    link to the final bytes; at ``after_publish`` and ``before_dir_fsync`` the tool has already
+    removed it, so there is nothing to preserve and no note. Every preservation check below runs
+    before the deliberate cleanup that lets the final manifest verify again.
+    """
     case = Case(tmp_path)
     killed_at(case, point)
-    parse_manifest(case.output.read_bytes())  # a complete valid manifest, never a prefix
+    final = case.output
+    final_bytes = final.read_bytes()
+    parse_manifest(final_bytes)  # a complete valid manifest, never a prefix
+    published = final.stat()
+    leftovers = case.temporaries()
+    if point == "after_link":
+        assert len(leftovers) == 1
+        temporary = case.out_dir / leftovers[0]
+        info = temporary.stat()
+        assert temporary.read_bytes() == final_bytes  # complete: never mistaken for a prefix
+        assert (info.st_ino, info.st_dev) == (published.st_ino, published.st_dev)
+        assert info.st_nlink == published.st_nlink == 2
+        assert info.st_mode & 0o777 == 0o600
+    else:
+        assert leftovers == [] and published.st_nlink == 1
+
     retry = case.generate()
     assert retry["reasons"] == ["output_exists"] and retry["publication"] == "not_published"
+    assert retry["notes"] == (["stale_temporary_present"] if leftovers else [])
+    assert final.read_bytes() == final_bytes  # the retry never changed the final manifest
+    assert (final.stat().st_ino, final.stat().st_nlink) == (published.st_ino, published.st_nlink)
+    assert case.temporaries() == leftovers  # and never deleted the leftover temporary
+    if leftovers:
+        assert (case.out_dir / leftovers[0]).read_bytes() == final_bytes
+
     if point == "after_link":
         # the leftover temporary is a hard link to the same bytes: the final manifest then has
         # two links and fails the mandatory single-link rule until the operator removes it.
-        assert case.verify()[0]["reasons"] == ["manifest_file_unsafe"]
-        (case.out_dir / case.temporaries()[0]).unlink()
+        failed, status = case.verify()
+        assert failed["reasons"] == ["manifest_file_unsafe"] and status == 1
+        assert failed["notes"] == []  # verify performs no stale-temporary scan
+        assert case.temporaries() == leftovers  # verification deletes nothing either
+        (case.out_dir / leftovers[0]).unlink()  # deliberate test cleanup, only now
     assert case.verify()[1] == 0
+    assert final.read_bytes() == final_bytes
 
 
 def test_t28_existing_destination_is_never_modified(tmp_path):

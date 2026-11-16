@@ -11,6 +11,8 @@ from recovery_set_support import (  # noqa: F401
     World,
     bare_world,
     build_world,
+    describe_calls,
+    file_access_guards,
     make_key,
     private_dir,
     run_generate,
@@ -19,6 +21,7 @@ from recovery_set_support import (  # noqa: F401
     write_private,
 )
 
+from app.recovery_set.cli import run
 from app.recovery_set.format import (
     FINGERPRINT_DOMAIN,
     HASH_DOMAIN,
@@ -146,6 +149,157 @@ def test_t7_manifest_path_unsafe(world, path):
     world.rewrite(lambda d: d["payload"]["body"]["members"][0].update(path=path))
     out = world.verify()[0]
     assert reasons(out) == ["manifest_path_unsafe"] and out["integrity"] == "integrity_invalid"
+
+
+T7_MARKER = "T7-OUTSIDE-SENTINEL"
+
+
+def make_outside_sentinel(world):
+    """Synthetic content next to the set that no member path may ever lead to."""
+    directory = world.root / f"{T7_MARKER}-dir"
+    directory.mkdir()
+    sentinel = directory / f"{T7_MARKER}.txt"
+    sentinel.write_bytes(b"synthetic outside sentinel: never to be read, listed or changed\n")
+    return directory, sentinel
+
+
+def t7_member_paths(world, sentinel):
+    """Unsafe member-path spellings, most of them aimed at the outside sentinel."""
+    relative = os.path.relpath(sentinel, world.synthetic.set_dir)
+    return {
+        "relative-traversal": relative,
+        "absolute": str(sentinel),
+        "traversal-through-archive": "archive/" + relative,
+        "backslash-traversal": relative.replace("/", "\\"),
+        "nul-in-segment": "archive/\x00" + sentinel.name,
+        "empty-segment": "archive//" + relative,
+        "over-length-segment": "archive/" + "a" * 70,
+        "unicode-look-alike": "archive/аbc.original",
+        "case-variant-of-dump": "Database.dump",
+    }
+
+
+def snapshot(*paths):
+    state = {}
+    for path in paths:
+        info = path.stat()
+        state[path.name] = (
+            path.read_bytes() if path.is_file() else sorted(item.name for item in path.iterdir()),
+            info.st_mode,
+            info.st_ino,
+            info.st_size,
+            info.st_mtime_ns,
+            info.st_nlink,
+        )
+    return state
+
+
+def escape_attempts(calls, world):
+    """Guarded calls whose path argument could reach beyond the set.
+
+    A call is an attempt when its path names the outside sentinel or its directory, has a ``..``
+    segment, a backslash or a NUL, or is absolute and neither inside nor an ancestor of one of
+    the independently supplied locations: the set, the key file, the manifest and the output
+    directory. Descriptor walks of the supplied paths' ancestors and the set's own member names
+    are therefore not attempts; a path outside those is.
+    """
+    supplied = [
+        os.path.normpath(str(item))
+        for item in (world.synthetic.set_dir, world.key.path, world.manifest, world.out_dir)
+    ]
+    found = []
+    for kind, path, _ in calls:
+        if path is None:
+            continue
+        segments = path.split("/")
+        reasons = []
+        if T7_MARKER in path:
+            reasons.append("names the outside sentinel")
+        if ".." in segments or "\\" in path or "\x00" in path:
+            reasons.append("traversal, backslash or NUL")
+        if os.path.isabs(path):
+            target = os.path.normpath(path)
+            related = any(
+                target == root
+                or target.startswith(root + os.sep)
+                or root.startswith(target.rstrip(os.sep) + os.sep)
+                for root in supplied
+            )
+            if not related:
+                reasons.append("absolute path outside the supplied locations")
+        if reasons:
+            found.append((kind, path, reasons))
+    # Report member-path escapes (sentinel, traversal) before incidental absolute paths.
+    return sorted(
+        found, key=lambda item: item[2] == ["absolute path outside the supplied locations"]
+    )
+
+
+@pytest.mark.parametrize(
+    "variant",
+    [
+        "relative-traversal", "absolute", "traversal-through-archive", "backslash-traversal",
+        "nul-in-segment", "empty-segment", "over-length-segment", "unicode-look-alike",
+        "case-variant-of-dump",
+    ],
+)  # fmt: skip
+def test_t7_unsafe_member_paths_cannot_reach_outside_the_set(world, variant):
+    """T7: the manifest names a member path aimed at (or shaped like) something outside the set.
+
+    The run is rejected with ``manifest_path_unsafe``; while it runs, no guarded filesystem call
+    names the outside sentinel, climbs out with ``..``, uses a backslash or NUL, or addresses an
+    absolute path outside the independently supplied key, manifest, set and output locations; the
+    sentinel and its directory, the set and the manifest are unchanged. The key and manifest
+    reads, and their ancestor walks, are legitimate and are observed (the guard is live).
+    """
+    from recovery_set_support import verify_args
+
+    directory, sentinel = make_outside_sentinel(world)
+    member_path = t7_member_paths(world, sentinel)[variant]
+    world.rewrite(lambda d: d["payload"]["body"]["members"][0].update(path=member_path))
+    args = verify_args(world.synthetic, world.key, world.manifest)  # built before the guards
+    watched = (sentinel, directory, world.synthetic.set_dir, world.manifest)
+    before = snapshot(*watched)
+    with file_access_guards(raising=False) as (counts, _, calls):
+        output, status = run(args)
+    assert not escape_attempts(calls, world), escape_attempts(calls, world)
+    assert snapshot(*watched) == before
+    assert counts["os.open"] > 0 and counts["os.read"] > 0  # the legitimate reads are seen
+    assert any(path and path.endswith(world.manifest.name) for _, path, _ in calls)
+    assert status == 1 and reasons(output) == ["manifest_path_unsafe"], output
+    assert output["integrity"] == "integrity_invalid"
+
+
+def test_t7_the_escape_guard_detects_an_attempted_escape(world):
+    """Controls for the T7 test: a real read of the sentinel is flagged, the path a naive
+    implementation would open for each targeted member-path spelling is flagged, and a refusing
+    guard stops the access itself, leaving the sentinel untouched."""
+    directory, sentinel = make_outside_sentinel(world)
+    with file_access_guards(raising=False) as (_, _, calls):
+        assert b"synthetic outside sentinel" in sentinel.read_bytes()
+    flagged = escape_attempts(calls, world)
+    assert flagged and all("names the outside sentinel" in why for _, _, why in flagged)
+    paths = t7_member_paths(world, sentinel)
+    targeted = (
+        "relative-traversal", "absolute", "traversal-through-archive",
+        "backslash-traversal", "nul-in-segment", "empty-segment",
+    )  # fmt: skip
+    for variant in targeted:
+        naive = os.path.join(world.synthetic.set_dir, paths[variant])
+        with file_access_guards(raising=False) as (_, _, calls):
+            try:  # what an implementation that trusted the member path would do
+                os.close(os.open(naive, os.O_RDONLY))
+            except (OSError, ValueError):
+                pass
+        assert escape_attempts(calls, world), variant
+    before = snapshot(sentinel, directory)
+    with (
+        file_access_guards(raising=True) as (_, _, calls),
+        pytest.raises(Exception, match="os.open"),
+    ):
+        os.open(sentinel, os.O_RDONLY)
+    assert snapshot(sentinel, directory) == before
+    assert escape_attempts(calls, world)
 
 
 def test_t7_duplicate_member_paths_are_ambiguous(world):

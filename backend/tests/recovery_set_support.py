@@ -4,9 +4,14 @@ Everything here is test data: a synthetic key generated with ``secrets`` at test
 fixture files. No real key, credential, database or recovery set is ever created or read.
 """
 
+import builtins
+import collections
+import contextlib
+import io
 import json
 import os
 import secrets
+import sys
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -190,3 +195,73 @@ def world(tmp_path):
 @pytest.fixture
 def bare_world(tmp_path):
     return build_world(tmp_path, archive=False, name="bare")
+
+
+class AccessAttempted(Exception):
+    pass
+
+
+FILE_ACCESS_NAMES = (
+    "open",
+    "stat",
+    "lstat",
+    "fstat",
+    "scandir",
+    "listdir",
+    "readlink",
+    "access",
+    "read",
+)
+
+
+@contextlib.contextmanager
+def file_access_guards(*, raising):
+    """Count (and optionally refuse) filesystem access entry points while a block runs.
+
+    Patches ``os.open/stat/lstat/fstat/scandir/listdir/readlink/access/read`` and
+    ``builtins.open``/``io.open``. It is installed by the caller after fixture setup, so setup is
+    not blocked and import-time activity is not covered. References bound before installation
+    (for example ``from os import open``) would not be seen; the controls below show the
+    implementation reaches the patched attributes.
+    """
+    counts, origins, calls = collections.Counter(), collections.Counter(), []
+
+    def make(kind, real):
+        def guard(*args, **kwargs):
+            counts[kind] += 1
+            frames, frame = [], sys._getframe(1)
+            while frame is not None:  # in memory only: no traceback or source formatting here
+                code = frame.f_code
+                frames.append((code.co_filename, code.co_name, frame.f_lineno))
+                frame = frame.f_back
+            if any("/app/recovery_set/" in name.replace("\\", "/") for name, _, _ in frames):
+                origins[kind] += 1
+            first = args[0] if args else None
+            if isinstance(first, bytes):
+                first = os.fsdecode(first)
+            elif isinstance(first, os.PathLike):
+                first = os.fspath(first)
+            calls.append((kind, first if isinstance(first, str) else None, frames))
+            if raising:
+                raise AccessAttempted(kind)
+            return real(*args, **kwargs)
+
+        return guard
+
+    with pytest.MonkeyPatch.context() as patch:
+        for name in FILE_ACCESS_NAMES:
+            patch.setattr(os, name, make(f"os.{name}", getattr(os, name)))
+        for module in (builtins, io):
+            patch.setattr(module, "open", make(f"{module.__name__}.open", module.open))
+        yield counts, origins, calls
+
+
+def describe_calls(calls, depth=10):
+    """Report recorded calls (after the patches are removed): kind, path, innermost frames."""
+    lines = []
+    for kind, path, frames in calls:
+        where = " <- ".join(
+            f"{name.rsplit('/', 2)[-1]}:{func}:{line}" for name, func, line in frames[:depth]
+        )
+        lines.append(f"{kind} {path!r}: {where}")
+    return "\n".join(lines)
