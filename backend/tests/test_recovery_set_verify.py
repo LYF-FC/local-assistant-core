@@ -553,6 +553,22 @@ def test_a2_every_output_uses_the_closed_vocabulary(world, bare_world):
         check_closed(output)
 
 
+def pin_locale(monkeypatch, value):
+    """Set the locale environment before a guarded call (gettext reads it on every lookup)."""
+    for name in ("LANGUAGE", "LC_MESSAGES", "LANG"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("LC_ALL", value)
+
+
+def missing_generate_input_args(world, flag):
+    from recovery_set_support import generate_args
+
+    args = generate_args(world.synthetic, world.key, world.out_dir / "new-manifest")
+    index = args.index(flag)
+    del args[index : index + 2]
+    return args
+
+
 @pytest.mark.parametrize(
     "flag",
     [
@@ -560,18 +576,50 @@ def test_a2_every_output_uses_the_closed_vocabulary(world, bare_world):
         "--output", "--installation-id", "--schema-head",
     ],
 )  # fmt: skip
-def test_every_required_generate_input_is_mandatory_before_any_file_access(world, flag):
-    from recovery_set_support import generate_args
+def test_every_required_generate_input_is_mandatory_before_any_file_access(
+    world, flag, monkeypatch
+):
+    """A5: no guarded filesystem call at all while a missing required input is rejected.
 
+    The locale is pinned to ``C`` (before the guards are installed) because the standard
+    library's ``argparse`` looks up gettext message catalogs on disk under any other locale; that
+    lookup is shown separately by the next test. No call count is tolerated here.
+    """
     output_path = world.out_dir / "new-manifest"
     before = sorted(path.name for path in world.out_dir.iterdir())  # holds the fixture manifest
-    args = generate_args(world.synthetic, world.key, output_path)
-    index = args.index(flag)
-    del args[index : index + 2]
+    args = missing_generate_input_args(world, flag)
+    pin_locale(monkeypatch, "C")
     with file_access_guards(raising=False) as (counts, _, calls):  # installed after fixture setup
         output, status = run(args)
-    # Diagnostic form: report every guarded call with its caller frames if any is made.
     assert dict(counts) == {}, (dict(counts), describe_calls(calls))
+    assert status == 2 and reasons(output) == ["trust_input_missing"]
+    assert not output_path.exists()
+    assert sorted(path.name for path in world.out_dir.iterdir()) == before
+
+
+def test_a5_the_only_calls_under_a_non_c_locale_are_the_gettext_catalog_lookup(world, monkeypatch):
+    """Observed cause of the hosted-CI failure: ``LC_ALL=C.UTF-8`` makes ``argparse`` probe for
+    ``.../LC_MESSAGES/messages.mo`` through ``gettext.find`` while the parser is built.
+
+    Every recorded call must be an ``os.stat`` of such a path made inside ``gettext.find`` called
+    from ``argparse``; any other call (a trust-input path, a different entry point, a call from
+    the tool's own code) fails the test. The result and the output directory are unchanged.
+    """
+    output_path = world.out_dir / "new-manifest"
+    before = sorted(path.name for path in world.out_dir.iterdir())
+    args = missing_generate_input_args(world, "--set")
+    pin_locale(monkeypatch, "C.UTF-8")
+    with file_access_guards(raising=False) as (_, _, calls):
+        output, status = run(args)
+    assert calls, "expected the locale lookup to be observed under a non-C locale"
+    for kind, path, frames in calls:
+        files = [(name.replace("\\", "/").rsplit("/", 1)[-1], func) for name, func, _ in frames]
+        assert kind == "os.stat", describe_calls(calls)
+        assert path is not None and path.endswith("/LC_MESSAGES/messages.mo"), describe_calls(calls)
+        assert ("gettext.py", "find") in files and any(f == "argparse.py" for f, _ in files), (
+            describe_calls(calls)
+        )
+        assert str(world.root) not in path
     assert status == 2 and reasons(output) == ["trust_input_missing"]
     assert not output_path.exists()
     assert sorted(path.name for path in world.out_dir.iterdir()) == before
