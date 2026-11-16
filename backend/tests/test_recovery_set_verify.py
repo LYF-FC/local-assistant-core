@@ -3,6 +3,10 @@
 trust inputs, output allowlist (T1, T17 to T23, T25, T26, T32 to T34, T44 to T48, T53, T54)."""
 
 import base64
+import builtins
+import collections
+import contextlib
+import io
 import json
 import logging
 import os
@@ -65,6 +69,19 @@ def check_closed(output):
     if "verified_references" in output:
         assert set(output["verified_references"]) == VERIFIED_KEYS
     return output
+
+
+def key_forms(material):
+    """Raw key bytes plus hex, uppercase hex, base64, URL-safe base64 and repr forms."""
+    raw = bytes.fromhex(material)
+    return [
+        raw,
+        material.encode(),
+        material.upper().encode(),
+        base64.b64encode(raw),
+        base64.urlsafe_b64encode(raw),
+        repr(raw).encode(),
+    ]
 
 
 def fresh(world, name):
@@ -291,13 +308,7 @@ def run_cli(args, env=None):
 
 def test_t33_key_material_never_appears(world, caplog):
     material = world.key.material
-    forms = [
-        material.encode(),
-        base64.b64encode(bytes.fromhex(material)),
-        base64.urlsafe_b64encode(bytes.fromhex(material)),
-        repr(bytes.fromhex(material)).encode(),
-        material.upper().encode(),
-    ]
+    forms = key_forms(material)
     scenarios = [verify_args(world.synthetic, world.key, world.manifest)]
     bad = list(scenarios[0])
     bad[bad.index("--expected-key-fingerprint") + 1] = "0" * 64
@@ -540,3 +551,256 @@ def test_a2_every_output_uses_the_closed_vocabulary(world, bare_world):
     ]
     for output in outputs:
         check_closed(output)
+
+
+def pin_locale(monkeypatch, value):
+    """Set the locale environment before a guarded call (gettext reads it on every lookup)."""
+    for name in ("LANGUAGE", "LC_MESSAGES", "LANG"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("LC_ALL", value)
+
+
+def missing_generate_input_args(world, flag):
+    from recovery_set_support import generate_args
+
+    args = generate_args(world.synthetic, world.key, world.out_dir / "new-manifest")
+    index = args.index(flag)
+    del args[index : index + 2]
+    return args
+
+
+@pytest.mark.parametrize(
+    "flag",
+    [
+        "--set", "--recovery-key", "--expected-key-fingerprint", "--expect-archive",
+        "--output", "--installation-id", "--schema-head",
+    ],
+)  # fmt: skip
+def test_every_required_generate_input_is_mandatory_before_any_file_access(
+    world, flag, monkeypatch
+):
+    """A5: no guarded filesystem call at all while a missing required input is rejected.
+
+    The locale is pinned to ``C`` (before the guards are installed) because the standard
+    library's ``argparse`` looks up gettext message catalogs on disk under any other locale; that
+    lookup is shown separately by the next test. No call count is tolerated here.
+    """
+    output_path = world.out_dir / "new-manifest"
+    before = sorted(path.name for path in world.out_dir.iterdir())  # holds the fixture manifest
+    args = missing_generate_input_args(world, flag)
+    pin_locale(monkeypatch, "C")
+    with file_access_guards(raising=False) as (counts, _, calls):  # installed after fixture setup
+        output, status = run(args)
+    assert dict(counts) == {}, (dict(counts), describe_calls(calls))
+    assert status == 2 and reasons(output) == ["trust_input_missing"]
+    assert not output_path.exists()
+    assert sorted(path.name for path in world.out_dir.iterdir()) == before
+
+
+def test_a5_the_only_calls_under_a_non_c_locale_are_the_gettext_catalog_lookup(world, monkeypatch):
+    """Observed cause of the hosted-CI failure: ``LC_ALL=C.UTF-8`` makes ``argparse`` probe for
+    ``.../LC_MESSAGES/messages.mo`` through ``gettext.find`` while the parser is built.
+
+    Every recorded call must be an ``os.stat`` of such a path made inside ``gettext.find`` called
+    from ``argparse``; any other call (a trust-input path, a different entry point, a call from
+    the tool's own code) fails the test. The result and the output directory are unchanged.
+    """
+    output_path = world.out_dir / "new-manifest"
+    before = sorted(path.name for path in world.out_dir.iterdir())
+    args = missing_generate_input_args(world, "--set")
+    pin_locale(monkeypatch, "C.UTF-8")
+    with file_access_guards(raising=False) as (_, _, calls):
+        output, status = run(args)
+    assert calls, "expected the locale lookup to be observed under a non-C locale"
+    for kind, path, frames in calls:
+        files = [(name.replace("\\", "/").rsplit("/", 1)[-1], func) for name, func, _ in frames]
+        assert kind == "os.stat", describe_calls(calls)
+        assert path is not None and path.endswith("/LC_MESSAGES/messages.mo"), describe_calls(calls)
+        assert ("gettext.py", "find") in files and any(f == "argparse.py" for f, _ in files), (
+            describe_calls(calls)
+        )
+        assert str(world.root) not in path
+    assert status == 2 and reasons(output) == ["trust_input_missing"]
+    assert not output_path.exists()
+    assert sorted(path.name for path in world.out_dir.iterdir()) == before
+
+
+def test_a2_authentic_altered_file_reports_freshness_per_supplied_hash(world):
+    """Section 2.5 row "Authentic, one file altered": freshness follows the supplied hash."""
+    expected = world.hash()
+    dump = world.synthetic.set_dir / "database.dump"
+    dump.write_bytes(dump.read_bytes()[:-1] + b"X")
+    cases = [
+        ([], "freshness_not_evaluated"),
+        (["--expected-manifest-hash", expected], "freshness_match"),
+        (["--expected-manifest-hash", "b" * 64], "freshness_mismatch"),
+    ]
+    for extra, freshness in cases:
+        output, status = world.verify(extra=extra)
+        check_closed(output)
+        assert status == 1 and output["freshness"] == freshness, extra
+        assert states(output)[:3] == ("integrity_invalid", "authenticity_valid", "expectations_met")
+        assert "set_member_hash_mismatch" in reasons(output)
+        assert "verified_references" not in output
+
+
+def test_t33_key_material_is_absent_from_generate_output_and_files(world):
+    """T33 for ``generate`` through the real CLI boundary (subprocess).
+
+    Scans stdout, stderr and the files the run wrote. The key files read by the runs are test
+    fixtures (inputs), not generated outputs, and sit outside the scanned output directory.
+    The second scenario is an ordinary validation failure (a malformed key file), not an injected
+    internal error.
+    """
+    from recovery_set_support import generate_args
+
+    forms = key_forms(world.key.material)
+    leak_key = write_private(
+        world.root / "k" / "leak2.key", json.dumps({"material": world.key.material})
+    )
+    assert world.out_dir not in world.key.path.parents and world.out_dir not in leak_key.parents
+    valid = generate_args(world.synthetic, world.key, world.out_dir / "generated")
+    malformed = generate_args(world.synthetic, world.key, world.out_dir / "crashing")
+    malformed[malformed.index("--recovery-key") + 1] = str(leak_key)
+    control = run_cli(valid)
+    assert control.returncode == 0 and json.loads(control.stdout)["reasons"] == []
+    rejected = run_cli(malformed)
+    assert rejected.returncode == 1
+    assert json.loads(rejected.stdout)["reasons"] == ["key_namespace_mismatch"]
+    for done in (control, rejected):
+        for form in forms:
+            assert form not in done.stdout and form not in done.stderr
+    written = [path for path in world.out_dir.iterdir() if path.is_file()]
+    assert (world.out_dir / "generated").exists() and not (world.out_dir / "crashing").exists()
+    assert {path.name for path in written} >= {"generated"}
+    for path in written:
+        assert all(form not in path.read_bytes() for form in forms), path.name
+
+
+def test_t33_application_logs_never_contain_key_material(world, caplog):
+    """T33 "logs": in-process ``generate`` and ``verify`` runs with application logs captured.
+
+    This is separate from the subprocess checks above (they cover the real CLI output boundary).
+    The tool itself defines no logger, so the capture is a negative check of the logging module's
+    output for these scenarios; a control record proves the capture is wired.
+    """
+    from recovery_set_support import generate_args
+
+    material = world.key.material
+    forms = [form.decode("latin-1") for form in key_forms(material)]
+    leak_key = write_private(world.root / "k" / "leak3.key", json.dumps({"material": material}))
+    wrong = verify_args(world.synthetic, world.key, world.manifest)
+    wrong[wrong.index("--expected-key-fingerprint") + 1] = "0" * 64
+    bad_verify = verify_args(world.synthetic, world.key, world.manifest)
+    bad_verify[bad_verify.index("--recovery-key") + 1] = str(leak_key)
+    bad_generate = generate_args(world.synthetic, world.key, world.out_dir / "log-bad")
+    bad_generate[bad_generate.index("--recovery-key") + 1] = str(leak_key)
+    scenarios = [
+        (
+            "generate valid",
+            generate_args(world.synthetic, world.key, world.out_dir / "log-ok"),
+            0,
+            [],
+        ),
+        ("generate malformed key", bad_generate, 1, ["key_namespace_mismatch"]),
+        ("verify valid", verify_args(world.synthetic, world.key, world.manifest), 0, []),
+        ("verify wrong fingerprint", wrong, 1, ["key_fingerprint_mismatch"]),
+        ("verify malformed key", bad_verify, 1, ["key_namespace_mismatch"]),
+    ]
+    with caplog.at_level(logging.DEBUG):
+        for label, args, status, expected in scenarios:
+            output, code = run(args)
+            assert (code, output["reasons"]) == (status, expected), label
+        logging.getLogger("app.recovery_set").debug("capture-control")
+    messages = "\n".join(record.getMessage() for record in caplog.records)
+    assert "capture-control" in messages  # the capture is wired
+    for form in forms:
+        assert form not in caplog.text and form not in messages
+
+
+class AccessAttempted(Exception):
+    pass
+
+
+FILE_ACCESS_NAMES = (
+    "open",
+    "stat",
+    "lstat",
+    "fstat",
+    "scandir",
+    "listdir",
+    "readlink",
+    "access",
+    "read",
+)
+
+
+@contextlib.contextmanager
+def file_access_guards(*, raising):
+    """Count (and optionally refuse) filesystem access entry points while a block runs.
+
+    Patches ``os.open/stat/lstat/fstat/scandir/listdir/readlink/access/read`` and
+    ``builtins.open``/``io.open``. It is installed by the caller after fixture setup, so setup is
+    not blocked and import-time activity is not covered. References bound before installation
+    (for example ``from os import open``) would not be seen; the controls below show the
+    implementation reaches the patched attributes.
+    """
+    counts, origins, calls = collections.Counter(), collections.Counter(), []
+
+    def make(kind, real):
+        def guard(*args, **kwargs):
+            counts[kind] += 1
+            frames, frame = [], sys._getframe(1)
+            while frame is not None:  # in memory only: no traceback or source formatting here
+                code = frame.f_code
+                frames.append((code.co_filename, code.co_name, frame.f_lineno))
+                frame = frame.f_back
+            if any("/app/recovery_set/" in name.replace("\\", "/") for name, _, _ in frames):
+                origins[kind] += 1
+            calls.append((kind, args[0] if args and isinstance(args[0], str) else None, frames))
+            if raising:
+                raise AccessAttempted(kind)
+            return real(*args, **kwargs)
+
+        return guard
+
+    with pytest.MonkeyPatch.context() as patch:
+        for name in FILE_ACCESS_NAMES:
+            patch.setattr(os, name, make(f"os.{name}", getattr(os, name)))
+        for module in (builtins, io):
+            patch.setattr(module, "open", make(f"{module.__name__}.open", module.open))
+        yield counts, origins, calls
+
+
+def describe_calls(calls, depth=10):
+    """Report recorded calls (after the patches are removed): kind, path, innermost frames."""
+    lines = []
+    for kind, path, frames in calls:
+        where = " <- ".join(
+            f"{name.rsplit('/', 2)[-1]}:{func}:{line}" for name, func, line in frames[:depth]
+        )
+        lines.append(f"{kind} {path!r}: {where}")
+    return "\n".join(lines)
+
+
+def test_file_access_guards_observe_the_entry_points_a_real_generate_uses(world):
+    from recovery_set_support import generate_args
+
+    args = generate_args(world.synthetic, world.key, world.out_dir / "observed")
+    with file_access_guards(raising=False) as (counts, origins, _):
+        output, status = run(args)
+    assert status == 0 and output["reasons"] == []
+    for kind in ("os.open", "os.lstat", "os.stat", "os.scandir", "os.fstat", "os.read"):
+        assert counts[kind] > 0 and origins[kind] > 0, (kind, dict(counts), dict(origins))
+
+
+def test_file_access_guards_refuse_a_real_access_and_record_it(world):
+    from recovery_set_support import generate_args
+
+    target = world.out_dir / "refused"
+    args = generate_args(world.synthetic, world.key, target)  # built before the guards exist
+    with file_access_guards(raising=True) as (counts, origins, _):
+        output, status = run(args)
+    assert output["reasons"] == ["internal_error"] and status == 1  # the guard fired
+    assert sum(counts.values()) > 0 and sum(origins.values()) > 0
+    assert not target.exists()
