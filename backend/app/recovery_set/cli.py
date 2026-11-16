@@ -45,11 +45,11 @@ _OPERATIONS = {"generate": (GENERATE_OPTIONS, ()), "verify": (VERIFY_OPTIONS, VE
 _NEGATIVE_NUMBER = re.compile(r"-\d+|-\d*\.\d+")
 
 
-def _option_like(token, options):
-    """Classify one token the way the previous ``argparse`` parser did, without ``argparse``.
+def _option_like(argument, options):
+    """Classify one argument the way the previous ``argparse`` parser did, without ``argparse``.
 
-    Returns ``None`` for a value (positional-looking) token, ``(name, explicit)`` for an option
-    (``explicit`` is the text after ``=`` or ``None``), and raises for an ambiguous prefix. A token
+    Returns ``None`` for a value (positional-looking) argument, ``(name, explicit)`` for an option
+    (``explicit`` is the text after ``=`` or ``None``), and raises for an ambiguous prefix. An argument
     that starts with ``-`` but names no option is an unknown option and is a malformed input.
 
     ``argparse`` was replaced here because its constructor and error paths translate messages
@@ -57,20 +57,20 @@ def _option_like(token, options):
     is filesystem access before a missing or malformed input is refused (spec 11.1 A5). This
     parser reads only the argument strings: no file, no locale and no environment.
     """
-    if not token or token[0] != "-" or len(token) == 1:
+    if not argument or argument[0] != "-" or len(argument) == 1:
         return None
-    if token in {f"--{name}" for name in options}:
-        return token[2:], None
-    prefix, separator, explicit = token.partition("=")
+    if argument in {f"--{name}" for name in options}:
+        return argument[2:], None
+    prefix, separator, explicit = argument.partition("=")
     if separator and prefix in {f"--{name}" for name in options}:
         return prefix[2:], explicit
-    if token.startswith("--"):
+    if argument.startswith("--"):
         matches = [name for name in options if f"--{name}".startswith(prefix)]
         if len(matches) > 1:
             raise CodedError("trust_input_malformed")
         if matches:
             return matches[0], (explicit if separator else None)
-    if _NEGATIVE_NUMBER.fullmatch(token) or " " in token:
+    if _NEGATIVE_NUMBER.fullmatch(argument) or " " in argument:
         return None
     raise CodedError("trust_input_malformed")
 
@@ -83,19 +83,19 @@ def parse_arguments(argv):
     ambiguous option, a missing option value, a stray value, ``--``, or an explicit value on a
     flag) is ``trust_input_malformed``.
     """
-    tokens = list(argv)
-    if not tokens or tokens[0] not in _OPERATIONS:
+    arguments = list(argv)
+    if not arguments or arguments[0] not in _OPERATIONS:
         raise CodedError("trust_input_malformed")
-    options, flags = _OPERATIONS[tokens[0]]
+    options, flags = _OPERATIONS[arguments[0]]
     values = dict.fromkeys(GENERATE_OPTIONS + VERIFY_OPTIONS + VERIFY_FLAGS)
-    chosen = {"operation": tokens[0]}
+    chosen = {"operation": arguments[0]}
     index = 1
-    while index < len(tokens):
-        token = tokens[index]
+    while index < len(arguments):
+        argument = arguments[index]
         index += 1
-        if token == "--":
+        if argument == "--":
             raise CodedError("trust_input_malformed")
-        found = _option_like(token, (*options, *flags))
+        found = _option_like(argument, (*options, *flags))
         if found is None:
             raise CodedError("trust_input_malformed")
         name, explicit = found
@@ -105,9 +105,9 @@ def parse_arguments(argv):
             chosen[name] = True
             continue
         if explicit is None:
-            if index >= len(tokens) or tokens[index] == "--":
+            if index >= len(arguments) or arguments[index] == "--":
                 raise CodedError("trust_input_malformed")
-            explicit = tokens[index]
+            explicit = arguments[index]
             if _option_like(explicit, (*options, *flags)) is not None:
                 raise CodedError("trust_input_malformed")
             index += 1
