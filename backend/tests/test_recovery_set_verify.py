@@ -568,11 +568,10 @@ def test_every_required_generate_input_is_mandatory_before_any_file_access(world
     args = generate_args(world.synthetic, world.key, output_path)
     index = args.index(flag)
     del args[index : index + 2]
-    with file_access_guards(raising=False) as (counts, origins):  # installed after fixture setup
+    with file_access_guards(raising=False) as (counts, _, calls):  # installed after fixture setup
         output, status = run(args)
-    # No guarded call was made by code running under app/recovery_set. Calls with no such frame
-    # (hosted CI under --cov showed six os.stat calls per case) come from the harness, not the tool.
-    assert dict(origins) == {}, (dict(origins), dict(counts))
+    # Diagnostic form: report every guarded call with its caller frames if any is made.
+    assert dict(counts) == {}, (dict(counts), describe_calls(calls))
     assert status == 2 and reasons(output) == ["trust_input_missing"]
     assert not output_path.exists()
     assert sorted(path.name for path in world.out_dir.iterdir()) == before
@@ -698,17 +697,19 @@ def file_access_guards(*, raising):
     (for example ``from os import open``) would not be seen; the controls below show the
     implementation reaches the patched attributes.
     """
-    counts, origins = collections.Counter(), collections.Counter()
+    counts, origins, calls = collections.Counter(), collections.Counter(), []
 
     def make(kind, real):
         def guard(*args, **kwargs):
             counts[kind] += 1
-            frame = sys._getframe(1)
-            while frame is not None:  # whole stack: a call made by the tool has one of its frames
-                if "/app/recovery_set/" in frame.f_code.co_filename.replace("\\", "/"):
-                    origins[kind] += 1
-                    break
+            frames, frame = [], sys._getframe(1)
+            while frame is not None:  # in memory only: no traceback or source formatting here
+                code = frame.f_code
+                frames.append((code.co_filename, code.co_name, frame.f_lineno))
                 frame = frame.f_back
+            if any("/app/recovery_set/" in name.replace("\\", "/") for name, _, _ in frames):
+                origins[kind] += 1
+            calls.append((kind, args[0] if args and isinstance(args[0], str) else None, frames))
             if raising:
                 raise AccessAttempted(kind)
             return real(*args, **kwargs)
@@ -720,14 +721,25 @@ def file_access_guards(*, raising):
             patch.setattr(os, name, make(f"os.{name}", getattr(os, name)))
         for module in (builtins, io):
             patch.setattr(module, "open", make(f"{module.__name__}.open", module.open))
-        yield counts, origins
+        yield counts, origins, calls
+
+
+def describe_calls(calls, depth=10):
+    """Report recorded calls (after the patches are removed): kind, path, innermost frames."""
+    lines = []
+    for kind, path, frames in calls:
+        where = " <- ".join(
+            f"{name.rsplit('/', 2)[-1]}:{func}:{line}" for name, func, line in frames[:depth]
+        )
+        lines.append(f"{kind} {path!r}: {where}")
+    return "\n".join(lines)
 
 
 def test_file_access_guards_observe_the_entry_points_a_real_generate_uses(world):
     from recovery_set_support import generate_args
 
     args = generate_args(world.synthetic, world.key, world.out_dir / "observed")
-    with file_access_guards(raising=False) as (counts, origins):
+    with file_access_guards(raising=False) as (counts, origins, _):
         output, status = run(args)
     assert status == 0 and output["reasons"] == []
     for kind in ("os.open", "os.lstat", "os.stat", "os.scandir", "os.fstat", "os.read"):
@@ -739,7 +751,7 @@ def test_file_access_guards_refuse_a_real_access_and_record_it(world):
 
     target = world.out_dir / "refused"
     args = generate_args(world.synthetic, world.key, target)  # built before the guards exist
-    with file_access_guards(raising=True) as (counts, origins):
+    with file_access_guards(raising=True) as (counts, origins, _):
         output, status = run(args)
     assert output["reasons"] == ["internal_error"] and status == 1  # the guard fired
     assert sum(counts.values()) > 0 and sum(origins.values()) > 0
