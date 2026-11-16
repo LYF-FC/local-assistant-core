@@ -3,10 +3,6 @@
 trust inputs, output allowlist (T1, T17 to T23, T25, T26, T32 to T34, T44 to T48, T53, T54)."""
 
 import base64
-import builtins
-import collections
-import contextlib
-import io
 import json
 import logging
 import os
@@ -18,8 +14,11 @@ from pathlib import Path
 
 import pytest
 from recovery_set_support import (  # noqa: F401
+    AccessAttempted,
     bare_world,
     build_world,
+    describe_calls,
+    file_access_guards,
     make_key,
     private_dir,
     run_generate,
@@ -30,6 +29,7 @@ from recovery_set_support import (  # noqa: F401
 
 from app.recovery_set import verify as verify_module
 from app.recovery_set.cli import run
+from app.recovery_set.format import CodedError
 from app.recovery_set.result import (
     AUTHENTICITY,
     EXPECTATIONS,
@@ -248,6 +248,17 @@ def test_t23_matching_expected_hash(world):
 
 
 def test_t25_cross_installation_substitution(tmp_path):
+    """T25: a complete valid set and manifest for installation B presented for installation A.
+
+    The assertions record the exact observed outcome of each scenario (reason, the four states,
+    exit status, no ``verified_references``). Scenario 2 differs from the T25 expected column,
+    which lists ``manifest_authentication_failed`` or ``manifest_key_reference_mismatch``: the
+    frozen precedence (2.5 and 7.2 step 3), the 2.5 combinations table, 6.2 and T17 all place the
+    key's installation binding check before the key references and the MAC, so a key bound to
+    installation A used with a manifest declaring B reports ``key_installation_mismatch``. The
+    conflict inside the frozen text is an open owner decision; nothing here resolves it, and the
+    code is neither reordered nor added to an accepted set.
+    """
     from recovery_set_support import make_set
 
     root = private_dir(tmp_path / "b")
@@ -256,17 +267,51 @@ def test_t25_cross_installation_substitution(tmp_path):
     manifest = private_dir(root / "o") / "m"
     assert run_generate(b_set, key_b, manifest)[1] == 0
     key_a = make_key(root / "ka")
-    # B's key and fingerprint presented for installation A
-    out = run(verify_args(b_set, key_b, manifest, installation=key_a.installation_id))[0]
-    assert reasons(out) == ["installation_mismatch"] and states(out)[1] == "authenticity_valid"
-    # A's key and fingerprint with B's manifest
-    out = run(verify_args(b_set, key_a, manifest, installation=key_a.installation_id))[0]
-    assert reasons(out)[0] in {"key_installation_mismatch", "manifest_key_reference_mismatch"}
-    assert states(out)[1] == "authenticity_invalid"
-    # B's key with A's fingerprint
+    assert key_a.installation_id != key_b.installation_id and key_a.key_id != key_b.key_id
+    rejected = (
+        "integrity_not_evaluated",
+        "authenticity_invalid",
+        "expectations_not_evaluated",
+        "freshness_not_evaluated",
+    )
+
+    def observed(args, reason, status_states, exit_status=1):
+        output, status = run(args)
+        assert status == exit_status and reasons(output) == [reason], output
+        assert states(output) == status_states and "verified_references" not in output
+        assert output["notes"] == []
+
+    # 1. B's key and fingerprint presented for installation A: authentic, expectations not met.
+    observed(
+        verify_args(b_set, key_b, manifest, installation=key_a.installation_id),
+        "installation_mismatch",
+        (
+            "integrity_valid",
+            "authenticity_valid",
+            "expectations_not_met",
+            "freshness_not_evaluated",
+        ),
+    )
+    # 2. A's key and fingerprint with B's manifest: the key's binding differs from the declared
+    #    installation (the T25 text lists other codes; see the docstring).
+    observed(
+        verify_args(b_set, key_a, manifest, installation=key_a.installation_id),
+        "key_installation_mismatch",
+        rejected,
+    )
+    # 3. B's key with A's fingerprint.
     args = verify_args(b_set, key_b, manifest)
     args[args.index("--expected-key-fingerprint") + 1] = key_a.fingerprint()
-    assert reasons(run(args)[0]) == ["key_fingerprint_mismatch"]
+    observed(args, "key_fingerprint_mismatch", rejected)
+    # Control for the code T25 lists: it is reachable only when the key carries the declared
+    # installation binding but is a different key (a key reference mismatch), not across
+    # installations.
+    same_installation = make_key(root / "kc", installation_id=key_b.installation_id)
+    observed(
+        verify_args(b_set, same_installation, manifest),
+        "manifest_key_reference_mismatch",
+        rejected,
+    )
 
 
 def test_t26_attacker_recreates_manifest_and_set_without_the_key(world):
@@ -569,60 +614,283 @@ def missing_generate_input_args(world, flag):
     return args
 
 
-@pytest.mark.parametrize(
-    "flag",
-    [
-        "--set", "--recovery-key", "--expected-key-fingerprint", "--expect-archive",
-        "--output", "--installation-id", "--schema-head",
-    ],
+LOCALE_ENVIRONMENTS = {
+    "inherited": None,  # the environment of the process, unchanged (CI sets C.UTF-8)
+    "C": {"LC_ALL": "C"},
+    "C.UTF-8": {"LC_ALL": "C.UTF-8"},
+    "LANGUAGE-override": {"LANGUAGE": "de:fr", "LANG": "en_US.UTF-8"},
+    "LC_MESSAGES-override": {"LC_MESSAGES": "ja_JP.UTF-8", "LANG": "C.UTF-8"},
+}
+
+
+def set_locale_environment(monkeypatch, name):
+    """Vary the locale environment of the test process (production never does this).
+
+    No translated catalog is assumed to exist: the result must not depend on that.
+    """
+    values = LOCALE_ENVIRONMENTS[name]
+    if values is None:
+        return
+    for variable in ("LANGUAGE", "LC_ALL", "LC_MESSAGES", "LANG"):
+        monkeypatch.delenv(variable, raising=False)
+    for variable, value in values.items():
+        monkeypatch.setenv(variable, value)
+
+
+GENERATE_REQUIRED = (
+    "--set", "--recovery-key", "--expected-key-fingerprint", "--expect-archive",
+    "--output", "--installation-id", "--schema-head",
 )  # fmt: skip
-def test_every_required_generate_input_is_mandatory_before_any_file_access(
-    world, flag, monkeypatch
-):
-    """A5: no guarded filesystem call at all while a missing required input is rejected.
+VERIFY_REQUIRED = (
+    "--set", "--recovery-key", "--expected-key-fingerprint", "--expect-archive",
+    "--manifest", "--expected-installation-id", "--expected-schema-head",
+)  # fmt: skip
 
-    The locale is pinned to ``C`` (before the guards are installed) because the standard
-    library's ``argparse`` looks up gettext message catalogs on disk under any other locale; that
-    lookup is shown separately by the next test. No call count is tolerated here.
-    """
-    output_path = world.out_dir / "new-manifest"
-    before = sorted(path.name for path in world.out_dir.iterdir())  # holds the fixture manifest
-    args = missing_generate_input_args(world, flag)
-    pin_locale(monkeypatch, "C")
-    with file_access_guards(raising=False) as (counts, _, calls):  # installed after fixture setup
-        output, status = run(args)
+
+def a5_arguments(world, operation):
+    from recovery_set_support import generate_args
+
+    if operation == "generate":
+        return generate_args(world.synthetic, world.key, world.out_dir / "new-manifest")
+    return verify_args(world.synthetic, world.key, world.manifest)
+
+
+def assert_rejected_before_any_file_access(world, args, operation, reason, status=2):
+    """Run ``args`` under strict zero-access guards, installed after fixture setup, and check the
+    closed result, that nothing was published and that the output directory is unchanged."""
+    listing = sorted(path.name for path in world.out_dir.iterdir())  # holds the fixture manifest
+    with file_access_guards(raising=False) as (counts, _, calls):
+        output, code = run(args)
     assert dict(counts) == {}, (dict(counts), describe_calls(calls))
-    assert status == 2 and reasons(output) == ["trust_input_missing"]
-    assert not output_path.exists()
-    assert sorted(path.name for path in world.out_dir.iterdir()) == before
+    assert code == status and reasons(output) == [reason], output
+    if args[:1] == ["generate"]:  # an unrecognised operation reports as the default, verify
+        assert output["publication"] == "not_published"
+    assert not (world.out_dir / "new-manifest").exists()
+    assert sorted(path.name for path in world.out_dir.iterdir()) == listing
 
 
-def test_a5_the_only_calls_under_a_non_c_locale_are_the_gettext_catalog_lookup(world, monkeypatch):
-    """Observed cause of the hosted-CI failure: ``LC_ALL=C.UTF-8`` makes ``argparse`` probe for
-    ``.../LC_MESSAGES/messages.mo`` through ``gettext.find`` while the parser is built.
+@pytest.mark.parametrize("locale_name", sorted(LOCALE_ENVIRONMENTS))
+@pytest.mark.parametrize(
+    ("operation", "flag"),
+    [("generate", flag) for flag in GENERATE_REQUIRED]
+    + [("verify", flag) for flag in VERIFY_REQUIRED],
+)
+def test_a5_every_required_input_is_mandatory_before_any_file_access(
+    world, monkeypatch, operation, flag, locale_name
+):
+    """A5: a missing required input is rejected with zero guarded filesystem calls, whatever
+    the locale environment. No tolerated call, count or path; the locale is not pinned."""
+    args = a5_arguments(world, operation)
+    index = args.index(flag)
+    del args[index : index + 2]
+    set_locale_environment(monkeypatch, locale_name)
+    assert_rejected_before_any_file_access(world, args, operation, "trust_input_missing")
 
-    Every recorded call must be an ``os.stat`` of such a path made inside ``gettext.find`` called
-    from ``argparse``; any other call (a trust-input path, a different entry point, a call from
-    the tool's own code) fails the test. The result and the output directory are unchanged.
+
+def replaced(args, flag, value):
+    args = list(args)
+    args[args.index(flag) + 1] = value
+    return args
+
+
+GENERATE_MALFORMED = [
+    ("--installation-id", "not-a-uuid"),
+    ("--schema-head", "bad rev!"),
+    ("--expected-key-fingerprint", "XYZ"),
+    ("--expect-archive", "maybe"),
+]
+VERIFY_MALFORMED = [
+    ("--expected-installation-id", "not-a-uuid"),
+    ("--expected-schema-head", "bad rev!"),
+    ("--expected-key-fingerprint", "XYZ"),
+    ("--expect-archive", "maybe"),
+]
+
+
+def malformed_cases():
+    cases = []
+    for flag, value in GENERATE_MALFORMED:
+        cases.append(("generate", f"{flag}={value}", lambda a, f=flag, v=value: replaced(a, f, v)))
+    for flag, value in VERIFY_MALFORMED:
+        cases.append(("verify", f"{flag}={value}", lambda a, f=flag, v=value: replaced(a, f, v)))
+    optional = [
+        ("generate", "--model-digest", "zz"),
+        ("generate", "--model-tag", "no tag"),
+        ("generate", "--work-suppression-manifest-sha256", "abc"),
+        ("generate", "--work-source-checkpoint-sha256", "ABC"),
+        ("verify", "--expected-manifest-hash", "abc"),
+    ]
+    for operation, flag, value in optional:
+        cases.append((operation, f"{flag}={value}", lambda a, f=flag, v=value: [*a, f, v]))
+    cases += [
+        ("generate", "tag-without-digest", lambda a: [*a, "--model-tag", "model:1"]),
+        ("generate", "digest-without-tag", lambda a: [*a, "--model-digest", "a" * 64]),
+        # Parser errors.
+        ("generate", "unknown-option", lambda a: [*a, "--limit", "1"]),
+        ("verify", "unknown-option", lambda a: [*a, "--fault", "1"]),
+        ("verify", "generate-only-option", lambda a: [*a, "--output", "x"]),
+        ("generate", "verify-only-option", lambda a: [*a, "--manifest", "x"]),
+        ("generate", "ambiguous-abbreviation", lambda a: [*a, "--s", "x"]),
+        ("generate", "missing-value-at-end", lambda a: [*a, "--model-tag"]),
+        ("generate", "value-looks-like-option", lambda a: [*a, "--model-tag", "--set"]),
+        ("generate", "stray-positional", lambda a: [*a, "stray"]),
+        ("generate", "double-dash", lambda a: [*a, "--", "x"]),
+        ("verify", "flag-with-explicit-value", lambda a: [*a, "--require-freshness=yes"]),
+        ("verify", "unknown-single-dash", lambda a: [*a, "-x"]),
+        ("generate", "option-before-operation", lambda a: [a[1], a[2], a[0], *a[3:]]),
+        ("generate", "unknown-operation", lambda a: ["restore", *a[1:]]),
+        ("generate", "no-operation", lambda a: []),
+    ]
+    return cases
+
+
+@pytest.mark.parametrize("locale_name", sorted(LOCALE_ENVIRONMENTS))
+@pytest.mark.parametrize(
+    ("operation", "label", "mutate"),
+    malformed_cases(),
+    ids=lambda value: value if isinstance(value, str) else None,
+)
+def test_a5_malformed_input_and_parser_errors_are_rejected_before_any_file_access(
+    world, monkeypatch, operation, label, mutate, locale_name
+):
+    """A5 for the shapes that are present but wrong, including every parser error path."""
+    args = mutate(a5_arguments(world, operation))
+    set_locale_environment(monkeypatch, locale_name)
+    assert_rejected_before_any_file_access(world, args, operation, "trust_input_malformed")
+
+
+@pytest.mark.parametrize("locale_name", sorted(LOCALE_ENVIRONMENTS))
+def test_t20_freshness_requested_without_a_hash_is_rejected_before_any_file_access(
+    world, monkeypatch, locale_name
+):
+    args = [*a5_arguments(world, "verify"), "--require-freshness"]
+    set_locale_environment(monkeypatch, locale_name)
+    assert_rejected_before_any_file_access(
+        world, args, "verify", "freshness_requested_without_expected_hash"
+    )
+
+
+def test_a5_the_guard_observes_the_gettext_lookup_that_argparse_makes_under_a_non_c_locale(
+    monkeypatch,
+):
+    """Sensitivity control for the zero-call results above: under ``LC_ALL=C.UTF-8`` merely
+    constructing an ``argparse`` parser (what the CLI did before) includes guarded ``os.stat``
+    calls of ``.../LC_MESSAGES/messages.mo`` paths made inside ``gettext.find``. The same guard
+    therefore can see the lookup that caused the hosted-CI failures; it does not assume a catalog
+    exists.
     """
-    output_path = world.out_dir / "new-manifest"
-    before = sorted(path.name for path in world.out_dir.iterdir())
-    args = missing_generate_input_args(world, "--set")
-    pin_locale(monkeypatch, "C.UTF-8")
+    import argparse
+
+    set_locale_environment(monkeypatch, "C.UTF-8")
     with file_access_guards(raising=False) as (_, _, calls):
-        output, status = run(args)
-    assert calls, "expected the locale lookup to be observed under a non-C locale"
-    for kind, path, frames in calls:
-        files = [(name.replace("\\", "/").rsplit("/", 1)[-1], func) for name, func, _ in frames]
-        assert kind == "os.stat", describe_calls(calls)
-        assert path is not None and path.endswith("/LC_MESSAGES/messages.mo"), describe_calls(calls)
-        assert ("gettext.py", "find") in files and any(f == "argparse.py" for f, _ in files), (
-            describe_calls(calls)
-        )
-        assert str(world.root) not in path
-    assert status == 2 and reasons(output) == ["trust_input_missing"]
-    assert not output_path.exists()
-    assert sorted(path.name for path in world.out_dir.iterdir()) == before
+        argparse.ArgumentParser(prog="control")
+    lookups = [
+        frames
+        for kind, path, frames in calls
+        if kind == "os.stat" and path and path.endswith("/LC_MESSAGES/messages.mo")
+    ]
+    assert lookups, "expected gettext to look for a catalog under a non-C locale"
+    # Other calls may be recorded (coverage's own tracing stats files the first time it sees
+    # one); only the catalog stats are claimed here, and each is made inside gettext.find.
+    for frames in lookups:
+        assert any(name.endswith("gettext.py") and func == "find" for name, func, _ in frames)
+
+
+def reference_parse(argv):
+    """The parser the CLI used before the A5 correction (``argparse``), kept here as an oracle."""
+    import argparse
+
+    class Parser(argparse.ArgumentParser):
+        def error(self, message):
+            raise ValueError("malformed")
+
+        def exit(self, status=0, message=None):
+            raise ValueError("malformed")
+
+    parser = Parser(prog="recovery_set", add_help=False)
+    commands = parser.add_subparsers(dest="operation", parser_class=Parser)
+    for operation, names in (("generate", GENERATE_OPTIONS_REF), ("verify", VERIFY_OPTIONS_REF)):
+        command = commands.add_parser(operation, add_help=False)
+        for name in names:
+            command.add_argument(f"--{name}", default=None)
+        if operation == "verify":
+            command.add_argument("--require-freshness", action="store_true", default=False)
+    args = parser.parse_args(argv)
+    if args.operation is None:
+        raise ValueError("malformed")
+    return vars(args)
+
+
+GENERATE_OPTIONS_REF = (
+    "set", "recovery-key", "expected-key-fingerprint", "expect-archive", "output",
+    "installation-id", "schema-head", "model-tag", "model-digest",
+    "work-suppression-manifest-sha256", "work-source-checkpoint-sha256",
+)  # fmt: skip
+VERIFY_OPTIONS_REF = (
+    "set", "recovery-key", "expected-key-fingerprint", "expect-archive", "manifest",
+    "expected-installation-id", "expected-schema-head", "expected-manifest-hash",
+)  # fmt: skip
+
+
+def new_parse(argv):
+    from app.recovery_set.cli import parse_arguments
+
+    try:
+        return vars(parse_arguments(argv))
+    except CodedError:
+        raise ValueError("malformed") from None
+
+
+def test_the_closed_parser_agrees_with_the_argparse_parser_it_replaced():
+    """Same accepted values and same malformed outcomes over a fixed and a seeded random corpus
+    (``--`` is the one documented narrowing: the closed parser always rejects it)."""
+    import random
+
+    pool = [
+        "generate", "verify", "--set", "--recovery-key", "--output", "--manifest", "--installation-id",
+        "--expect-archive", "--require-freshness", "--model-tag", "--model-digest", "--s", "--se",
+        "--expected", "--expected-m", "--expect", "--limit", "--set=a", "--set=", "--output=b",
+        "--require-freshness=1", "-x", "-", "-5", "-1.5", "-a b", "a", "b c", "", "present",
+        "absent", "--set=--output", "--sch", "--schema-head=head", "stray",
+    ]  # fmt: skip
+    rng = random.Random(7405)
+    corpus = [[], ["generate"], ["verify"], ["restore"], ["--set", "a", "generate"]]
+    corpus += [
+        [
+            rng.choice(("generate", "verify")),
+            *[rng.choice(pool[2:]) for _ in range(rng.randint(0, 6))],
+        ]
+        for _ in range(4000)
+    ]
+    disagreements = []
+    accepted = 0
+    for argv in corpus:
+        try:
+            expected = reference_parse(argv)
+        except ValueError:
+            expected = None
+        try:
+            actual = new_parse(argv)
+        except ValueError:
+            actual = None
+        if expected is None or actual is None:
+            if (expected is None) != (actual is None):
+                disagreements.append((argv, expected, actual))
+            continue
+        accepted += 1
+        mine = {key: actual[key] for key in expected}
+        extras = {key: value for key, value in actual.items() if key not in expected}
+        if mine != expected or any(value not in (None, False) for value in extras.values()):
+            disagreements.append((argv, expected, actual))
+    assert accepted > 200  # the corpus is not trivially all-rejected
+    assert not disagreements, disagreements[:5]
+    for argv in (
+        ["generate", "--", "--set", "a"],
+        ["verify", "--set", "a", "--"],
+        ["generate", "--"],
+    ):
+        with pytest.raises(ValueError):
+            new_parse(argv)
 
 
 def test_a2_authentic_altered_file_reports_freshness_per_supplied_hash(world):
@@ -716,71 +984,6 @@ def test_t33_application_logs_never_contain_key_material(world, caplog):
     assert "capture-control" in messages  # the capture is wired
     for form in forms:
         assert form not in caplog.text and form not in messages
-
-
-class AccessAttempted(Exception):
-    pass
-
-
-FILE_ACCESS_NAMES = (
-    "open",
-    "stat",
-    "lstat",
-    "fstat",
-    "scandir",
-    "listdir",
-    "readlink",
-    "access",
-    "read",
-)
-
-
-@contextlib.contextmanager
-def file_access_guards(*, raising):
-    """Count (and optionally refuse) filesystem access entry points while a block runs.
-
-    Patches ``os.open/stat/lstat/fstat/scandir/listdir/readlink/access/read`` and
-    ``builtins.open``/``io.open``. It is installed by the caller after fixture setup, so setup is
-    not blocked and import-time activity is not covered. References bound before installation
-    (for example ``from os import open``) would not be seen; the controls below show the
-    implementation reaches the patched attributes.
-    """
-    counts, origins, calls = collections.Counter(), collections.Counter(), []
-
-    def make(kind, real):
-        def guard(*args, **kwargs):
-            counts[kind] += 1
-            frames, frame = [], sys._getframe(1)
-            while frame is not None:  # in memory only: no traceback or source formatting here
-                code = frame.f_code
-                frames.append((code.co_filename, code.co_name, frame.f_lineno))
-                frame = frame.f_back
-            if any("/app/recovery_set/" in name.replace("\\", "/") for name, _, _ in frames):
-                origins[kind] += 1
-            calls.append((kind, args[0] if args and isinstance(args[0], str) else None, frames))
-            if raising:
-                raise AccessAttempted(kind)
-            return real(*args, **kwargs)
-
-        return guard
-
-    with pytest.MonkeyPatch.context() as patch:
-        for name in FILE_ACCESS_NAMES:
-            patch.setattr(os, name, make(f"os.{name}", getattr(os, name)))
-        for module in (builtins, io):
-            patch.setattr(module, "open", make(f"{module.__name__}.open", module.open))
-        yield counts, origins, calls
-
-
-def describe_calls(calls, depth=10):
-    """Report recorded calls (after the patches are removed): kind, path, innermost frames."""
-    lines = []
-    for kind, path, frames in calls:
-        where = " <- ".join(
-            f"{name.rsplit('/', 2)[-1]}:{func}:{line}" for name, func, line in frames[:depth]
-        )
-        lines.append(f"{kind} {path!r}: {where}")
-    return "\n".join(lines)
 
 
 def test_file_access_guards_observe_the_entry_points_a_real_generate_uses(world):

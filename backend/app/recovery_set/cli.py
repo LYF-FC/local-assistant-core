@@ -5,11 +5,11 @@ configuration-file, default-path or "same directory" fallback, and no test-only 
 option exists here.
 """
 
-import argparse
 import json
 import os
 import re
 import sys
+import types
 
 from app.recovery_set.format import CodedError
 from app.recovery_set.generate import generate
@@ -22,41 +22,100 @@ _REVISION = re.compile(r"[A-Za-z0-9_]{1,64}")
 _TAG = re.compile(r"[A-Za-z0-9][A-Za-z0-9_./-]{0,96}:[A-Za-z0-9_.-]{1,30}")
 
 
-class _Parser(argparse.ArgumentParser):
-    def error(self, message):  # never prints usage, paths or argument text
+_COMMON_OPTIONS = ("set", "recovery-key", "expected-key-fingerprint", "expect-archive")
+GENERATE_OPTIONS = (
+    *_COMMON_OPTIONS,
+    "output",
+    "installation-id",
+    "schema-head",
+    "model-tag",
+    "model-digest",
+    "work-suppression-manifest-sha256",
+    "work-source-checkpoint-sha256",
+)
+VERIFY_OPTIONS = (
+    *_COMMON_OPTIONS,
+    "manifest",
+    "expected-installation-id",
+    "expected-schema-head",
+    "expected-manifest-hash",
+)
+VERIFY_FLAGS = ("require-freshness",)
+_OPERATIONS = {"generate": (GENERATE_OPTIONS, ()), "verify": (VERIFY_OPTIONS, VERIFY_FLAGS)}
+_NEGATIVE_NUMBER = re.compile(r"-\d+|-\d*\.\d+")
+
+
+def _option_like(argument, options):
+    """Classify one argument the way the previous ``argparse`` parser did, without ``argparse``.
+
+    Returns ``None`` for a value (positional-looking) argument, ``(name, explicit)`` for an option
+    (``explicit`` is the text after ``=`` or ``None``), and raises for an ambiguous prefix. An argument
+    that starts with ``-`` but names no option is an unknown option and is a malformed input.
+
+    ``argparse`` was replaced here because its constructor and error paths translate messages
+    through ``gettext``, which looks for catalogs on disk under any locale other than ``C``; that
+    is filesystem access before a missing or malformed input is refused (spec 11.1 A5). This
+    parser reads only the argument strings: no file, no locale and no environment.
+    """
+    if not argument or argument[0] != "-" or len(argument) == 1:
+        return None
+    if argument in {f"--{name}" for name in options}:
+        return argument[2:], None
+    prefix, separator, explicit = argument.partition("=")
+    if separator and prefix in {f"--{name}" for name in options}:
+        return prefix[2:], explicit
+    if argument.startswith("--"):
+        matches = [name for name in options if f"--{name}".startswith(prefix)]
+        if len(matches) > 1:
+            raise CodedError("trust_input_malformed")
+        if matches:
+            return matches[0], (explicit if separator else None)
+    if _NEGATIVE_NUMBER.fullmatch(argument) or " " in argument:
+        return None
+    raise CodedError("trust_input_malformed")
+
+
+def parse_arguments(argv):
+    """Closed argument parser: the operation, then ``--option value`` or ``--option=value``.
+
+    Every option is optional here (``parse_trust`` enforces the required set). A repeated option
+    keeps its last value, as before. Anything else (no or unknown operation, an unknown or
+    ambiguous option, a missing option value, a stray value, ``--``, or an explicit value on a
+    flag) is ``trust_input_malformed``.
+    """
+    arguments = list(argv)
+    if not arguments or arguments[0] not in _OPERATIONS:
         raise CodedError("trust_input_malformed")
-
-    def exit(self, status=0, message=None):
-        raise CodedError("trust_input_malformed")
-
-
-def _arg(parser, name, **kwargs):
-    parser.add_argument(name, default=None, **kwargs)
-
-
-def build_parser():
-    parser = _Parser(prog="recovery_set", add_help=False)
-    commands = parser.add_subparsers(dest="operation", parser_class=_Parser)
-    for operation in ("generate", "verify"):
-        command = commands.add_parser(operation, add_help=False)
-        for name in (
-            "--set", "--recovery-key", "--expected-key-fingerprint", "--expect-archive",
-        ):  # fmt: skip
-            _arg(command, name)
-        if operation == "generate":
-            for name in (
-                "--output", "--installation-id", "--schema-head", "--model-tag", "--model-digest",
-                "--work-suppression-manifest-sha256", "--work-source-checkpoint-sha256",
-            ):  # fmt: skip
-                _arg(command, name)
-        else:
-            for name in (
-                "--manifest", "--expected-installation-id", "--expected-schema-head",
-                "--expected-manifest-hash",
-            ):  # fmt: skip
-                _arg(command, name)
-            command.add_argument("--require-freshness", action="store_true", default=False)
-    return parser
+    options, flags = _OPERATIONS[arguments[0]]
+    values = dict.fromkeys(GENERATE_OPTIONS + VERIFY_OPTIONS + VERIFY_FLAGS)
+    chosen = {"operation": arguments[0]}
+    index = 1
+    while index < len(arguments):
+        argument = arguments[index]
+        index += 1
+        if argument == "--":
+            raise CodedError("trust_input_malformed")
+        found = _option_like(argument, (*options, *flags))
+        if found is None:
+            raise CodedError("trust_input_malformed")
+        name, explicit = found
+        if name in flags:
+            if explicit is not None:
+                raise CodedError("trust_input_malformed")
+            chosen[name] = True
+            continue
+        if explicit is None:
+            if index >= len(arguments) or arguments[index] == "--":
+                raise CodedError("trust_input_malformed")
+            explicit = arguments[index]
+            if _option_like(explicit, (*options, *flags)) is not None:
+                raise CodedError("trust_input_malformed")
+            index += 1
+        chosen[name] = explicit
+    values.update(chosen)
+    attributes = {name.replace("-", "_"): value for name, value in values.items()}
+    attributes["require_freshness"] = bool(attributes["require_freshness"])
+    return types.SimpleNamespace(**attributes)
 
 
 def _require(args, names):
@@ -116,9 +175,7 @@ def _overlaps(set_path, key_path, file_path):
 
 def parse_trust(argv):
     """Stage 1: shape of every trust input, before any file is touched."""
-    args = build_parser().parse_args(argv)
-    if args.operation is None:
-        raise CodedError("trust_input_malformed")
+    args = parse_arguments(argv)
     common = ["set", "recovery_key", "expected_key_fingerprint", "expect_archive"]
     if args.operation == "generate":
         _require(args, [*common, "output", "installation_id", "schema_head"])
