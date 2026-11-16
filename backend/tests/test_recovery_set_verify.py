@@ -568,9 +568,11 @@ def test_every_required_generate_input_is_mandatory_before_any_file_access(world
     args = generate_args(world.synthetic, world.key, output_path)
     index = args.index(flag)
     del args[index : index + 2]
-    with file_access_guards(raising=False) as (counts, _):  # installed after fixture setup
+    with file_access_guards(raising=False) as (counts, origins):  # installed after fixture setup
         output, status = run(args)
-    assert dict(counts) == {}, dict(counts)  # no path access or read during the invocation
+    # No guarded call was made by code running under app/recovery_set. Calls with no such frame
+    # (hosted CI under --cov showed six os.stat calls per case) come from the harness, not the tool.
+    assert dict(origins) == {}, (dict(origins), dict(counts))
     assert status == 2 and reasons(output) == ["trust_input_missing"]
     assert not output_path.exists()
     assert sorted(path.name for path in world.out_dir.iterdir()) == before
@@ -701,12 +703,12 @@ def file_access_guards(*, raising):
     def make(kind, real):
         def guard(*args, **kwargs):
             counts[kind] += 1
-            frame, depth = sys._getframe(1), 0
-            while frame is not None and depth < 15:
+            frame = sys._getframe(1)
+            while frame is not None:  # whole stack: a call made by the tool has one of its frames
                 if "/app/recovery_set/" in frame.f_code.co_filename.replace("\\", "/"):
                     origins[kind] += 1
                     break
-                frame, depth = frame.f_back, depth + 1
+                frame = frame.f_back
             if raising:
                 raise AccessAttempted(kind)
             return real(*args, **kwargs)
