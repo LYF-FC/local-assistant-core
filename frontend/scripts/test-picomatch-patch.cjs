@@ -68,8 +68,12 @@ try {
   // Upstream explicitly documents this affected capture detail; boolean matching is preserved.
   assert.deepEqual(matcher.makeRe('+(*a)', { capture: true }).exec('aba').slice(1), ['aba', 'ab']);
   assert(matcher.makeRe('+(*a)', { maxExtglobRecursion: false }).source.includes(')+'));
+  // Known upstream compatibility regression, NOT a claim of preserved semantics.
+  // Keep this counterexample visible for independent review of the temporary candidate.
+  assert.equal(baseline.isMatch('a/b', '+([ab/]*)'), true);
+  assert.equal(matcher.isMatch('a/b', '+([ab/]*)'), false);
   console.log('picomatch patch: pinned bytes, all consumers, vulnerable control, isolated deadline, ' +
-    comparisons + ' matching comparisons and capture/opt-out controls passed');
+    comparisons + ' matching comparisons passed; capture and slash-class differences recorded');
 } finally {
   fs.rmSync(temporary, { recursive: true, force: true });
 }

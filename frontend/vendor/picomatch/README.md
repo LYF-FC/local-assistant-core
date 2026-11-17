@@ -64,6 +64,19 @@ rather than only its last repetition; the outer match and tested boolean matchin
 are preserved. No explicit use of either option was found in Butler or its installed
 Vite/Vitest/tinyglobby/fdir source. Broader API compatibility remains an upstream review risk.
 
+**Additional observed compatibility regression:** a broader 825-comparison probe found
+that `+([ab/]*)` matches `a/b`, `a/b/a`, `aba/` and `//` before this patch but rejects
+them afterwards under the default, dot, Windows and capture options (16 differences).
+A slash inside a bracket can cross the boundary the ordinary star cannot absorb;
+the upstream single-branch closure assumption is therefore too broad for those shapes.
+The installed-package check records the default `a/b` counterexample explicitly,
+not as a preserved-semantic result. No local modification of the upstream hunk is
+made to conceal this. The current Butler application tests pass, but that does not
+establish that all consumer-generated patterns avoid the affected shape.
+**This is an independent-review blocker for adopting the candidate**, alongside the
+unchanged audit failure. Do not represent the bounded matching comparison as full
+compatibility or the candidate as ready to merge.
+
 `npm test` first runs `scripts/test-picomatch-patch.cjs`: archive/source pins,
 consumer resolution, an isolated unpatched timeout control, an isolated patched
 deadline, 42,966 short-input matching comparisons and explicit capture/opt-out checks.
