@@ -32,7 +32,7 @@ Required available space on the recovery host is therefore at least D + A + M + 
 | M2 | Peak resident memory | Sample the process during `generate` and `verify` | Roughly flat, independent of D |
 | M3 | Wall time | Same runs; report median and spread | Informational (`elapsed_ms` is informational only) |
 | M4 | Disk use of publication | Free space before, during and after | Transient overhead about M |
-| M5 | Ceiling behaviour | A sparse file with apparent size ceiling minus 1, equal and plus 1; confirm `set_size_limit_exceeded` is decided from `fstat` before hashing | Immediate rejection, nothing published |
+| M5 | Size-boundary logic (not a capacity measurement) | Use small injected limits and fixtures at limit minus 1, equal and plus 1. Only a dump above the configured limit should produce `set_size_limit_exceeded` from metadata (`fstat`) before hashing; otherwise-valid dumps below or equal to the limit may proceed to hashing | Above limit: rejection before hashing, nothing published. Below/equal: no size rejection; other validation still applies. This establishes boundary logic, not capacity |
 | M6 | Archive-entry stress | Archives of 1, 100, 4096, 8192 and 8193 entries of small objects | 8192 entries fit under the 4 MiB manifest limit (spec estimate about 1.4 to 1.6 MB); 8193 refused |
 | M7 | Interruption | SIGKILL during hashing, during temporary write and after the link before cleanup (extending the T27 to T31 behaviour on a real disk) | No partial final manifest; stale temporary reported |
 | M8 | Disk-full | A deliberately small scratch filesystem filled during manifest write | Fails closed, no final manifest. **Not covered by the existing tests**, which inject `EIO` and do not exercise `ENOSPC` |
@@ -43,7 +43,7 @@ Required available space on the recovery host is therefore at least D + A + M + 
 
 - **1, 4 and 16 GiB tiers can fit in the page cache** of a typical disposable host. They then mostly measure CPU hashing, not storage, and warm repeats are misleadingly fast. At least one tier larger than host RAM, or a controlled cold-cache procedure, is needed for I/O-bound behaviour; that may be infeasible on a small disposable host and is an owner decision.
 - **Three points cannot show non-linearity.** Throttling, burst-credit exhaustion on virtual disks and cache cliffs can appear beyond 16 GiB; a linear extrapolation to 64 GiB or beyond is unsupported evidence.
-- **Sparse files are cheap to create** and suit M5, but their reads are not representative of real I/O; use non-sparse data for M1 to M3.
+- **Sparse allocation does not make hashing cheap.** A sparse dump near the 64 GiB placeholder, below or equal to the configured limit, may proceed to hashing and trigger substantial logical reads. Those reads do not establish representative physical I/O. M5 boundary logic should instead use small injected limits and fixtures, separately from capacity measurements; use non-sparse data for M1 to M3. The 64 GiB operational ceiling remains unapproved.
 - **Noisy neighbours, CPU frequency, concurrent load and filesystem aging** change results run to run; report spread and host load, not a single number.
 - **Synthetic data** is neither a real dump nor a real archive; compressibility of the content does not affect hashing but does affect copy and restore times.
 - **A passing run shows behaviour on that environment only.** It validates no real host, real storage, NAS or recovery objective.

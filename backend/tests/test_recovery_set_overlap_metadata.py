@@ -96,10 +96,58 @@ def mutation_guards():
     return guard()
 
 
-def assert_metadata_only(calls, mutations):
-    """The recorded calls are exactly the approved metadata operations from the approved helpers."""
+def expected_metadata_targets(args):
+    """Build an independent, exact target allowlist BEFORE recording the implementation.
+
+    Walk only the explicit input paths and symlink targets discovered on those chains, using
+    lstat/readlink directly, not cli helpers or realpath. Missing components remain candidates
+    (realpath is non-strict). No observed implementation call can expand this expectation.
+    This fixture walker is bounded and rejects symlink cycles rather than granting a subtree.
+    """
+    paths = [args[args.index(flag) + 1] for flag in ("--set", "--recovery-key")]
+    file_flag = "--output" if args[0] == "generate" else "--manifest"
+    paths.append(args[args.index(file_flag) + 1])
+    expected = {"os.lstat": set(), "os.readlink": set(), "os.stat": set(paths[1:])}
+
+    for supplied in paths:
+        pending = os.path.abspath(supplied).split("/")
+        resolved = []
+        links = 0
+        while pending:
+            part = pending.pop(0)
+            if part in {"", "."}:
+                continue
+            if part == "..":
+                resolved = resolved[:-1]
+                continue
+            target = "/" + "/".join([*resolved, part])
+            expected["os.lstat"].add(target)
+            try:
+                is_link = stat_module.S_ISLNK(os.lstat(target).st_mode)
+            except (FileNotFoundError, NotADirectoryError):
+                is_link = False
+            if not is_link:
+                resolved.append(part)
+                continue
+            expected["os.readlink"].add(target)
+            link_target = os.readlink(target)
+            links += 1
+            assert links <= 40, "fixture resolution contains a cycle or too many symlinks"
+            if link_target.startswith("/"):
+                resolved = []
+            pending = link_target.split("/") + pending
+    return expected
+
+
+def assert_metadata_only(calls, mutations, expected):
+    """Check kind, helper AND exact precomputed target; do no filesystem work here.
+
+    Recorded paths are deliberately not normalized: unrelated/../permitted must not acquire
+    permission merely because it normalizes to an allowed path. Python entry points only;
+    pre-bound references, native calls and import-time activity remain outside these guards.
+    """
     assert not mutations, f"write-side calls during overlap checking: {mutations}"
-    for kind, _, frames in calls:
+    for kind, target, frames in calls:
         assert kind in ALLOWED_KINDS, (
             f"prohibited access {kind} (content read, open or enumeration):\n"
             + describe_calls(calls)
@@ -107,6 +155,9 @@ def assert_metadata_only(calls, mutations):
         helpers = {function for name, function, _ in frames if name.endswith("recovery_set/cli.py")}
         assert helpers & ALLOWED_KINDS[kind], (
             f"{kind} not made by an approved overlap helper:\n" + describe_calls(calls)
+        )
+        assert target in expected[kind], (
+            f"unapproved metadata target for {kind}: {target!r}\n" + describe_calls(calls)
         )
 
 
@@ -145,6 +196,10 @@ def overlap_cases(world):
     link.symlink_to(set_dir, target_is_directory=True)
     file_link = root / "looks-outside.json"
     file_link.symlink_to(set_dir / "database.dump")
+    relative_link = root / "relative-alias"
+    relative_link.symlink_to("alias-of-set", target_is_directory=True)
+    relative_file = root / "relative-file"
+    relative_file.symlink_to(os.path.relpath(set_dir / "database.dump", root))
     hard = root / "hardlink-of-key"
     os.link(key, hard)
     return {
@@ -161,6 +216,10 @@ def overlap_cases(world):
             swapped(verify, "--set", link), "--manifest", set_dir / "m.json"
         ),
         "manifest-hard-links-the-key": swapped(verify, "--manifest", hard),
+        "manifest-through-relative-symlink-chain": swapped(
+            verify, "--manifest", relative_link / "m"
+        ),
+        "manifest-relative-symlink-into-set": swapped(verify, "--manifest", relative_file),
         "output-inside-set": swapped(generate, "--output", set_dir / "manifest.json"),
         "output-equals-key": swapped(generate, "--output", key),
         "output-through-symlinked-parent": swapped(generate, "--output", link / "m.json"),
@@ -177,6 +236,8 @@ CASE_NAMES = [
     "manifest-is-a-symlink-into-set",
     "set-given-as-symlink",
     "manifest-hard-links-the-key",
+    "manifest-through-relative-symlink-chain",
+    "manifest-relative-symlink-into-set",
     "output-inside-set",
     "output-equals-key",
     "output-through-symlinked-parent",
@@ -203,9 +264,10 @@ def overlapping(args):
 def strict_zero_access(world, args, reason):
     """The strict A5 assertion: zero guarded calls of any kind, closed code, nothing published."""
     listing = sorted(path.name for path in world.out_dir.iterdir())
-    with file_access_guards(raising=False) as (counts, _, calls):
+    with mutation_guards() as mutations, file_access_guards(raising=False) as (counts, _, calls):
         output, status = run(args)
     assert dict(counts) == {}, (dict(counts), describe_calls(calls))
+    assert not mutations, f"mutation before invalid-input rejection: {mutations}"
     assert status == 2 and output["reasons"] == [reason], output
     assert {key: output[key] for key in NOT_EVALUATED} == NOT_EVALUATED
     assert sorted(path.name for path in world.out_dir.iterdir()) == listing
@@ -283,6 +345,7 @@ def test_a_the_overlap_precheck_runs_only_after_every_shape_is_valid(world, monk
 @pytest.mark.parametrize("name", CASE_NAMES)
 def test_a_overlap_rejection_is_paths_overlap_and_only_reads_metadata(world, name):
     args = overlap_cases(world)[name]
+    expected = expected_metadata_targets(args)
     before = snapshot(world.root)
     with mutation_guards() as mutations, file_access_guards(raising=False) as (_, _, calls):
         output, status = run(args)
@@ -293,7 +356,7 @@ def test_a_overlap_rejection_is_paths_overlap_and_only_reads_metadata(world, nam
         assert output["publication"] == "not_published"
         assert not (world.out_dir / "new-manifest").exists()
     assert calls, "the overlap pre-check made no metadata call: the guard would prove nothing"
-    assert_metadata_only(calls, mutations)
+    assert_metadata_only(calls, mutations, expected)
     assert before == after, "an overlap rejection changed the filesystem or a file's contents"
 
 
@@ -311,11 +374,16 @@ def test_a_symlink_resolution_and_same_file_comparison_are_the_permitted_operati
 # ------------------------------- non-overlapping inputs still reach the protected reading path
 
 
-def test_a_valid_non_overlapping_inputs_still_read_through_the_protected_path(world, monkeypatch):
+@pytest.mark.parametrize("operation", ["verify", "generate"])
+def test_a_valid_non_overlapping_inputs_still_read_through_the_protected_path(
+    world, monkeypatch, operation
+):
     """Guard scoped to the pre-check only: it makes metadata calls alone; the rest of the run
     (outside the scope) opens and reads the authorized files as before."""
     scoped = {}
     real = cli._overlaps
+    args = a5_arguments(world, operation)
+    expected = expected_metadata_targets(args)
 
     def scoped_precheck(*arguments):
         with mutation_guards() as mutations, file_access_guards(raising=False) as (_, _, calls):
@@ -325,10 +393,13 @@ def test_a_valid_non_overlapping_inputs_still_read_through_the_protected_path(wo
 
     monkeypatch.setattr(cli, "_overlaps", scoped_precheck)
     with file_access_guards(raising=False) as (counts, origins, calls):
-        output, status = run(verify_args(world.synthetic, world.key, world.manifest))
+        output, status = run(args)
     assert status == 0 and output["integrity"] == "integrity_valid", output
     assert scoped["result"] is False and scoped["calls"]
-    assert_metadata_only(scoped["calls"], scoped["mutations"])
+    assert_metadata_only(scoped["calls"], scoped["mutations"], expected)
+    if operation == "generate":
+        assert output["publication"] == "published_durable"
+        assert (world.out_dir / "new-manifest").exists()
     assert counts["os.open"] > 0 and counts["os.read"] > 0 and counts["os.fstat"] > 0
     assert origins["os.open"] > 0 and origins["os.read"] > 0
     first_open = next(index for index, call in enumerate(calls) if call[0] == "os.open")
@@ -350,9 +421,10 @@ def test_a_valid_generate_still_publishes_after_the_precheck(world):
 
 
 def run_with_guards(world, args):
+    expected = expected_metadata_targets(args)
     with mutation_guards() as mutations, file_access_guards(raising=False) as (_, _, calls):
         run(args)
-    return calls, mutations
+    return calls, mutations, expected
 
 
 def test_a_control_a_content_read_during_overlap_checking_is_detected(world, monkeypatch):
@@ -364,12 +436,12 @@ def test_a_control_a_content_read_during_overlap_checking_is_detected(world, mon
         return real(first, second)
 
     monkeypatch.setattr(cli, "_same_existing_file", reading)
-    calls, mutations = run_with_guards(
+    calls, mutations, expected = run_with_guards(
         world, verify_args(world.synthetic, world.key, world.manifest)
     )
     assert {kind for kind, _, _ in calls} & {"builtins.open", "io.open"}
     with pytest.raises(AssertionError, match="prohibited access"):
-        assert_metadata_only(calls, mutations)
+        assert_metadata_only(calls, mutations, expected)
 
 
 def test_a_control_a_directory_enumeration_during_overlap_checking_is_detected(world, monkeypatch):
@@ -380,11 +452,11 @@ def test_a_control_a_directory_enumeration_during_overlap_checking_is_detected(w
         return real(set_path, key_path, file_path)
 
     monkeypatch.setattr(cli, "_overlaps", enumerating)
-    calls, mutations = run_with_guards(
+    calls, mutations, expected = run_with_guards(
         world, verify_args(world.synthetic, world.key, world.manifest)
     )
     with pytest.raises(AssertionError, match="prohibited access"):
-        assert_metadata_only(calls, mutations)
+        assert_metadata_only(calls, mutations, expected)
 
 
 def test_a_control_a_write_during_overlap_checking_is_detected(world, monkeypatch):
@@ -397,12 +469,12 @@ def test_a_control_a_write_during_overlap_checking_is_detected(world, monkeypatc
         return real(set_path, key_path, file_path)
 
     monkeypatch.setattr(cli, "_overlaps", writing)
-    calls, mutations = run_with_guards(
+    calls, mutations, expected = run_with_guards(
         world, verify_args(world.synthetic, world.key, world.manifest)
     )
     assert mutations == ["os.utime"]
     with pytest.raises(AssertionError, match="write-side"):
-        assert_metadata_only(calls, mutations)
+        assert_metadata_only(calls, mutations, expected)
     # the snapshot comparison also sees the change
     assert os.lstat(scratch).st_mtime_ns == 1_000_000_000
 
@@ -419,6 +491,78 @@ def test_a_control_a_metadata_access_before_shape_validation_is_detected(world, 
     del args[args.index("--manifest") : args.index("--manifest") + 2]
     with pytest.raises(AssertionError):
         strict_zero_access(world, args, "trust_input_missing")
+
+
+def test_a_control_a_mutation_before_shape_validation_is_detected(world):
+    scratch = world.root / "scratch-for-early-mutation"
+    scratch.write_bytes(b"synthetic")
+    real = cli.parse_arguments
+    original_utime, original_lstat = os.utime, os.lstat
+
+    def early(argv):
+        os.utime(scratch, (1, 1))
+        return real(argv)
+
+    args = a5_arguments(world, "verify")
+    del args[args.index("--manifest") : args.index("--manifest") + 2]
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(cli, "parse_arguments", early)
+        with pytest.raises(
+            AssertionError, match=r"mutation before invalid-input rejection:.*os.utime"
+        ):
+            strict_zero_access(world, args, "trust_input_missing")
+    assert cli.parse_arguments is real
+    assert os.utime is original_utime and os.lstat is original_lstat
+    assert os.lstat(scratch).st_mtime_ns == 1_000_000_000
+    # The same assertion succeeds after the sensitivity control's patches have unwound.
+    strict_zero_access(world, args, "trust_input_missing")
+
+
+@pytest.mark.parametrize("spelling", ["unrelated", "unrelated/../s/set"])
+def test_a_control_unrelated_lstat_inside_an_approved_helper_is_detected(world, spelling):
+    (world.root / "unrelated").mkdir()
+    unrelated = f"{world.root}/{spelling}"
+    real = os.path.realpath
+    args = verify_args(world.synthetic, world.key, world.manifest)
+    expected = expected_metadata_targets(args)
+
+    def probing(path):
+        # Called by the actual cli._spellings: operation and approved-helper checks pass.
+        os.lstat(unrelated)
+        return real(path)
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(os.path, "realpath", probing)
+        with mutation_guards() as mutations, file_access_guards(raising=False) as (_, _, calls):
+            run(args)
+        probes = [call for call in calls if call[:2] == ("os.lstat", unrelated)]
+        assert probes and not mutations
+        assert all(
+            any(name == cli.__file__ and function == "_spellings" for name, function, _ in frames)
+            for _, _, frames in probes
+        )
+        with pytest.raises(AssertionError, match="unapproved metadata target for os.lstat"):
+            assert_metadata_only(calls, mutations, expected)
+    assert os.path.realpath is real
+
+
+def test_a_control_same_file_stat_cannot_probe_the_set(world):
+    real = os.path.samestat
+    args = verify_args(world.synthetic, world.key, world.manifest)
+    expected = expected_metadata_targets(args)
+
+    def probing(first, second):
+        # The SET is a permitted lstat target, but is not a permitted same-file stat target.
+        os.stat(world.synthetic.set_dir)
+        return real(first, second)
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(os.path, "samestat", probing)
+        with mutation_guards() as mutations, file_access_guards(raising=False) as (_, _, calls):
+            run(args)
+        with pytest.raises(AssertionError, match="unapproved metadata target for os.stat"):
+            assert_metadata_only(calls, mutations, expected)
+    assert os.path.samestat is real
 
 
 def test_a_control_a_lexical_only_overlap_check_would_miss_a_symlink_alias(world, monkeypatch):
