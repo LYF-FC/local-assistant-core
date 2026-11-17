@@ -1,4 +1,4 @@
-"""Rebuild the temporary picomatch archive from its verified npm release and upstream patch.
+"""Rebuild picomatch from its verified release, upstream hunk and local correction.
 
 Download with: npm pack picomatch@4.0.7 --ignore-scripts --pack-destination /tmp
 Then: python3 scripts/build_picomatch_patch.py /tmp/picomatch-4.0.7.tgz
@@ -18,15 +18,16 @@ ROOT = Path(__file__).resolve().parents[1]
 VENDOR = ROOT / "frontend/vendor/picomatch"
 ORIGINAL_SHA256 = "697b463be3cdbd9ffc8f4194fd5019a69ddf95875fb703d78b2b115cc9e740a8"
 
-PATCH_SHA256 = "71b0f6637e7c33d07dffee9dce0b3b0e19004d59ed57e29aa6ca6291af63592e"
+PATCHES = {
+    "upstream-254.patch": "71b0f6637e7c33d07dffee9dce0b3b0e19004d59ed57e29aa6ca6291af63592e",
+    "compatibility.patch": "b312df250bef52229939cafbc448205719f29435bc67c5b4d483a83b886b9af2",
+}
 
 
 def build(source, destination):
-    if (
-        hashlib.sha256((VENDOR / "upstream-254.patch").read_bytes()).hexdigest()
-        != PATCH_SHA256
-    ):
-        raise SystemExit("Patch does not match the reviewed upstream security hunk")
+    for name, expected in PATCHES.items():
+        if hashlib.sha256((VENDOR / name).read_bytes()).hexdigest() != expected:
+            raise SystemExit(f"Patch does not match reviewed bytes: {name}")
     data = source.read_bytes()
     if hashlib.sha256(data).hexdigest() != ORIGINAL_SHA256:
         raise SystemExit(
@@ -45,18 +46,12 @@ def build(source, destination):
             target = directory / name
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(content)
-        subprocess.run(
-            [
-                "patch",
-                "-p1",
-                "--batch",
-                "--fuzz=0",
-                "-i",
-                str(VENDOR / "upstream-254.patch"),
-            ],
-            cwd=directory / "package",
-            check=True,
-        )
+        for name in PATCHES:
+            subprocess.run(
+                ["patch", "-p1", "--batch", "--fuzz=0", "-i", str(VENDOR / name)],
+                cwd=directory / "package",
+                check=True,
+            )
         for name, original in members.items():
             content = (directory / name).read_bytes()
             if name != "package/lib/parse.js" and content != original:

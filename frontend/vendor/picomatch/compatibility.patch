@@ -1,0 +1,41 @@
+diff --git a/lib/parse.js b/lib/parse.js
+--- a/lib/parse.js
++++ b/lib/parse.js
+@@ -578,0 +579,37 @@
++    // Local compatibility correction: a bracket may match a separator (and,
++    // by default, its literal bracket spelling), which an ordinary star cannot
++    // absorb. For a bracket/star pair use the union alphabet and retain only
++    // literal words that contain a character outside that alphabet.
++    if (singleWildcard && bodyTokens.length === 2) {
++      const bracket = bodyTokens.find(part => part.type === 'bracket');
++      const wildcard = bodyTokens.find(part => part.type === 'star');
++      if (bracket && wildcard) {
++        const emitted = wildcard.output;
++        const capturesStar = emitted[0] === '(';
++        const rawStar = capturesStar ? emitted.slice(1, -1) : emitted;
++        const excluded = rawStar === '[^/]*?' ? ['/']
++          : rawStar === '[^\\\\/]*?' ? ['\\', '/']
++            : rawStar === '.*?' ? (opts.flags && opts.flags.includes('s') ? []
++              : ['\n', '\r', '\u2028', '\u2029']) : null;
++        if (excluded) {
++          const bracketSource = bracket.output || bracket.value;
++          const character = new RegExp('^(?:' + bracketSource + ')$');
++          const remaining = excluded.filter(value => !character.test(value));
++          const alphabet = remaining.length === 0 ? '[\\s\\S]'
++            : '[^' + remaining.map(value => '\\u' + value.charCodeAt(0).toString(16).padStart(4, '0')).join('') + ']';
++          const unionStar = alphabet + '*?';
++          const capturedStar = capturesStar ? '(' + unionStar + ')' : unionStar;
++          const bracketFirst = bodyTokens[0] === bracket;
++          const literal = bracketFirst ? body.slice(0, -1) : body.slice(1);
++          const word = character.test(literal) && remaining.some(value => literal.includes(value))
++            ? utils.escapeRegex(literal) : '';
++          const repeat = word
++            ? '(?:' + (bracketFirst ? word + unionStar : unionStar + word) + ')*' : '';
++          const oldBody = bodyTokens.map(part => part.output || part.value).join('');
++          wildcard.output = bracketFirst ? capturedStar + repeat : repeat + capturedStar;
++          const newBody = bodyTokens.map(part => part.output || part.value).join('');
++          state.output = state.output.slice(0, -oldBody.length) + newBody;
++          state.backtrack = true;
++        }
++      }
++    }

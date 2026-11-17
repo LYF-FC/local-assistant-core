@@ -4,7 +4,7 @@
 
 Historical record of changes. Entries before spec 068 were not kept here; merged work from PR #1 onward is indexed in [PROJECT_MASTER.md](PROJECT_MASTER.md#5-stage-and-gate-progress), which owns current status. Nothing here implies a release or MVP acceptance.
 
-- Temporary picomatch dependency patch candidate (unmerged): published 4.0.7 plus the isolated upstream PR #254 security hunk, reproducible archive and regression controls; existing audit remains enabled and still flags the advisory. No acceptance or operational status change.
+- Temporary picomatch dependency patch candidate (unmerged): published 4.0.7 plus the isolated upstream PR #254 security hunk and local bracket/star compatibility correction, reproducible archive and regression controls; existing audit remains enabled and still flags the advisory. No acceptance or operational status change.
 
 - Spec 074 evidence reconciliation (documentation only): criterion-level evidence index for A1 to A13 and T1 to T54, a reviewer checklist pending human review and classified remaining work in the traceability appendix at verification target `48c3581`; `PROJECT_MASTER.md` and directly dependent documents reconciled with PRs #50 to #52. No runtime, test, dependency, migration or workflow change; no status promoted.
 - Spec 074 owner decision on T25 (documentation-only [PR #52](https://github.com/LYF-FC/local-assistant-core/pull/52), merge `48c3581`): the key's installation binding is checked before key references and the MAC; the second scenario expects `key_installation_mismatch`. One cell of the frozen spec corrected with a labelled post-freeze clarification; the original freeze reference is unchanged.
