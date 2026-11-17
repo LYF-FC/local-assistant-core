@@ -1,6 +1,7 @@
 FROM node:26-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json /app/
+COPY vendor/picomatch/picomatch-4.0.7-upstream-254.tgz /app/vendor/picomatch/
 RUN npm ci --ignore-scripts
 COPY tsconfig.json tsconfig.app.json tsconfig.node.json vite.config.ts index.html /app/
 COPY src /app/src

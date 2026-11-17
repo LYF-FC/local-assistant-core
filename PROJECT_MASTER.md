@@ -87,6 +87,8 @@ PR index: #1 scope reconciliation (docs); #2 spec 050; #3 spec 051; #4 spec 052;
 - **Outstanding:** real-model FR/ES/EN quality and activation, semantic retrieval, free-form conversation/synthesis, no-egress evidence for a real model.
 - **Blockers:** needs an approved local model and its licensing/resource review (RND-04/05 research is open). **Next:** after the synthetic MVP gates; time-boxed local-model spike (see §7).
 
+- **Dependency maintenance candidate (unmerged; no status change):** the owner authorized a temporary, reviewed picomatch patch for frontend build/test tooling on 17 November 2026. The separate candidate pins published 4.0.7 plus upstream PR #254’s security hunk; it preserves package identity and the existing npm audit, which still reports GHSA-fc5q-39xc-vjpf. Provenance, compatibility limits and removal conditions are in [the patch record](frontend/vendor/picomatch/README.md). This is not a model/feature delivery or a waiver of the audit; PR #54 remains separate.
+
 ### Gate 4 — Calendar and briefing (MVP-02)
 - **Delivered (subset, synthetic):** bounded normalized snapshot reconciliation and day briefing (spec 054, [PR #8](https://github.com/LYF-FC/local-assistant-core/pull/8)); recurrence expansion, a synthetic cursor-based provider-mode sync and a 1–7 day briefing (spec 070, [PR #28](https://github.com/LYF-FC/local-assistant-core/pull/28), merge `b0a5a67`).
 - **Testing evidence:** `test_calendar_*.py`, `test_calendars.py`, `test_calendar_briefing_v2.py`, `integration/test_calendars_postgres.py`, `test_calendar_sync_postgres.py`, `test_calendar_provider_schema_postgres.py`.

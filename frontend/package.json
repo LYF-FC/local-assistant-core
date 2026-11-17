@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test": "vitest run src",
+    "test": "node scripts/test-picomatch-patch.cjs && vitest run src",
     "typecheck": "tsc -b",
     "test:e2e": "playwright test"
   },
@@ -22,6 +22,10 @@
     "@vitejs/plugin-react": "^6.3.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.8",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.0",
+    "picomatch": "file:vendor/picomatch/picomatch-4.0.7-upstream-254.tgz"
+  },
+  "overrides": {
+    "picomatch": "$picomatch"
   }
 }
