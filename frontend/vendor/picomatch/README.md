@@ -19,7 +19,7 @@ The upstream PR is unmerged and is not an official fixed release.
 - Base SHA-256: `697b463be3cdbd9ffc8f4194fd5019a69ddf95875fb703d78b2b115cc9e740a8`.
 - Base npm integrity:
   `sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA==`.
-- `upstream-254.patch` is the PR's exact `lib/parse.js` hunk. No other
+- `upstream-254.patch` is a zero-context diff of the PR's exact `lib/parse.js` security hunk. No other
   post-4.0.7 changes from its fork head are included.
 - Patched archive SHA-256:
   `e0c1084e3580fab3440d420fbdf79ada687e74e01aa63a7076d61fdaed98843c`.

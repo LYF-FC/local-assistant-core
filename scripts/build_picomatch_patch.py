@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 VENDOR = ROOT / "frontend/vendor/picomatch"
 ORIGINAL_SHA256 = "697b463be3cdbd9ffc8f4194fd5019a69ddf95875fb703d78b2b115cc9e740a8"
 
-PATCH_SHA256 = "4afef897a56bca13d0684746449d62bc1817e8272ecc3eacf2d85a469b7b1c90"
+PATCH_SHA256 = "71b0f6637e7c33d07dffee9dce0b3b0e19004d59ed57e29aa6ca6291af63592e"
 
 
 def build(source, destination):

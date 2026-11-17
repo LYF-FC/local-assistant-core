@@ -1,10 +1,7 @@
 diff --git a/lib/parse.js b/lib/parse.js
 --- a/lib/parse.js
 +++ b/lib/parse.js
-@@ -565,7 +565,17 @@ const parse = (input, options) => {
-       return;
-     }
- 
+@@ -568 +568,11 @@
 -    let output = token.close + (opts.capture ? ')' : '');
 +    // A single wildcard branch is closed under concatenation: P*S repeated
 +    // one or more times still matches P*S. Remove the outer repeat instead of
@@ -17,6 +14,3 @@ diff --git a/lib/parse.js b/lib/parse.js
 +      bodyTokens.every(part => !part.extglob && !part.suffix &&
 +        (part.type === 'text' || part.type === 'star' || part.type === 'qmark' || part.type === 'bracket'));
 +    let output = (singleWildcard ? (token.type === 'star' ? ')?' : ')') : token.close) + (opts.capture ? ')' : '');
-     let rest;
- 
-     if (token.type === 'negate') {
