@@ -154,3 +154,80 @@ On 17 November 2026 (Europe/Paris) the owner explicitly approved this bounded ex
 **Effect:** the specification carries a separately labelled post-freeze clarification (sections 2.5, A5 and the overlap sentence of section 7.1; the head-of-document note). The original freeze (14 November 2026, `f903237a69e6e2eeeef8b057abef3fc618a27630`) and the 16 November 2026 T25 correction are not rewritten or re-dated; this is not a new freeze, and the current text is that revision plus the two recorded clarifications. Focused tests were added to hold the implementation to the exception.
 
 This decision approves the wording only. It is not independent verification and not acceptance of A5, T36 or any criterion or gate, and it authorizes no operational activity, key or recovery-set use, capacity measurement, restoration or NAS/production access. Independent verification of spec 074 and the Phase C owner decisions (C1 to C5) remain open, and no register, gate or acceptance status changes.
+
+
+### 18 November 2026 — Defer experimental frontend tooling replacement until the first minor release after MVP
+
+The owner directed: set this work aside from the MVP, record it clearly, fix it in
+the next minor version after MVP, and resume the MVP. This decision schedules the
+experimental frontend tooling replacement and its temporary picomatch-patch route
+for the **first minor release after an accepted MVP**. No numeric release version
+or date is assigned. It does not remove a user-facing feature from the eleven MVP
+gates, defer Spec 074's recovery requirements, or approve the incomplete patch.
+
+The deferred engineering work includes completing or replacing the PR #55 temporary
+patch, migrating Vite/Vitest to an alternative toolchain, the remaining unit-test
+migration, development HMR parity and browser-tooling remediation. The one-file
+esbuild/Node trial is bounded feasibility evidence only; it is not an adopted
+architecture or whole-suite replacement. PR #54's Spec 074 clarification and tests
+remain separate recovery work, not part of this deferral. Neither PR is closed,
+merged, marked ready or accepted by this decision.
+
+The security finding is not resolved or waived. The existing full audit, CI scope
+selection and aggregate gate remain mandatory and unchanged. Deferring the
+migration does not turn failed CI into a pass or authorize an MVP release with a
+failed required check. A separate reviewed resolution is still needed before
+blocked runtime changes can merge or MVP readiness can be established; no release
+exception is granted here. Do not split runtime/test changes into documentation
+PRs to avoid the failing job, relabel a package, omit development dependencies,
+lower the audit threshold or suppress the advisory.
+
+The immediate work focus resumes **Spec 074's existing MVP scope**, beginning with
+its owner-decision/reviewer packet and pending independent document review. Spec
+075 restore-contract planning follows that bounded closure work; no restore
+implementation or operation is authorized here. The full longer-term proposed
+priority order is not approved by this narrower instruction.
+
+[PROJECT_MASTER.md](PROJECT_MASTER.md) reflects this scheduling decision. The
+[resumption packet](docs/MVP_RESUMPTION_PLAN.md) records the post-MVP follow-up and
+the next non-operational MVP work. No frozen specification, acceptance procedure,
+gate/register/task checkbox, verification result or operational authorization
+changes. C1–C5 remain open; real keys, sets, measurements, NAS access and restoration
+remain separately gated.
+
+
+### 18 November 2026 — Owner authorizes resuming implementation; advisory withdrawal makes an exception unnecessary
+
+After the deferral entry above, the owner explicitly changed the earlier
+instruction and authorized bypassing the blocking audit finding as needed to
+resume implementation, including the needed actions on PRs #54, #55 and #56.
+This later instruction supersedes the earlier prohibition on a narrowly reviewed
+exception for that finding; it does not accept a gate or authorize operations.
+
+Before activating an exception, a fresh check found that GitHub had marked
+[GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf) **withdrawn
+on 18 November 2026**. Two actual full `npm audit --audit-level=high --json` runs
+on the unchanged main lock reported **exit 0 and zero findings**, including one
+with a fresh cache and `--prefer-online` against `https://registry.npmjs.org/`.
+Picomatch remains 4.0.7; no dependency was relabelled or updated. Withdrawal and a
+zero-finding report are not evidence that the observed matching behavior was fixed.
+
+Therefore **no audit exception is activated**: keep the original full audit,
+threshold, workflow selection and aggregate gate unchanged. The authorized but
+unneeded exception prototype is not part of the delivery. This approval is not
+a standing blanket waiver for unrelated or future findings; those retain their
+ordinary review and required-check boundaries.
+
+The owner authorizes closing the incompatible PR #55 **without merging** its
+patch, completing and merging PR #56's documentation reconciliation after its
+checks, and refreshing PR #54 against updated main and merging it only after
+fresh required CI passes. No unattended auto-merge is enabled. The tooling
+migration remains deferred to the first minor release after MVP; the original
+release numbering remains unassigned.
+
+The earlier failed CI remains attributed to its original run. Fresh passing
+results must be read on the actual refreshed head; no result is inferred from
+withdrawal alone. Implementation can resume through the normal gates when those
+checks pass. No frozen specification change is included here, and no independent
+verification, MVP/Phase C acceptance, capacity measurement, real-key/set use,
+NAS/production access, restoration or private-data adoption is authorized.
