@@ -16,6 +16,22 @@ The Everyday MVP is the set of **eleven end-to-end gates** in [docs/MVP_ACCEPTAN
 
 Delivery strategy (agreed 10 November 2026): finish the MVP with synthetic data and synthetic adapters first; then run short, separately approved connector spikes with sandbox accounts and invented content; real private data last, behind separate authorization.
 
+### Engineering work deferred by the owner — 18 November 2026
+
+The experimental frontend tooling replacement and temporary picomatch-patch route
+are scheduled for the **first minor release after an accepted MVP** (version/date
+unassigned), rather than being an additional MVP engineering deliverable. This
+covers the incomplete PR #55 approach, the remaining unit-test migration,
+development HMR parity and browser-tooling remediation. It removes no product
+gate or recovery requirement. See the [owner decision](DECISIONS.md#18-november-2026--defer-experimental-frontend-tooling-replacement-until-the-first-minor-release-after-mvp)
+and [resumption packet](docs/MVP_RESUMPTION_PLAN.md).
+
+The existing advisory remains unresolved: required audit/CI checks still apply.
+The deferral itself unblocks no runtime merge or release; it grants no audit
+exception, acceptance or operational authorization. PR #54's Spec 074 work remains
+separate and unmerged. The immediate permitted work is the Spec 074 owner/reviewer
+packet; recovery requirements and independent verification remain outstanding.
+
 ## 3. Status model
 
 Five separate facts. None implies another, and "complete" is never derived from them automatically.
@@ -192,7 +208,14 @@ Current priorities, in order. **Proposed — awaiting owner confirmation; not ye
 4. **Time-boxed connector spikes** with sandbox accounts, calendar and notification first (Gates 4, 5); mail intake and local model after (Gates 7, 3). Each needs its own approval and data-flow statement.
 5. **Whole-MVP acceptance tests:** cross-user leakage, offline/model-failure and restart journeys (Gates 1, 8, MVP-01).
 
-With priorities 1 and 2 delivered, the first undelivered item of the proposed order is priority 3. Whether priority 3 is confirmed as the next task, or the order is changed (for example connector spikes, priority 4, first), is an **owner decision that has not been taken**; the owner confirms, changes or rejects the order before it is treated as approved. No feature work is part of the governance PR that introduced this file.
+The full priority order above remains a proposal. On 18 November 2026 the owner
+confirmed the narrower immediate focus: resume Spec 074 at its existing MVP scope,
+starting with the non-operational owner/reviewer packet, then prepare the reserved
+Spec 075 restore contract. This does not approve the rest of the proposed order,
+accept a gate, authorize measurements/operations or waive required CI. The
+experimental frontend migration is deferred to the first minor release after MVP;
+its unresolved advisory remains a delivery blocker under the unchanged checks.
+See [the bounded next work and follow-up record](docs/MVP_RESUMPTION_PLAN.md).
 
 ## 8. Documentation map and update rules
 

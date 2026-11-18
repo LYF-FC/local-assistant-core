@@ -140,3 +140,43 @@ The precedence was already specified: section 2.5 (its combinations row), sectio
 Effect: the second-scenario expected code in the spec's T25 row is corrected to `key_installation_mismatch` (the first and third scenarios and every other row are unchanged) and the correction is recorded in the spec as a separately labelled post-freeze clarification. The original freeze (14 November 2026, the content of commit `f903237a69e6e2eeeef8b057abef3fc618a27630`) is not rewritten or re-dated and this is not a new freeze; the current text is that revision plus this one correction. **Implementation behavior is unchanged:** the verification order is retained, nothing in the runtime changes, and the existing test `test_t25_cross_installation_substitution` (merged in PR #51 as `28a2d79`) already asserts this exact outcome.
 
 This decision does not authorize runtime changes, acceptance of any criterion or gate, operational activity, or the closure of any other requirement. Independent verification of spec 074 and the Phase C owner decisions (C1 to C5) remain open, and no register, gate or acceptance status changes.
+
+
+### 18 November 2026 — Defer experimental frontend tooling replacement until the first minor release after MVP
+
+The owner directed: set this work aside from the MVP, record it clearly, fix it in
+the next minor version after MVP, and resume the MVP. This decision schedules the
+experimental frontend tooling replacement and its temporary picomatch-patch route
+for the **first minor release after an accepted MVP**. No numeric release version
+or date is assigned. It does not remove a user-facing feature from the eleven MVP
+gates, defer Spec 074's recovery requirements, or approve the incomplete patch.
+
+The deferred engineering work includes completing or replacing the PR #55 temporary
+patch, migrating Vite/Vitest to an alternative toolchain, the remaining unit-test
+migration, development HMR parity and browser-tooling remediation. The one-file
+esbuild/Node trial is bounded feasibility evidence only; it is not an adopted
+architecture or whole-suite replacement. PR #54's Spec 074 clarification and tests
+remain separate recovery work, not part of this deferral. Neither PR is closed,
+merged, marked ready or accepted by this decision.
+
+The security finding is not resolved or waived. The existing full audit, CI scope
+selection and aggregate gate remain mandatory and unchanged. Deferring the
+migration does not turn failed CI into a pass or authorize an MVP release with a
+failed required check. A separate reviewed resolution is still needed before
+blocked runtime changes can merge or MVP readiness can be established; no release
+exception is granted here. Do not split runtime/test changes into documentation
+PRs to avoid the failing job, relabel a package, omit development dependencies,
+lower the audit threshold or suppress the advisory.
+
+The immediate work focus resumes **Spec 074's existing MVP scope**, beginning with
+its owner-decision/reviewer packet and pending independent document review. Spec
+075 restore-contract planning follows that bounded closure work; no restore
+implementation or operation is authorized here. The full longer-term proposed
+priority order is not approved by this narrower instruction.
+
+[PROJECT_MASTER.md](PROJECT_MASTER.md) reflects this scheduling decision. The
+[resumption packet](docs/MVP_RESUMPTION_PLAN.md) records the post-MVP follow-up and
+the next non-operational MVP work. No frozen specification, acceptance procedure,
+gate/register/task checkbox, verification result or operational authorization
+changes. C1–C5 remain open; real keys, sets, measurements, NAS access and restoration
+remain separately gated.

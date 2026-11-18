@@ -8,6 +8,17 @@ Counted views are generated: [feature overview](docs/FEATURE_OVERVIEW.md) and [d
 
 Gate-by-gate progress, evidence and blockers: [PROJECT_MASTER.md, section 5](PROJECT_MASTER.md#5-stage-and-gate-progress). Ordered priorities with reasons: [section 7](PROJECT_MASTER.md#7-dependencies-order-and-priorities). Work already merged (specs 050–074, PRs #2–#40) is recorded there and in the historical notes at the end of this page. No gate is accepted.
 
+### Post-MVP engineering follow-up
+
+Owner scheduling decision, 18 November 2026: defer the experimental frontend
+tooling replacement and temporary picomatch-patch route to the **first minor
+release after an accepted MVP**; version/date unassigned. Resume the bounded Spec
+074 owner/reviewer work, followed by Spec 075 restore-contract planning. The
+[master](PROJECT_MASTER.md#engineering-work-deferred-by-the-owner--18-november-2026)
+owns this scheduling record; [the decision](DECISIONS.md#18-november-2026--defer-experimental-frontend-tooling-replacement-until-the-first-minor-release-after-mvp)
+grants no audit exception or release/operational acceptance. The unresolved
+required-CI blocker is retained in the [resumption packet](docs/MVP_RESUMPTION_PLAN.md).
+
 ## Reusable-installation milestone
 
 Owner-approved INSTALL-01–12 add [independent installations, onboarding and feature lifecycle](docs/CONFIGURABLE_INSTALLATIONS.md). Plan the identity/configuration contracts early, implement them in coherent reviewed increments and complete them before any private-data conversion or reusable-installation release. This does not block independent bounded document work or grant production readiness. Keep all existing domain scope; no feature is dropped because it is optional.
