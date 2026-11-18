@@ -1,6 +1,9 @@
 # Expected-manifest-hash governance — spec 074 Phase C (C2)
 
-**Status: DRAFT design proposal for owner review. No expected-hash governance policy is approved or operating.** On 15 November 2026 the owner authorized Phase C design and preparatory work, then separately authorized implementation of the non-operational portions; that bounded implementation was merged in PR #43 ([RECOVERY_PHASE_C_IMPLEMENTATION.md](RECOVERY_PHASE_C_IMPLEMENTATION.md)). This draft remains a proposal; record validators and report-only reconciliation do not establish independent custody or governance of the expected hash. The only implemented behaviour is that of [RECOVERY_SET.md](RECOVERY_SET.md): `verify` accepts an optional `--expected-manifest-hash`, compares it with the computed `manifest_hash` after authenticity is valid, and a supplied mismatch always fails (spec 5.1, 5.2, 10.1; O5). Governance of the retained hash (who records, retains and updates it) is deferred (spec 10.2). Synthetic example values only. No status changes.
+**Scoped owner decision — 18 November 2026:** C2 design approved: option A baseline and optional B key-holder comparison. Detailed governance assignments, storage/update/dispute rules and any E process remain pending. No records, key-holder check or new tool is operated. See [the authoritative decision](../DECISIONS.md#18-november-2026--spec074-c1c3-design-c4-planning-and-c5-manual-ceremony-requirements-approved) and [remaining fields](SPEC_074_OWNER_DECISION_WORKSHEET.md).
+
+
+**Status: C2 option A baseline and optional B key-holder comparison approved as design on 18 November 2026; no expected-hash governance is operating.** On 15 November 2026 the owner authorized Phase C design and preparatory work, then separately authorized implementation of the non-operational portions; that bounded implementation was merged in PR #43 ([RECOVERY_PHASE_C_IMPLEMENTATION.md](RECOVERY_PHASE_C_IMPLEMENTATION.md)). The remaining detailed governance procedures remain proposals; record validators and report-only reconciliation do not establish independent custody or governance of the expected hash. The only implemented behaviour is that of [RECOVERY_SET.md](RECOVERY_SET.md): `verify` accepts an optional `--expected-manifest-hash`, compares it with the computed `manifest_hash` after authenticity is valid, and a supplied mismatch always fails (spec 5.1, 5.2, 10.1; O5). Governance of the retained hash (who records, retains and updates it) is deferred (spec 10.2). Synthetic example values only. No status changes.
 
 ## 1. Purpose and the anchoring principle
 
@@ -65,7 +68,7 @@ The record is itself a point of trust. A record kept beside the sets re-creates 
 
 ## 6. Owner decisions required (unresolved)
 
-Recorder, witness and approver; record medium and location; which options (A baseline; B and E optional; C and D excluded or not); the update procedure after each backup; whether freshness may be relied on before a second reviewer exists; who decides disputes; whether the out-of-band approval process for E is defined and trusted.
+Recorder, witness and approver assignments; actual record medium/location and update procedure. A baseline and optional B are design-approved; no E process, C or D is selected. Remaining decisions include whether freshness may be relied on before a second reviewer exists; who decides disputes; whether the out-of-band approval process for E is defined and trusted.
 
 ## 7. Objective acceptance criteria for this document
 

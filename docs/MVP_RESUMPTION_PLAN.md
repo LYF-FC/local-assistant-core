@@ -43,39 +43,41 @@ no result is inferred from withdrawal alone. This does not accept a gate or
 permit deployment, real keys/sets, measurements, NAS access or restoration. See
 [the later owner decision](../DECISIONS.md#18-november-2026--owner-authorizes-resuming-implementation-advisory-withdrawal-makes-an-exception-unnecessary).
 
-## 3. Exact baseline and open-PR boundary
+## 3. Merged review target and historical boundary
 
-The preparation baseline is main `05b97c5177cd4bcffc21a3fcd84fd1488f491d9a`, the
-merge of PR #53. Main contains the Spec 074 criterion index and pending reviewer
-checklist. It does not contain the changes in either PR below.
+The current completion-review target is main
+`1c94e445db3dcc74a0133813b35300d205a64380`, the PR #54 merge. The initial packet
+was prepared at `05b97c5177cd4bcffc21a3fcd84fd1488f491d9a` (PR #53 merge), before
+PR #54 merged; that historical preparation is not current main's normative state.
 
-- [PR #54](https://github.com/LYF-FC/local-assistant-core/pull/54), reviewed head
-  `e69252b05835607ecf62b48e37179ef29751f843`: owner-approved overlap wording,
-  focused guards and corrected C4 M5 planning. Open, draft, unmerged at preparation.
-  Its recorded exact-head CI #179 passes scope/backend/postgres/containers, while
-  frontend and aggregate CI fail at the audit. No merge or readiness is inferred.
-- [PR #55](https://github.com/LYF-FC/local-assistant-core/pull/55): separate temporary
-  dependency candidate. Neither the matching failures nor advisory are declared
-  resolved. The later owner-authorized disposition closes it without merging.
+- PR #54's clarification, 248-case guard file and corrected M5 plan are now merged.
+  All six PR-head jobs passed in CI #186 at `df308cd4a8bfda17fa0c573bdba7a17d88386af4`.
+  CI #187 is the separate push/main run at the exact target; do not transfer its
+  result from #186 or a documentation-only run.
+- PR #55's incompatible patch was closed without merging; it is not on main.
+- PR #56 merged at `67ca361f4cc96cd29a8c1aa84e8068be39df19c9` to record the owner
+  decisions and withdrawal. Its docs-only CI is not runtime evidence.
 
-Review main's normative text separately from the proposed corrections in PR #54.
-The owner's approval of an interpretation does not make the branch merged or its
-implementation independently verified. No new runtime run is claimed here.
+Use [the exact-revision human-review handoff](SPEC_074_REVIEW_TARGET_1C94E445.md)
+and [the owner-decision worksheet](SPEC_074_OWNER_DECISION_WORKSHEET.md) for the
+next bounded batch. The reviewer handoff is preparation, not human findings. The worksheet now records
+the scoped owner design/planning approvals while leaving detailed choices pending;
+neither is a Spec 074 completion declaration.
 
 ## 4. Next MVP work: Spec 074 owner/reviewer packet
 
-These recommendations consolidate the existing Phase C drafts for review. They
-are **not approved choices**, do not tick C1–C5, and require no new key, set,
-measurement or provider access. Personal identities and physical locations belong
+These recommendations consolidate the existing Phase C drafts for review. The owner approved C1–C3 design baselines, C4 planning only and C5 manual-ceremony
+requirements on 18 November 2026. Remaining detailed choices are pending. These
+approvals do not tick C1–C5 or authorize a new key, set, measurement or provider access. Personal identities and physical locations belong
 in separately authorized private records, not this public packet.
 
-| Item | Recommendation for review | Explicit decision still needed |
+| Item | Approved design/planning baseline | Remaining decision or evidence |
 |---|---|---|
-| C1 custody | Use the existing encrypted removable-container baseline, separate primary/recovery copies and independent fingerprint/hash-record keeper; operator access is temporary. Both custodians can forge HMACs. | Role separation, medium/process, session controls and rotation/compromise authority; a written degraded arrangement or deferral of real use if distinct roles are unavailable. No custody is activated. |
-| C2 hash governance | Option A: witnessed initial recording as the baseline. Optional B: later key-holder comparison, labelled honestly. Independently held records are not independent HMAC verification. | Recorder/witness/approver roles, independent record storage/update/dispute process and whether optional checks are wanted. No new keyless tool or secret holder. |
-| C3 retention | Keep the set/copy inventory; propose manifest co-retirement with its set and authentication records/keys retained while governed manifests require them. Do not restore older non-Work sets without reconciliation. | Every lifetime, early-purge promise, destruction authority, deletion evidence and inventory rule. Key destruction is not data erasure; no deletion occurs. |
+| C1 custody | Use the existing encrypted removable-container baseline, separate primary/recovery copies and independent fingerprint/hash-record keeper; operator access is temporary. Both custodians can forge HMACs. | Actual roles/media/locations, presentation/session details and rotation/compromise authority; any degraded exception needs a separate decision. No custody is activated. |
+| C2 hash governance | Option A: witnessed initial recording as the baseline. Optional B: later key-holder comparison, labelled honestly. Independently held records are not independent HMAC verification. | Actual recorder/witness/approver assignments and storage/update/dispute details; B is optional, not a separately approved run. No new keyless tool or secret holder. |
+| C3 retention | Keep the set/copy inventory; approved manifest co-retirement with its set and authentication records/keys retained while governed manifests require them. Do not restore older non-Work sets without reconciliation. | Every lifetime, early-purge promise, destruction authority, deletion evidence and operational inventory procedure. Key destruction is not data erasure; no deletion occurs. |
 | C4 capacity | Prepare the bounded authorization sheet below; use small injected limits for boundary logic rather than near-ceiling sparse files. | Environment, synthetic-key permission, budgets, tiers and stop conditions. No campaign or ceiling is approved; 64 GiB remains a placeholder. |
-| C5 generation requirements | Decide whether a documented manual ceremony is sufficient before considering dedicated tooling. Existing requirements are a review input. | Manual versus dedicated tooling, and any later implementation authorization. No key generation or management tool is implemented or run. |
+| C5 generation requirements | Manual-ceremony requirements are approved; no dedicated tooling is commissioned. | Detailed manual procedure/evidence and any later execution authority remain pending. No key generation or management tool is implemented or run. |
 
 Detailed sources: [custody](RECOVERY_KEY_CUSTODY.md),
 [hash governance](RECOVERY_HASH_GOVERNANCE.md), [retention](RECOVERY_RETENTION.md),
@@ -92,7 +94,7 @@ Every field below remains pending; this document supplies no default permission.
 | Data and key permission | Synthetic-only fixtures; explicit approval if a synthetic key is needed. No real key or set. |
 | Resource budget | Maximum file size/count, temporary disk, RAM, I/O, elapsed time and available-space floor, chosen before the run. No implied 64 GiB tier. |
 | Measurements | Selected M1–M9 procedures, repetitions and instrumentation, with hypotheses separated from criteria. Interruption/disk-full tests need their own bounded scratch environment. |
-| Boundary logic | Review PR #54's M5 correction: only above-limit dumps reject from metadata before hashing; otherwise-valid below/equal inputs may hash. Use small injected limits. Main's older wording remains separately identified until reconciled. |
+| Boundary logic | Review the merged PR #54 M5 correction: only above-limit dumps reject from metadata before hashing; otherwise-valid below/equal inputs may hash. Use small injected limits. The older wording remains historical; the correction is now on main. |
 | Stop conditions | Exceeding any approved budget, leaving the scratch boundary, unexpected access/write, inability to clean up or encountering non-synthetic inputs. Record failure and stop. |
 | Exclusions | No capacity/measurement run is authorized now. Staging/restore and recovery-time evidence require separate authority and the Spec 075 boundary. |
 | Output | Exact revision/environment/commands, source hashes, raw observations and limitations; no inferred operational ceiling, RPO or RTO. |
@@ -103,7 +105,7 @@ Use [appendix section 9](RECOVERY_INDEPENDENT_VERIFICATION_TRACEABILITY.md#9-rev
 as the existing V1–V13 checklist. Leave every checkbox untouched.
 The implementer/assistant must not sign the human reviewer's findings.
 
-Prioritize V3 (A5/overlap text versus main and PR #54), V5 (T25 against the recorded
+Prioritize V3 (A5/overlap text and the now-merged PR #54 guards), V5 (T25 against the recorded
 decision), V9 (A13 document review), V10 (exact-revision full coverage), V11
 (privilege-dependent cases) and V13 (a new reviewer record for the actual checked
 revision). Preserve the other checklist items. Record missing or contradictory
