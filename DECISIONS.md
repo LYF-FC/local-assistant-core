@@ -231,3 +231,56 @@ withdrawal alone. Implementation can resume through the normal gates when those
 checks pass. No frozen specification change is included here, and no independent
 verification, MVP/Phase C acceptance, capacity measurement, real-key/set use,
 NAS/production access, restoration or private-data adoption is authorized.
+
+
+### 18 November 2026 — Spec074: C1–C3 design, C4 planning and C5 manual-ceremony requirements approved
+
+The owner explicitly approved the C1–C3 design recommendations, C4 planning only
+and C5 manual-ceremony requirements, and instructed recording the decisions and
+merging PR #57 while keeping acceptance and operational statuses unchanged.
+The approval refers to the worksheet and recommendation summary prepared from
+main `1c94e445db3dcc74a0133813b35300d205a64380`; this entry is the authoritative
+record of that bounded approval, not a human-verification or operational record.
+
+- **C1 design approved:** encrypted removable-container baseline on a supported
+  POSIX filesystem; physically separate primary/recovery copies; separate
+  custodians and independent fingerprint/hash-record keeper; temporary operator
+  access. Both symmetric-key holders can forge HMACs: separation is procedural.
+  Actual people/media/locations/hosts, presentation and residue controls, session
+  details, intervals and compromise/rotation procedures remain unassigned or
+  unresolved. No degraded arrangement is implicitly approved and no custody is
+  activated.
+- **C2 design approved:** option A witnessed initial recording as the baseline;
+  option B may be an optional later comparison by an existing key holder. That
+  later comparison is not independent HMAC verification. Independently held,
+  append-only/superseded records remain distinct from keys/sets/verifier hosts.
+  No new keyless tool or additional holder is selected. Detailed assignments,
+  storage/update/dispute rules and any option E process remain unresolved.
+- **C3 design relationships approved:** copy inventory; co-retirement of a
+  manifest and its set; expected-hash records retained while governed manifests
+  remain; fingerprints/old keys retained while needed for authentication; deletion
+  evidence referencing sets rather than forgotten object identifiers. Every actual
+  lifetime, expiry trigger, early-purge promise, destruction authority and evidence
+  method remains unresolved. Key destruction is not erasure. Older non-Work sets
+  are not safe to restore merely because they verify; reconciliation remains open.
+- **C4 planning only approved:** the bounded future-authorization sheet may be
+  used to prepare explicit resource budgets, environment, synthetic-fixture/key
+  permissions, procedures and stop conditions. No campaign, synthetic-key run,
+  large-data test, interruption/disk-full experiment or measurement is authorized.
+  Numeric budgets and the real operational ceiling remain undecided; 64 GiB is
+  unapproved. Small injected-limit M5 logic is not capacity evidence. No staging
+  or restore measurement is authorized.
+- **C5 manual-ceremony requirements approved:** use the documented manual route
+  and the existing KG-1–KG-11 requirements as the requirements baseline; no
+  dedicated key-generation tool is commissioned. Detailed procedure and evidence
+  remain to be prepared/reviewed. This approves requirements, not execution of a
+  ceremony, key generation, provisioning or key-management operations.
+
+The [worksheet](docs/SPEC_074_OWNER_DECISION_WORKSHEET.md) and master distinguish
+these approved design/planning choices from the remaining fields. C1–C5 remain
+unchecked. Independent human review, Phase C/Spec 074/MVP acceptance, real-key/set
+use, custody activation, capacity/ceiling evidence, NAS/production access,
+restoration and private-data adoption remain unchanged and separately gated.
+No frozen specification, manifest format, runtime, dependency, migration or CI
+policy changes. PR #57 may merge after its updated documentation checks; no
+unattended automerge is enabled. Spec 075 implementation is not authorized here.

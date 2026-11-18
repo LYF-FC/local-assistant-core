@@ -1,6 +1,9 @@
 # Recovery-set key custody policy and key-generation requirements — spec 074 Phase C (C1, C5)
 
-**Status: DRAFT design proposal for owner review. No custody or key-generation policy is decided, approved or operating.** On 15 November 2026 the owner authorized Phase C design and preparatory work, then separately authorized implementation of the non-operational portions; that bounded implementation was merged in PR #43 ([RECOVERY_PHASE_C_IMPLEMENTATION.md](RECOVERY_PHASE_C_IMPLEMENTATION.md)). This draft remains a proposal. No key exists or is created by this document; no person, medium or location is selected; no custody is activated; no key-generation or key-management tooling is implemented. The PR #43 validators and interface definitions do not activate custody or approve this proposal. This page distinguishes **design proposals** from **implemented non-operational validators/interfaces**. It changes no gate, register row or acceptance status. The frozen [spec 074](../specs/074-recovery-set-manifest/spec.md) is the authority for sections 6.1 to 6.7 cited below; this draft does not amend it.
+**Scoped owner decision — 18 November 2026:** C1 custody design baseline and C5 manual-ceremony requirements approved; actual assignments, media/locations, host/session/residue details, intervals and any degraded arrangement remain pending. No custody activation, key, ceremony or dedicated tooling is authorized. See [the authoritative decision](../DECISIONS.md#18-november-2026--spec074-c1c3-design-c4-planning-and-c5-manual-ceremony-requirements-approved) and [remaining fields](SPEC_074_OWNER_DECISION_WORKSHEET.md).
+
+
+**Status: C1 design baseline and C5 manual-ceremony requirements approved on 18 November 2026; no custody or key-generation policy is operating.** On 15 November 2026 the owner authorized Phase C design and preparatory work, then separately authorized implementation of the non-operational portions; that bounded implementation was merged in PR #43 ([RECOVERY_PHASE_C_IMPLEMENTATION.md](RECOVERY_PHASE_C_IMPLEMENTATION.md)). The remaining detailed procedures and operational fields remain proposals. No key exists or is created by this document; no person, medium or location is selected; no custody is activated; no key-generation or key-management tooling is implemented. The PR #43 validators and interface definitions do not activate custody or approve this proposal. This page distinguishes **design proposals** from **implemented non-operational validators/interfaces**. It changes no gate, register row or acceptance status. The frozen [spec 074](../specs/074-recovery-set-manifest/spec.md) is the authority for sections 6.1 to 6.7 cited below; this draft does not amend it.
 
 ## 1. What is fixed by the specification
 
@@ -10,7 +13,7 @@
 - The key file is JSON of at most 2 KiB (`schema_version`, `purpose: "installation_recovery_set"`, `key_id`, `installation_id`, `created_at`, 32 bytes of material as 64 hex characters). It must be a regular, single-link file with no group or other permission bits, opened without following links, and never inside the set (spec 6.2; `backend/app/recovery_set/key.py`, `load_key`).
 - Minimum custody responsibilities: spec 6.6, items 1 to 6. Rotation, replacement, loss and compromise consequences: spec 6.7. This slice provides no rotation, escrow, revocation or key-generation tooling.
 
-## 2. Roles (design proposal; no person is named)
+## 2. Roles (approved design baseline; no person is assigned)
 
 | Role | Responsibilities | Is a key holder? |
 |---|---|---|
@@ -110,12 +113,12 @@ Failure modes to be covered: short or failed random read, existing target, insec
 ## 10. Owner decisions required (unresolved)
 
 1. The people for each role, and whether one person may hold several.
-2. The storage option and the physical locations of the primary and recovery copies; whether the medium baseline is accepted.
+2. The baseline storage design is approved; actual media and physical locations of the primary/recovery copies remain unassigned.
 3. How the key file is presented to the tool from the medium (K1).
 4. Whether a minimal dedicated session host is required.
 5. The key-event log review interval, the rotation cadence and the authority to declare compromise.
 6. Whether the degraded arrangement is acceptable when too few distinct people exist.
-7. Whether key-generation tooling is wanted at all, or a documented manual ceremony is preferred.
+7. Manual-ceremony requirements are approved; the detailed procedure/evidence and any later execution remain pending. No dedicated tooling is commissioned.
 8. Whether public-key signatures are required, which would revisit O6 (spec 6.4).
 
 ## 11. Objective acceptance criteria for this document
@@ -125,7 +128,7 @@ Failure modes to be covered: short or failed random read, existing target, insec
 - The operator's key access is stated as temporary and non-retained.
 - Every role is an owner decision with no person named; no key, medium or custody arrangement is activated.
 - The tabletop uses synthetic material only.
-- Nothing claims the policy is operating, approved or tested on a real key.
+- Design/requirements approval is distinguished from operational policy activation or acceptance; nothing claims operation or testing on a real key.
 
 ## 12. Out of scope
 

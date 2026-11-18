@@ -171,3 +171,12 @@ the later restore gate and environment/scope-specific acceptance separate.
 No frozen text, historical reviewer record, existing checkbox, acceptance or
 operational status is changed by this handoff. The [master](../PROJECT_MASTER.md)
 remains the authority for current scope and evidence.
+
+
+### Later design decision outside the pinned source target
+
+On 18 November 2026 the owner approved C1–C3 design baselines, C4 planning only
+and C5 manual-ceremony requirements; see [the decision](../DECISIONS.md#18-november-2026--spec074-c1c3-design-c4-planning-and-c5-manual-ceremony-requirements-approved).
+The worksheet now distinguishes approved design choices from pending details.
+This is not a human verification result, a task/acceptance promotion or a change
+to the immutable `1c94e445` review target; no operation or measurement is authorized.

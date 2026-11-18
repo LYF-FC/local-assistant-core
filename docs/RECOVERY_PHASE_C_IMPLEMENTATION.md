@@ -1,5 +1,8 @@
 # Spec 074 Phase C — non-operational implementation (C1 to C5)
 
+**Scoped owner decision — 18 November 2026:** C1–C3 design baselines, C4 planning only and C5 manual-ceremony requirements approved. The implemented non-operational interfaces/validators remain unchanged, not independently verified or accepted. No task completion or operation is authorized. See [the authoritative decision](../DECISIONS.md#18-november-2026--spec074-c1c3-design-c4-planning-and-c5-manual-ceremony-requirements-approved) and [remaining fields](SPEC_074_OWNER_DECISION_WORKSHEET.md).
+
+
 **Status: implemented and merged in PR #43 (merge commit `708e8134098846a40e0c49cae5a954913aef9fdb`); not independently verified; not accepted.** This page separates what is implemented, what is still a proposal, what is blocked on an owner decision and what remains prohibited. The frozen [spec 074](../specs/074-recovery-set-manifest/spec.md) is unchanged, and so is the accepted synthetic-only Phase B implementation (`backend/app/recovery_set`, its tests and `scripts/test-db-restore.sh`). The closed Phase B output schema and its first-violation behaviour are untouched. The design drafts ([custody](RECOVERY_KEY_CUSTODY.md), [hash governance](RECOVERY_HASH_GOVERNANCE.md), [retention](RECOVERY_RETENTION.md), [capacity](RECOVERY_CAPACITY_VALIDATION.md), [independent verification](RECOVERY_INDEPENDENT_VERIFICATION.md)) remain proposals; nothing here decides an open owner decision. No gate, register row or status changes.
 
 ## 1. What is implemented
@@ -31,7 +34,7 @@ These describe how a future, separately authorized implementation would be contr
 
 - **Generation, provisioning, storage, rotation, loss handling:** each requires an owner decision on custody (people, medium, location) first, a custodian-authorized session, and a `KeyEventRecord` per operation; the requirements KG-1 to KG-11 and the rotation/loss/compromise table of the custody draft apply.
 - **Separation of duties:** procedural only. Both custodians can forge; the operator has the key temporarily; the recovery custodian's copy improves availability and does not protect authenticity against a compromised primary custodian.
-- **Lifecycle:** the draft's states (generated, provisioned, active, rotated, retired, destroyed) are a proposal. No state machine is implemented, because the owner has not decided them.
+- **Lifecycle:** generated, provisioned, active, rotated, retired and destroyed are part of the approved KG-9 manual-ceremony requirements baseline. No operational state machine is implemented or activated; detailed transition procedures, evidence and any execution authority remain pending.
 - **Dependencies:** key generation (C5) depends on the C1 custody decisions; deletion evidence (C3) depends on the owner-decided deletion standard; retention periods depend on owner decisions and on DOC-X02.
 
 ## 4. Unresolved owner decisions and how each stays safely blocked

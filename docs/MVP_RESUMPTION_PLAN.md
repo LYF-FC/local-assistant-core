@@ -60,23 +60,24 @@ PR #54 merged; that historical preparation is not current main's normative state
 
 Use [the exact-revision human-review handoff](SPEC_074_REVIEW_TARGET_1C94E445.md)
 and [the owner-decision worksheet](SPEC_074_OWNER_DECISION_WORKSHEET.md) for the
-next bounded batch. Both are preparation artifacts, not independent reviewer
-findings, owner choices or a Spec 074 completion declaration.
+next bounded batch. The reviewer handoff is preparation, not human findings. The worksheet now records
+the scoped owner design/planning approvals while leaving detailed choices pending;
+neither is a Spec 074 completion declaration.
 
 ## 4. Next MVP work: Spec 074 owner/reviewer packet
 
-These recommendations consolidate the existing Phase C drafts for review. They
-are **not approved choices**, do not tick C1–C5, and require no new key, set,
-measurement or provider access. Personal identities and physical locations belong
+These recommendations consolidate the existing Phase C drafts for review. The owner approved C1–C3 design baselines, C4 planning only and C5 manual-ceremony
+requirements on 18 November 2026. Remaining detailed choices are pending. These
+approvals do not tick C1–C5 or authorize a new key, set, measurement or provider access. Personal identities and physical locations belong
 in separately authorized private records, not this public packet.
 
-| Item | Recommendation for review | Explicit decision still needed |
+| Item | Approved design/planning baseline | Remaining decision or evidence |
 |---|---|---|
-| C1 custody | Use the existing encrypted removable-container baseline, separate primary/recovery copies and independent fingerprint/hash-record keeper; operator access is temporary. Both custodians can forge HMACs. | Role separation, medium/process, session controls and rotation/compromise authority; a written degraded arrangement or deferral of real use if distinct roles are unavailable. No custody is activated. |
-| C2 hash governance | Option A: witnessed initial recording as the baseline. Optional B: later key-holder comparison, labelled honestly. Independently held records are not independent HMAC verification. | Recorder/witness/approver roles, independent record storage/update/dispute process and whether optional checks are wanted. No new keyless tool or secret holder. |
-| C3 retention | Keep the set/copy inventory; propose manifest co-retirement with its set and authentication records/keys retained while governed manifests require them. Do not restore older non-Work sets without reconciliation. | Every lifetime, early-purge promise, destruction authority, deletion evidence and inventory rule. Key destruction is not data erasure; no deletion occurs. |
+| C1 custody | Use the existing encrypted removable-container baseline, separate primary/recovery copies and independent fingerprint/hash-record keeper; operator access is temporary. Both custodians can forge HMACs. | Actual roles/media/locations, presentation/session details and rotation/compromise authority; any degraded exception needs a separate decision. No custody is activated. |
+| C2 hash governance | Option A: witnessed initial recording as the baseline. Optional B: later key-holder comparison, labelled honestly. Independently held records are not independent HMAC verification. | Actual recorder/witness/approver assignments and storage/update/dispute details; B is optional, not a separately approved run. No new keyless tool or secret holder. |
+| C3 retention | Keep the set/copy inventory; approved manifest co-retirement with its set and authentication records/keys retained while governed manifests require them. Do not restore older non-Work sets without reconciliation. | Every lifetime, early-purge promise, destruction authority, deletion evidence and operational inventory procedure. Key destruction is not data erasure; no deletion occurs. |
 | C4 capacity | Prepare the bounded authorization sheet below; use small injected limits for boundary logic rather than near-ceiling sparse files. | Environment, synthetic-key permission, budgets, tiers and stop conditions. No campaign or ceiling is approved; 64 GiB remains a placeholder. |
-| C5 generation requirements | Decide whether a documented manual ceremony is sufficient before considering dedicated tooling. Existing requirements are a review input. | Manual versus dedicated tooling, and any later implementation authorization. No key generation or management tool is implemented or run. |
+| C5 generation requirements | Manual-ceremony requirements are approved; no dedicated tooling is commissioned. | Detailed manual procedure/evidence and any later execution authority remain pending. No key generation or management tool is implemented or run. |
 
 Detailed sources: [custody](RECOVERY_KEY_CUSTODY.md),
 [hash governance](RECOVERY_HASH_GOVERNANCE.md), [retention](RECOVERY_RETENTION.md),

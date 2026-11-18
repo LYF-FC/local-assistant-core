@@ -687,3 +687,17 @@ are not completed here. Full Spec 074 completion cannot be declared from design
 approval or a green CI result alone. Restore/staging, restored-database binding,
 older non-Work reconciliation and clean-host/RPO/RTO evidence remain the reserved
 Spec 075 boundary, not new tasks implemented in this packet.
+
+
+## 13. Scoped owner approvals recorded (18 November 2026)
+
+The owner approved C1–C3 design recommendations, C4 planning only and C5
+manual-ceremony requirements; see [the authoritative decision](../DECISIONS.md#18-november-2026--spec074-c1c3-design-c4-planning-and-c5-manual-ceremony-requirements-approved).
+The [worksheet](SPEC_074_OWNER_DECISION_WORKSHEET.md) records those approvals
+separately from remaining private/detailed fields. This later decision does not
+rewrite historical evidence or change the exact `1c94e445` human-review target.
+
+C1–C5 remain unchecked. No independent reviewer findings or acceptance are
+supplied. No custody, key/ceremony/tooling operation, measurement, ceiling,
+NAS/production access or restore is authorized. The next work remains human
+criterion review and separately bounded preparation of unresolved details.

@@ -1,6 +1,9 @@
 # Recovery-set retention and forgetting reconciliation — spec 074 Phase C (C3)
 
-**Status: DRAFT design proposal for owner review. No retention duration, deletion rule or forgetting policy is approved by this document.** On 15 November 2026 the owner authorized Phase C design and preparatory work, then separately authorized implementation of the non-operational portions; that bounded implementation was merged in PR #43 ([RECOVERY_PHASE_C_IMPLEMENTATION.md](RECOVERY_PHASE_C_IMPLEMENTATION.md)). This draft remains a proposal; validators and report-only reconciliation do not delete, purge, expire or modify records. Every duration below is `[owner decision, not decided]`. Nothing is deleted, purged, expired or modified, and DOC-X02 is not implemented. Spec 074 section 9.4 separates four matters and finalizes none of their durations; this draft organizes them and records the conflicts. No gate, register row or status changes.
+**Scoped owner decision — 18 November 2026:** C3 inventory/co-retirement/authentication-retention relationships approved. Every actual lifetime, expiry/purge/destruction rule and evidence method remains pending. No deletion, reconciliation operation or restore is authorized. See [the authoritative decision](../DECISIONS.md#18-november-2026--spec074-c1c3-design-c4-planning-and-c5-manual-ceremony-requirements-approved) and [remaining fields](SPEC_074_OWNER_DECISION_WORKSHEET.md).
+
+
+**Status: C3 design relationships approved on 18 November 2026; no retention duration, operational deletion rule or forgetting operation is approved.** On 15 November 2026 the owner authorized Phase C design and preparatory work, then separately authorized implementation of the non-operational portions; that bounded implementation was merged in PR #43 ([RECOVERY_PHASE_C_IMPLEMENTATION.md](RECOVERY_PHASE_C_IMPLEMENTATION.md)). Remaining durations and operational procedures remain proposals; validators and report-only reconciliation do not delete, purge, expire or modify records. Every duration below is `[owner decision, not decided]`. Nothing is deleted, purged, expired or modified, and DOC-X02 is not implemented. Spec 074 section 9.4 separates four matters and finalizes none of their durations; this draft organizes them and records the conflicts. No gate, register row or status changes.
 
 ## 1. Boundary: a verified manifest is not permission to restore
 
@@ -38,7 +41,7 @@
 
 ## 4. Owner decisions required (unresolved)
 
-Every duration in the matrix; whether backups may be purged early on a forgetting request; who may authorize destruction; the standard of deletion evidence; whether the copy inventory is mandatory; the interim rule for older non-Work sets (for example, no restore of such a set without a separately designed reconciliation).
+Every duration in the matrix; whether backups may be purged early on a forgetting request; who may authorize destruction; the standard of deletion evidence; actual copy-inventory procedures and completeness evidence (the inventory design baseline is approved); the interim rule for older non-Work sets (for example, no restore of such a set without a separately designed reconciliation).
 
 ## 5. Objective acceptance criteria for this document
 
