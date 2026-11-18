@@ -180,3 +180,40 @@ the next non-operational MVP work. No frozen specification, acceptance procedure
 gate/register/task checkbox, verification result or operational authorization
 changes. C1–C5 remain open; real keys, sets, measurements, NAS access and restoration
 remain separately gated.
+
+
+### 18 November 2026 — Owner authorizes resuming implementation; advisory withdrawal makes an exception unnecessary
+
+After the deferral entry above, the owner explicitly changed the earlier
+instruction and authorized bypassing the blocking audit finding as needed to
+resume implementation, including the needed actions on PRs #54, #55 and #56.
+This later instruction supersedes the earlier prohibition on a narrowly reviewed
+exception for that finding; it does not accept a gate or authorize operations.
+
+Before activating an exception, a fresh check found that GitHub had marked
+[GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf) **withdrawn
+on 18 November 2026**. Two actual full `npm audit --audit-level=high --json` runs
+on the unchanged main lock reported **exit 0 and zero findings**, including one
+with a fresh cache and `--prefer-online` against `https://registry.npmjs.org/`.
+Picomatch remains 4.0.7; no dependency was relabelled or updated. Withdrawal and a
+zero-finding report are not evidence that the observed matching behavior was fixed.
+
+Therefore **no audit exception is activated**: keep the original full audit,
+threshold, workflow selection and aggregate gate unchanged. The authorized but
+unneeded exception prototype is not part of the delivery. This approval is not
+a standing blanket waiver for unrelated or future findings; those retain their
+ordinary review and required-check boundaries.
+
+The owner authorizes closing the incompatible PR #55 **without merging** its
+patch, completing and merging PR #56's documentation reconciliation after its
+checks, and refreshing PR #54 against updated main and merging it only after
+fresh required CI passes. No unattended auto-merge is enabled. The tooling
+migration remains deferred to the first minor release after MVP; the original
+release numbering remains unassigned.
+
+The earlier failed CI remains attributed to its original run. Fresh passing
+results must be read on the actual refreshed head; no result is inferred from
+withdrawal alone. Implementation can resume through the normal gates when those
+checks pass. No frozen specification change is included here, and no independent
+verification, MVP/Phase C acceptance, capacity measurement, real-key/set use,
+NAS/production access, restoration or private-data adoption is authorized.

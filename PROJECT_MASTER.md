@@ -26,11 +26,16 @@ development HMR parity and browser-tooling remediation. It removes no product
 gate or recovery requirement. See the [owner decision](DECISIONS.md#18-november-2026--defer-experimental-frontend-tooling-replacement-until-the-first-minor-release-after-mvp)
 and [resumption packet](docs/MVP_RESUMPTION_PLAN.md).
 
-The existing advisory remains unresolved: required audit/CI checks still apply.
-The deferral itself unblocks no runtime merge or release; it grants no audit
-exception, acceptance or operational authorization. PR #54's Spec 074 work remains
-separate and unmerged. The immediate permitted work is the Spec 074 owner/reviewer
-packet; recovery requirements and independent verification remain outstanding.
+Later on 18 November 2026 the owner explicitly authorized the actions needed to
+resume implementation on PRs #54–#56, including an audit exception if required.
+The subsequent check found the advisory withdrawn and two fresh unchanged-lock
+audits passing with zero findings. **No exception is activated:** the original
+audit/CI gates remain unchanged. See [the later decision](DECISIONS.md#18-november-2026--owner-authorizes-resuming-implementation-advisory-withdrawal-makes-an-exception-unnecessary).
+PR #55's incompatible patch is closed without merging. PR #54 remains separate;
+refresh it against updated main and require fresh normal CI before merging.
+Spec 074 review/owner work resumes, with implementation through the normal checks.
+Recovery requirements, independent verification, acceptance and operational
+restrictions remain outstanding.
 
 ## 3. Status model
 
@@ -214,7 +219,8 @@ starting with the non-operational owner/reviewer packet, then prepare the reserv
 Spec 075 restore contract. This does not approve the rest of the proposed order,
 accept a gate, authorize measurements/operations or waive required CI. The
 experimental frontend migration is deferred to the first minor release after MVP;
-its unresolved advisory remains a delivery blocker under the unchanged checks.
+the previously blocking advisory was subsequently withdrawn, and fresh normal
+checks are required before resuming merges. No audit exception is activated.
 See [the bounded next work and follow-up record](docs/MVP_RESUMPTION_PLAN.md).
 
 ## 8. Documentation map and update rules

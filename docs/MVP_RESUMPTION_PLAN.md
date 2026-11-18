@@ -21,20 +21,27 @@ is selected by this scheduling decision.
 This is an engineering deferral, not removal of recovery, browser coverage or
 security obligations from the MVP. It accepts no gate and authorizes no operation.
 
-## 2. What still blocks delivery
+## 2. Resume through the unchanged audit and CI gates
 
-The picomatch advisory [GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf)
-remains unresolved in the reviewed dependency graph. Deferral is not remediation.
-The existing `npm audit --audit-level=high`, conservative CI selection and aggregate
-gate stay unchanged. No suppressed advisory, omitted development dependencies,
-threshold reduction, package relabelling or merge exception is authorized.
+Later on 18 November 2026 the owner authorized the needed actions on PRs #54–#56,
+including an exception for the blocking audit finding if required. A subsequent
+check found [GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf)
+withdrawn on 18 November. Two fresh audits on the unchanged main dependency lock
+reported exit 0 and zero findings; one used a fresh cache and `--prefer-online`.
+The registry remained npmjs.org and picomatch remained 4.0.7.
 
-Documentation/review and isolated development can proceed. Runtime/test work must
-not be disguised as documentation to avoid the required job. A documentation-only
-CI pass is not runtime evidence and does not clear the advisory. Required passing
-checks remain necessary before the blocked changes can merge or release readiness
-can be established. The post-MVP scheduling target does not promise that an MVP
-can be released first while this required check remains failed.
+**No exception is activated.** The original full audit, high threshold, scope
+selection and aggregate gate remain unchanged. No suppression, omitted development
+dependencies, package relabelling, workflow bypass or `continue-on-error` is added.
+Withdrawal does not prove the matching behavior fixed, and earlier failed runs
+are not rewritten as passes.
+
+PR #55's incompatible patch is closed without merging. Complete PR #56's
+reconciliation, incorporate updated main into PR #54, and inspect fresh required
+CI before merging. Runtime implementation can proceed through the normal gates;
+no result is inferred from withdrawal alone. This does not accept a gate or
+permit deployment, real keys/sets, measurements, NAS access or restoration. See
+[the later owner decision](../DECISIONS.md#18-november-2026--owner-authorizes-resuming-implementation-advisory-withdrawal-makes-an-exception-unnecessary).
 
 ## 3. Exact baseline and open-PR boundary
 
@@ -49,7 +56,7 @@ checklist. It does not contain the changes in either PR below.
   frontend and aggregate CI fail at the audit. No merge or readiness is inferred.
 - [PR #55](https://github.com/LYF-FC/local-assistant-core/pull/55): separate temporary
   dependency candidate. Neither the matching failures nor advisory are declared
-  resolved. This deferral does not close, merge or mark it ready.
+  resolved. The later owner-authorized disposition closes it without merging.
 
 Review main's normative text separately from the proposed corrections in PR #54.
 The owner's approval of an interpretation does not make the branch merged or its
@@ -122,8 +129,8 @@ data. Any implementation batch remains separately scoped and reviewed.
 
 ## 6. Review boundaries
 
-This scheduling/packet change edits no runtime, dependency, workflow, migration,
+This scheduling/packet reconciliation edits no runtime, dependency, workflow, migration,
 frozen specification, reviewer record, acceptance contract or generated status
-view. It closes no PR and changes no gate/register/task checkbox. Existing trials
+view. The later owner instruction closes PR #55 without merging; no gate/register/task checkbox changes. Existing trials
 remain disposable evidence, not an adopted replacement. Only the owner can accept
 the relevant MVP scope after its required evidence exists.

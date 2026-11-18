@@ -16,8 +16,9 @@ release after an accepted MVP**; version/date unassigned. Resume the bounded Spe
 074 owner/reviewer work, followed by Spec 075 restore-contract planning. The
 [master](PROJECT_MASTER.md#engineering-work-deferred-by-the-owner--18-november-2026)
 owns this scheduling record; [the decision](DECISIONS.md#18-november-2026--defer-experimental-frontend-tooling-replacement-until-the-first-minor-release-after-mvp)
-grants no audit exception or release/operational acceptance. The unresolved
-required-CI blocker is retained in the [resumption packet](docs/MVP_RESUMPTION_PLAN.md).
+grants no audit exception or release/operational acceptance. A later same-day check found the advisory withdrawn and fresh normal audits
+passing; no audit exception is activated. Resume through fresh required checks as
+recorded in [the packet](docs/MVP_RESUMPTION_PLAN.md) and the later owner decision.
 
 ## Reusable-installation milestone
 
