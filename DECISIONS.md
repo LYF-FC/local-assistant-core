@@ -141,6 +141,20 @@ Effect: the second-scenario expected code in the spec's T25 row is corrected to 
 
 This decision does not authorize runtime changes, acceptance of any criterion or gate, operational activity, or the closure of any other requirement. Independent verification of spec 074 and the Phase C owner decisions (C1 to C5) remain open, and no register, gate or acceptance status changes.
 
+### 17 November 2026 — Spec074: bounded metadata-only exception for the stage-1 overlap pre-check
+
+On 17 November 2026 (Europe/Paris) the owner explicitly approved this bounded exception: after every required argument is present and every argument shape is validated, the tool may perform filesystem metadata checks solely to detect overlapping paths and aliases before reading file contents.
+
+**Resolves** the specification-conformance finding recorded in the [traceability appendix](docs/RECOVERY_INDEPENDENT_VERIFICATION_TRACEABILITY.md) and [PR #53](https://github.com/LYF-FC/local-assistant-core/pull/53): the [frozen specification](specs/074-recovery-set-manifest/spec.md) section 2.5 described stage 1 as "no file access" and listed `paths_overlap` among the stage-1 codes, while the implementation's overlap check makes metadata calls (16 `os.lstat` measured for a manifest inside `SET`). The finding was open and no interpretation had been adopted; this decision adopts the exception below and no other.
+
+**The permitted operations, from the implementation (`backend/app/recovery_set/cli.py`, `_spellings`, `_same_existing_file`, `_overlaps`):** the lexical normalization of each supplied path (no file access); symlink resolution by `os.path.realpath` (`lstat` and `readlink` of path components); and a same-file comparison of the key and the manifest or output path (`os.stat` and `os.path.samestat`). An overlap rejection remains `paths_overlap`, exit 2, with all four states `*_not_evaluated`.
+
+**Preserved, unchanged:** zero filesystem access when rejecting a missing or malformed argument shape or a parser error, including when the supplied paths would overlap; no content read, directory-content enumeration, write or publication during overlap checking; the symlink-resolved and same-file overlap protections; the no-follow protected opens, single-link checks, rejection behavior and the documented race limitation (the pre-check names paths as they are at that moment). The exception is not a general exception for stage-1 file access and not a statement that metadata access is never file access. The lexical-only alternative that had been proposed is **not** adopted, and no runtime change was made.
+
+**Effect:** the specification carries a separately labelled post-freeze clarification (sections 2.5, A5 and the overlap sentence of section 7.1; the head-of-document note). The original freeze (14 November 2026, `f903237a69e6e2eeeef8b057abef3fc618a27630`) and the 16 November 2026 T25 correction are not rewritten or re-dated; this is not a new freeze, and the current text is that revision plus the two recorded clarifications. Focused tests were added to hold the implementation to the exception.
+
+This decision approves the wording only. It is not independent verification and not acceptance of A5, T36 or any criterion or gate, and it authorizes no operational activity, key or recovery-set use, capacity measurement, restoration or NAS/production access. Independent verification of spec 074 and the Phase C owner decisions (C1 to C5) remain open, and no register, gate or acceptance status changes.
+
 
 ### 18 November 2026 — Defer experimental frontend tooling replacement until the first minor release after MVP
 
