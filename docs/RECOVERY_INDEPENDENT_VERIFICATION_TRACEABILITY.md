@@ -662,3 +662,28 @@ Owner-authorized follow-up to PR #54, based on main `05b97c5177cd4bcffc21a3fcd84
 The test runs emit the existing Starlette/httpx deprecation warning. An initial focused development run found one wrongly targeted new relative-symlink fixture (247 passed, 1 failed); the fixture target was corrected before the recorded passing runs. Formatting initially requested two line wraps, which were applied before the full lint/format check. The container policy-check attempt initially lacked Git; it was installed only inside that disposable container before the passing checks. Host fallback policy attempts lacked PyYAML; those failures are not passing evidence. None of these corrections changed runtime code or weakened an assertion.
 
 **Remaining limits.** These are Python-level regression guards, not syscall interception or a security boundary. Pre-bound function references, native/`ctypes` access, import/fixture preparation and unlisted operations (including `close`) remain outside observation. The expectation is a fixture-time snapshot, not race protection; it does not authorize paths merely because the implementation visited them. Local aarch64 container results do not certify other filesystems, operational capacity, a real host or clean-host recovery. No local PostgreSQL integration, container-stack drill or restoration was run in this follow-up. The separate frontend picomatch advisory GHSA-fc5q-39xc-vjpf remains a CI blocker; frontend dependencies, audit policy and workflows are unchanged. Hosted results must be reported on the final pushed head, separately from the historical #178 result. No C1–C5 task, gate or acceptance status changes.
+
+
+## 12. Merged-review preparation at 1c94e445 (18 November 2026)
+
+PR #54 merged at `1c94e445db3dcc74a0133813b35300d205a64380` after exact-head
+CI #186 passed all six jobs on `df308cd4a8bfda17fa0c573bdba7a17d88386af4`.
+Its overlap clarification, focused guard hardening and M5 wording are now merged,
+not proposals waiting for integration. Historical sections 8–11 retain their
+original target, observations and attribution; they are not silently re-targeted.
+The historical frontend-audit failure is preserved. The advisory was subsequently
+withdrawn; the original audit/workflow remains unchanged. No code fix or
+whole-toolchain safety is inferred from withdrawal.
+
+The next bounded work is [human criterion review at the exact merged target](SPEC_074_REVIEW_TARGET_1C94E445.md)
+and [owner review of the unresolved C1–C5 choices](SPEC_074_OWNER_DECISION_WORKSHEET.md).
+The handoff identifies the separate post-merge CI #187 run to inspect. No passing
+post-merge result, human review, reviewer signature or owner decision is inferred
+from the PR-head run. These new documents are assistant-prepared review inputs.
+
+All original reviewer/task checkboxes and the human record remain unchanged.
+C1–C5, Phase C acceptance, independent verification and operational authorization
+are not completed here. Full Spec 074 completion cannot be declared from design
+approval or a green CI result alone. Restore/staging, restored-database binding,
+older non-Work reconciliation and clean-host/RPO/RTO evidence remain the reserved
+Spec 075 boundary, not new tasks implemented in this packet.
