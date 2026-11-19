@@ -92,6 +92,13 @@ The record notes date, roles present, outcome per scenario, gaps and follow-up o
 
 ## 9. C5: key-generation requirements (requirements preparation only)
 
+A [manual-ceremony procedure draft](RECOVERY_MANUAL_CEREMONY_PROCEDURE.md) was
+prepared under the 19 November planning instruction. It maps the approved
+requirements to steps, evidence and unresolved method gates. It is not an
+executable key-generation recipe, execution authorization or evidence that the
+manual route already meets every requirement. No dedicated tool is commissioned.
+
+
 Key generation is deferred until the custody decisions of section 10 exist; these requirements are a preparation draft and cannot be finalised before then. These are requirements and design preparation only: no tool is implemented, no key is generated, nothing is provisioned, and key-generation tooling and any provisioning workflow remain unauthorized (O9).
 
 | ID | Requirement | Objective acceptance check |

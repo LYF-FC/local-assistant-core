@@ -81,6 +81,10 @@ Approval settles only the stated design relationships. It does not prove invento
 
 ## 5. C4 — future bounded measurement authorization sheet
 
+The [concrete small-pilot proposal](RECOVERY_C4_MEASUREMENT_PROPOSAL.md) offers
+suggested numeric fields for the owner's next review. They remain unapproved;
+this worksheet grants no run permission.
+
 Source: [RECOVERY_CAPACITY_VALIDATION.md](RECOVERY_CAPACITY_VALIDATION.md). **PLANNING ONLY APPROVED; no capacity campaign, synthetic-key use or large-data run is authorized.** The model in [RECOVERY_PHASE_C_IMPLEMENTATION.md](RECOVERY_PHASE_C_IMPLEMENTATION.md) is unmeasured and unvalidated. The 64 GiB ceiling remains an unapproved placeholder. Existing 1/4/16 GiB tiers and repetitions in the draft are proposals, not a budget or permission.
 
 Before a future run, the owner must approve a concrete sheet with actual numbers and a named disposable scope. Do not interpret a missing value, model input, engineering bound or draft tier as a default authorization. Keep host/path/person details in a private record and use its opaque reference here.
@@ -111,6 +115,10 @@ M1–M9 results, if separately authorized and obtained, would apply only to thei
 C4 requires **measured resource evidence and a separate owner decision on the real operational dump ceiling**. Neither approval of this plan nor approval to measure closes C4. The draft's wider ceiling evidence also needs restore-size ratio, restore working space, real-host disk/growth inputs and a chosen margin; those remain unknown. M10 staging/restore measurement is excluded from this bounded proposal and reserved for separate authority in the later restore/staging specification. A limited M1–M9 campaign cannot silently stand in for the missing envelope evidence.
 
 ## 6. C5 — manual ceremony versus dedicated tooling
+
+Use the [manual procedure draft](RECOVERY_MANUAL_CEREMONY_PROCEDURE.md) to review
+remaining method and evidence gates. The draft does not authorize or execute a
+ceremony, and does not complete C5.
 
 Recommendation from [RECOVERY_KEY_CUSTODY.md](RECOVERY_KEY_CUSTODY.md), sections 9–10: use documented manual-ceremony requirements; dedicated tooling is not commissioned. The **manual-ceremony requirements route is approved**; it must meet the reviewed requirements and custody decisions. Dedicated tooling is not commissioned. Choosing the manual route does not waive randomness, protected creation, durability, secret-handling or audit controls.
 

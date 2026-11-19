@@ -284,3 +284,15 @@ restoration and private-data adoption remain unchanged and separately gated.
 No frozen specification, manifest format, runtime, dependency, migration or CI
 policy changes. PR #57 may merge after its updated documentation checks; no
 unattended automerge is enabled. Spec 075 implementation is not authorized here.
+
+
+### 19 November 2026 — Prepare C4 measurement and manual-ceremony drafts only
+
+The owner authorized agents to prepare a concrete C4 measurement proposal and a
+manual-ceremony procedure in a draft PR. The instruction explicitly excludes
+running measurements, generating keys, changing acceptance or operational
+statuses, and merging. This is preparation authority only; the 18 November
+C1–C3 design, C4 planning-only and C5 manual-requirements approval remains the
+baseline. No proposed numeric budget, execution method, environment, campaign or
+ceremony is approved by publication or review of these drafts. Outstanding human
+verification, C1–C5 task states and all operational restrictions remain unchanged.
