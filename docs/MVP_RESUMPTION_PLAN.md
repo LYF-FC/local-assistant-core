@@ -84,6 +84,16 @@ Detailed sources: [custody](RECOVERY_KEY_CUSTODY.md),
 [capacity](RECOVERY_CAPACITY_VALIDATION.md),
 [non-operational implementation](RECOVERY_PHASE_C_IMPLEMENTATION.md).
 
+### Concrete proposals for the next review
+
+The [C4 pilot proposal](RECOVERY_C4_MEASUREMENT_PROPOSAL.md) supplies suggested
+numeric limits and a selected small synthetic scope; those limits are **proposals,
+not approvals**. The [manual-ceremony procedure](RECOVERY_MANUAL_CEREMONY_PROCEDURE.md)
+turns the approved requirements into review steps and execution-readiness gates.
+Both were requested as draft preparation on 19 November 2026. No measurement,
+synthetic or real key generation, ceremony or merge is authorized by these drafts.
+The owner worksheet's run/operational fields remain pending.
+
 ### C4 authorization sheet — preparation only
 
 Every field below remains pending; this document supplies no default permission.

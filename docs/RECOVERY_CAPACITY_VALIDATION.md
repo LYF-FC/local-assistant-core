@@ -5,6 +5,10 @@
 
 **Status: planning only approved by the owner on 18 November 2026. No capacity measurement has been run, and none is authorized.** On 15 November 2026 the owner authorized Phase C design and preparatory work, then separately authorized implementation of the non-operational portions; the model-only capacity calculation was merged in PR #43 ([RECOVERY_PHASE_C_IMPLEMENTATION.md](RECOVERY_PHASE_C_IMPLEMENTATION.md)). Unselected procedures, budgets and run permissions remain proposals; the calculation is not a measurement or capacity validation. This plan authorizes no capacity measurement, no large-data run, no NAS or production-storage access and no synthetic-key test execution. The **64 GiB dump ceiling is an unapproved placeholder** (`PROVISIONAL_UNAPPROVED_DUMP_CEILING_BYTES` in `backend/app/recovery_set/format.py`, spec 3.8, 10.1) and is not changed here. Thresholds below are **hypotheses to test**, not acceptance criteria; the owner decides criteria and the real ceiling separately after measured evidence exists. No result of this plan will be an RPO/RTO measure (O3). No gate or status changes.
 
+For a concrete first small campaign to review, see [the C4 measurement proposal](RECOVERY_C4_MEASUREMENT_PROPOSAL.md), prepared 19 November 2026. Its proposed
+budgets and narrower selection are not permission to run this wider M1–M10 plan.
+No proposed tier or limit is an approved operational capacity.
+
 ## 1. Environment (disposable, non-production)
 
 - **Permitted:** a dedicated disposable VM or container, or a scratch directory on a local disk of a disposable host; synthetic data only; no network needed.
