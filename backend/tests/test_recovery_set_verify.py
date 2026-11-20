@@ -250,14 +250,17 @@ def test_t23_matching_expected_hash(world):
 def test_t25_cross_installation_substitution(tmp_path):
     """T25: a complete valid set and manifest for installation B presented for installation A.
 
-    The assertions record the exact observed outcome of each scenario (reason, the four states,
-    exit status, no ``verified_references``). Scenario 2 differs from the T25 expected column,
-    which lists ``manifest_authentication_failed`` or ``manifest_key_reference_mismatch``: the
-    frozen precedence (2.5 and 7.2 step 3), the 2.5 combinations table, 6.2 and T17 all place the
-    key's installation binding check before the key references and the MAC, so a key bound to
-    installation A used with a manifest declaring B reports ``key_installation_mismatch``. The
-    conflict inside the frozen text is an open owner decision; nothing here resolves it, and the
-    code is neither reordered nor added to an accepted set.
+    The assertions record the exact outcome of each of the three scenarios (reason, the four
+    states, exit status, no ``verified_references``, empty ``notes``) and, as a control, that
+    ``manifest_key_reference_mismatch`` is reachable only for a different key bound to the
+    declared installation. They match the T25 row as corrected by the owner's decision of
+    16 November 2026 (DECISIONS.md): scenario 2, installation A's key and fingerprint with
+    installation B's manifest, reports ``key_installation_mismatch``, because the key's
+    installation binding is checked before the key references and the MAC (2.5, 6.2, 7.2 step 3
+    and T17). The frozen T25 text had listed ``manifest_authentication_failed`` or
+    ``manifest_key_reference_mismatch`` for that scenario; that one cell was corrected after the
+    freeze, and the verification order and the code were not changed. The test shows these
+    outcomes in process with synthetic keys only; it shows no other key or manifest pairing.
     """
     from recovery_set_support import make_set
 
@@ -293,7 +296,7 @@ def test_t25_cross_installation_substitution(tmp_path):
         ),
     )
     # 2. A's key and fingerprint with B's manifest: the key's binding differs from the declared
-    #    installation (the T25 text lists other codes; see the docstring).
+    #    installation (the corrected T25 row; see the docstring).
     observed(
         verify_args(b_set, key_a, manifest, installation=key_a.installation_id),
         "key_installation_mismatch",
