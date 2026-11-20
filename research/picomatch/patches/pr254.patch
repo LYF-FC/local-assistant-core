@@ -1,0 +1,17 @@
+diff --git a/lib/parse.js b/lib/parse.js
+index 0bb4116..379ea41 100644
+--- a/lib/parse.js
++++ b/lib/parse.js
+@@ -568 +568,11 @@ const parse = (input, options) => {
+-    let output = token.close + (opts.capture ? ')' : '');
++    // A single wildcard branch is closed under concatenation: P*S repeated
++    // one or more times still matches P*S. Remove the outer repeat instead of
++    // nesting its unbounded quantifier around the wildcard's own quantifier.
++    const bodyTokens = tokens.slice(token.tokensIndex + 2);
++    const singleWildcard = opts.maxExtglobRecursion !== false &&
++      (token.type === 'plus' || token.type === 'star') &&
++      splitTopLevel(body).length === 1 &&
++      bodyTokens.some(part => part.type === 'star' && !part.extglob) &&
++      bodyTokens.every(part => !part.extglob && !part.suffix &&
++        (part.type === 'text' || part.type === 'star' || part.type === 'qmark' || part.type === 'bracket'));
++    let output = (singleWildcard ? (token.type === 'star' ? ')?' : ')') : token.close) + (opts.capture ? ')' : '');

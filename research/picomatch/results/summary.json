@@ -1,0 +1,540 @@
+{
+ "rows": [
+  {
+   "group": "G1",
+   "variant": "stock",
+   "total": 25,
+   "passVsStock": 25,
+   "mismatchVsStock": 0,
+   "rejectsValid": 0,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": 0,
+   "thrown": 0
+  },
+  {
+   "group": "G1",
+   "variant": "pr254",
+   "total": 25,
+   "passVsStock": 25,
+   "mismatchVsStock": 0,
+   "rejectsValid": 0,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": 0,
+   "thrown": 0
+  },
+  {
+   "group": "G1",
+   "variant": "pr237",
+   "total": 25,
+   "passVsStock": 25,
+   "mismatchVsStock": 0,
+   "rejectsValid": 0,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": 0,
+   "thrown": 0
+  },
+  {
+   "group": "G1",
+   "variant": "pr238",
+   "total": 25,
+   "passVsStock": 25,
+   "mismatchVsStock": 0,
+   "rejectsValid": 0,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": 0,
+   "thrown": 0
+  },
+  {
+   "group": "G1",
+   "variant": "pr55",
+   "total": 25,
+   "passVsStock": 25,
+   "mismatchVsStock": 0,
+   "rejectsValid": 0,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": 0,
+   "thrown": 0
+  },
+  {
+   "group": "G1dot",
+   "variant": "stock",
+   "total": 3,
+   "passVsStock": 3,
+   "mismatchVsStock": 0,
+   "rejectsValid": 0,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": 0,
+   "thrown": 0
+  },
+  {
+   "group": "G1dot",
+   "variant": "pr254",
+   "total": 3,
+   "passVsStock": 3,
+   "mismatchVsStock": 0,
+   "rejectsValid": 0,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": 0,
+   "thrown": 0
+  },
+  {
+   "group": "G1dot",
+   "variant": "pr237",
+   "total": 3,
+   "passVsStock": 3,
+   "mismatchVsStock": 0,
+   "rejectsValid": 0,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": 0,
+   "thrown": 0
+  },
+  {
+   "group": "G1dot",
+   "variant": "pr238",
+   "total": 3,
+   "passVsStock": 3,
+   "mismatchVsStock": 0,
+   "rejectsValid": 0,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": 0,
+   "thrown": 0
+  },
+  {
+   "group": "G1dot",
+   "variant": "pr55",
+   "total": 3,
+   "passVsStock": 3,
+   "mismatchVsStock": 0,
+   "rejectsValid": 0,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": 0,
+   "thrown": 0
+  },
+  {
+   "group": "G4",
+   "variant": "stock",
+   "total": 28,
+   "passVsStock": 28,
+   "mismatchVsStock": 0,
+   "rejectsValid": 0,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": 0,
+   "thrown": 0
+  },
+  {
+   "group": "G4",
+   "variant": "pr254",
+   "total": 28,
+   "passVsStock": 4,
+   "mismatchVsStock": 24,
+   "rejectsValid": 24,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": 24,
+   "thrown": 0
+  },
+  {
+   "group": "G4",
+   "variant": "pr237",
+   "total": 28,
+   "passVsStock": 4,
+   "mismatchVsStock": 24,
+   "rejectsValid": 24,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": 24,
+   "thrown": 0
+  },
+  {
+   "group": "G4",
+   "variant": "pr238",
+   "total": 28,
+   "passVsStock": 26,
+   "mismatchVsStock": 2,
+   "rejectsValid": 2,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": 2,
+   "thrown": 0
+  },
+  {
+   "group": "G4",
+   "variant": "pr55",
+   "total": 28,
+   "passVsStock": 22,
+   "mismatchVsStock": 6,
+   "rejectsValid": 6,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": 6,
+   "thrown": 0
+  },
+  {
+   "group": "G2",
+   "variant": "stock",
+   "total": 42966,
+   "passVsStock": 42966,
+   "mismatchVsStock": 0,
+   "rejectsValid": 0,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": null,
+   "thrown": 0
+  },
+  {
+   "group": "G2",
+   "variant": "pr254",
+   "total": 42966,
+   "passVsStock": 42966,
+   "mismatchVsStock": 0,
+   "rejectsValid": 0,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": null,
+   "thrown": 0
+  },
+  {
+   "group": "G2",
+   "variant": "pr237",
+   "total": 42966,
+   "passVsStock": 42966,
+   "mismatchVsStock": 0,
+   "rejectsValid": 0,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": null,
+   "thrown": 0
+  },
+  {
+   "group": "G2",
+   "variant": "pr238",
+   "total": 42966,
+   "passVsStock": 42396,
+   "mismatchVsStock": 570,
+   "rejectsValid": 570,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": null,
+   "thrown": 0
+  },
+  {
+   "group": "G2",
+   "variant": "pr55",
+   "total": 42966,
+   "passVsStock": 42966,
+   "mismatchVsStock": 0,
+   "rejectsValid": 0,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": null,
+   "thrown": 0
+  },
+  {
+   "group": "G3",
+   "variant": "stock",
+   "total": 303264,
+   "passVsStock": 303264,
+   "mismatchVsStock": 0,
+   "rejectsValid": 0,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": null,
+   "thrown": 0
+  },
+  {
+   "group": "G3",
+   "variant": "pr254",
+   "total": 303264,
+   "passVsStock": 297182,
+   "mismatchVsStock": 6082,
+   "rejectsValid": 6082,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": null,
+   "thrown": 0
+  },
+  {
+   "group": "G3",
+   "variant": "pr237",
+   "total": 303264,
+   "passVsStock": 297182,
+   "mismatchVsStock": 6082,
+   "rejectsValid": 6082,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": null,
+   "thrown": 0
+  },
+  {
+   "group": "G3",
+   "variant": "pr238",
+   "total": 303264,
+   "passVsStock": 276162,
+   "mismatchVsStock": 27102,
+   "rejectsValid": 27102,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": null,
+   "thrown": 0
+  },
+  {
+   "group": "G3",
+   "variant": "pr55",
+   "total": 303264,
+   "passVsStock": 303264,
+   "mismatchVsStock": 0,
+   "rejectsValid": 0,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": null,
+   "thrown": 0
+  },
+  {
+   "group": "G5",
+   "variant": "stock",
+   "total": 14391,
+   "passVsStock": 14391,
+   "mismatchVsStock": 0,
+   "rejectsValid": 0,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": null,
+   "thrown": 0
+  },
+  {
+   "group": "G5",
+   "variant": "pr254",
+   "total": 14391,
+   "passVsStock": 14391,
+   "mismatchVsStock": 0,
+   "rejectsValid": 0,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": null,
+   "thrown": 0
+  },
+  {
+   "group": "G5",
+   "variant": "pr237",
+   "total": 14391,
+   "passVsStock": 14391,
+   "mismatchVsStock": 0,
+   "rejectsValid": 0,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": null,
+   "thrown": 0
+  },
+  {
+   "group": "G5",
+   "variant": "pr238",
+   "total": 14391,
+   "passVsStock": 14391,
+   "mismatchVsStock": 0,
+   "rejectsValid": 0,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": null,
+   "thrown": 0
+  },
+  {
+   "group": "G5",
+   "variant": "pr55",
+   "total": 14391,
+   "passVsStock": 14391,
+   "mismatchVsStock": 0,
+   "rejectsValid": 0,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": null,
+   "thrown": 0
+  },
+  {
+   "group": "G6",
+   "variant": "stock",
+   "total": 139904,
+   "passVsStock": 139904,
+   "mismatchVsStock": 0,
+   "rejectsValid": 0,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": null,
+   "thrown": 0
+  },
+  {
+   "group": "G6",
+   "variant": "pr254",
+   "total": 139904,
+   "passVsStock": 131528,
+   "mismatchVsStock": 8376,
+   "rejectsValid": 8376,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": null,
+   "thrown": 0
+  },
+  {
+   "group": "G6",
+   "variant": "pr237",
+   "total": 139904,
+   "passVsStock": 131528,
+   "mismatchVsStock": 8376,
+   "rejectsValid": 8376,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": null,
+   "thrown": 0
+  },
+  {
+   "group": "G6",
+   "variant": "pr238",
+   "total": 139904,
+   "passVsStock": 137552,
+   "mismatchVsStock": 2352,
+   "rejectsValid": 2352,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": null,
+   "thrown": 0
+  },
+  {
+   "group": "G6",
+   "variant": "pr55",
+   "total": 139904,
+   "passVsStock": 131528,
+   "mismatchVsStock": 8376,
+   "rejectsValid": 8376,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": null,
+   "thrown": 0
+  },
+  {
+   "group": "G7",
+   "variant": "stock",
+   "total": 1180440,
+   "passVsStock": 1180440,
+   "mismatchVsStock": 0,
+   "rejectsValid": 0,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": 91191,
+   "thrown": 0
+  },
+  {
+   "group": "G7",
+   "variant": "pr254",
+   "total": 1180440,
+   "passVsStock": 1140022,
+   "mismatchVsStock": 40418,
+   "rejectsValid": 40418,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": 129287,
+   "thrown": 0
+  },
+  {
+   "group": "G7",
+   "variant": "pr237",
+   "total": 1180440,
+   "passVsStock": 1144838,
+   "mismatchVsStock": 35602,
+   "rejectsValid": 35602,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": 124471,
+   "thrown": 0
+  },
+  {
+   "group": "G7",
+   "variant": "pr238",
+   "total": 1180440,
+   "passVsStock": 1148120,
+   "mismatchVsStock": 32320,
+   "rejectsValid": 32320,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": 121419,
+   "thrown": 0
+  },
+  {
+   "group": "G7",
+   "variant": "pr55",
+   "total": 1180440,
+   "passVsStock": 1164380,
+   "mismatchVsStock": 16060,
+   "rejectsValid": 16060,
+   "acceptsInvalid": 0,
+   "mismatchVsIndependentExpectation": 107251,
+   "thrown": 0
+  }
+ ],
+ "examples": {
+  "pr254|G4": [
+   "\"+([ab/]*)\" \"a/b\" {} stock=1 cand=0",
+   "\"+([ab/]*)\" \"a/b/a\" {} stock=1 cand=0",
+   "\"+([ab/]*)\" \"aba/\" {} stock=1 cand=0",
+   "\"+([ab/]*)\" \"//\" {} stock=1 cand=0"
+  ],
+  "pr237|G4": [
+   "\"+([ab/]*)\" \"a/b\" {} stock=1 cand=0",
+   "\"+([ab/]*)\" \"a/b/a\" {} stock=1 cand=0",
+   "\"+([ab/]*)\" \"aba/\" {} stock=1 cand=0",
+   "\"+([ab/]*)\" \"//\" {} stock=1 cand=0"
+  ],
+  "pr238|G4": [
+   "\"+(*[ab/]a)\" \"/aaa\" {} stock=1 cand=0",
+   "\"+(*a)\" \"aba\" {} stock=1 cand=0"
+  ],
+  "pr55|G4": [
+   "\"+([ab/]*a)\" \"aa/a\" {} stock=1 cand=0",
+   "\"+([ab/]a*)\" \"aa/a\" {} stock=1 cand=0",
+   "\"+(*[ab/]a)\" \"/aaa\" {} stock=1 cand=0",
+   "\"+(a[ab/]*)\" \"aaa/\" {} stock=1 cand=0"
+  ],
+  "pr238|G2": [
+   "\"+(*a)\" \"a\" {} stock=1 cand=0",
+   "\"+(*a)\" \"aa\" {} stock=1 cand=0",
+   "\"+(*a)\" \"ba\" {} stock=1 cand=0",
+   "\"+(*a)\" \".a\" {} stock=1 cand=0"
+  ],
+  "pr254|G3": [
+   "\"+([ab/]*)\" \"a/b\" {} stock=1 cand=0",
+   "\"+([ab/]*)\" \"a/b/a\" {} stock=1 cand=0",
+   "\"+([ab/]*)\" \"aba/\" {} stock=1 cand=0",
+   "\"+([ab/]*)\" \"//\" {} stock=1 cand=0"
+  ],
+  "pr237|G3": [
+   "\"+([ab/]*)\" \"a/b\" {} stock=1 cand=0",
+   "\"+([ab/]*)\" \"a/b/a\" {} stock=1 cand=0",
+   "\"+([ab/]*)\" \"aba/\" {} stock=1 cand=0",
+   "\"+([ab/]*)\" \"//\" {} stock=1 cand=0"
+  ],
+  "pr238|G3": [
+   "\"+(*[ab/])\" \"a/b\" {} stock=1 cand=0",
+   "\"+(*[ab/])\" \"a/b/a\" {} stock=1 cand=0",
+   "\"+(*[ab/])\" \"aba/\" {} stock=1 cand=0",
+   "\"+(*[ab/])\" \"//\" {} stock=1 cand=0"
+  ],
+  "pr254|G6": [
+   "\"+([ab/]*a)\" \"aa/a\" {} stock=1 cand=0",
+   "\"+([ab/]*a)\" \"ba/a\" {} stock=1 cand=0",
+   "\"+([ab/]*a)\" \"/a/a\" {} stock=1 cand=0",
+   "\"+([ab/]*a)\" \"aaa/a\" {} stock=1 cand=0"
+  ],
+  "pr237|G6": [
+   "\"+([ab/]*a)\" \"aa/a\" {} stock=1 cand=0",
+   "\"+([ab/]*a)\" \"ba/a\" {} stock=1 cand=0",
+   "\"+([ab/]*a)\" \"/a/a\" {} stock=1 cand=0",
+   "\"+([ab/]*a)\" \"aaa/a\" {} stock=1 cand=0"
+  ],
+  "pr238|G6": [
+   "\"+(*[ab/]a)\" \"aa\" {} stock=1 cand=0",
+   "\"+(*[ab/]a)\" \"ba\" {} stock=1 cand=0",
+   "\"+(*[ab/]a)\" \"/a\" {} stock=1 cand=0",
+   "\"+(*[ab/]a)\" \"aaa\" {} stock=1 cand=0"
+  ],
+  "pr55|G6": [
+   "\"+([ab/]*a)\" \"aa/a\" {} stock=1 cand=0",
+   "\"+([ab/]*a)\" \"ba/a\" {} stock=1 cand=0",
+   "\"+([ab/]*a)\" \"/a/a\" {} stock=1 cand=0",
+   "\"+([ab/]*a)\" \"aaa/a\" {} stock=1 cand=0"
+  ],
+  "pr254|G7": [
+   "\"+(*[ab/])\" \"/a\" {} stock=1 cand=0",
+   "\"+(*[ab/])\" \"/b\" {} stock=1 cand=0",
+   "\"+(*[ab/])\" \"//\" {} stock=1 cand=0",
+   "\"+(*[ab/])\" \"a/a\" {} stock=1 cand=0"
+  ],
+  "pr237|G7": [
+   "\"+(*[ab/])\" \"/a\" {} stock=1 cand=0",
+   "\"+(*[ab/])\" \"/b\" {} stock=1 cand=0",
+   "\"+(*[ab/])\" \"//\" {} stock=1 cand=0",
+   "\"+(*[ab/])\" \"a/a\" {} stock=1 cand=0"
+  ],
+  "pr238|G7": [
+   "\"+(*a)\" \"a\" {} stock=1 cand=0",
+   "\"+(*a)\" \"aa\" {} stock=1 cand=0",
+   "\"+(*a)\" \"ba\" {} stock=1 cand=0",
+   "\"+(*a)\" \"aaa\" {} stock=1 cand=0"
+  ],
+  "pr55|G7": [
+   "\"+(a*[ab/])\" \"a/aa\" {} stock=1 cand=0",
+   "\"+(a*[ab/])\" \"a/ab\" {} stock=1 cand=0",
+   "\"+(a*[ab/])\" \"a/a/\" {} stock=1 cand=0",
+   "\"+(a*[ab/])\" \"aa/aa\" {} stock=1 cand=0"
+  ]
+ }
+}

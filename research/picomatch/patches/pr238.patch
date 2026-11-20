@@ -1,0 +1,31 @@
+diff --git a/lib/parse.js b/lib/parse.js
+index 0bb4116..3ec28c8 100644
+--- a/lib/parse.js
++++ b/lib/parse.js
+@@ -272,0 +273,21 @@ const getStarExtglobSequenceChars = pattern => {
++// A branch that *starts* with a bare (non-parenthesized) `*`/`?` quantifier
++// and has further content after it (e.g. `*a`, `?[ab]`) is unsafe to repeat
++// with an outer `+(...)`/`*(...)`: with no fixed prefix anchoring where the
++// quantifier ends, it compiles to a nested-quantifier regex (e.g.
++// `(?:[^/]*?a)+` for `+(*a)`) that is prone to catastrophic backtracking
++// (CVE-2026-112366). A bare quantifier with nothing else in the branch
++// (`+(*)`), a `*(...)`/`?(...)` group opener (its contents are analyzed
++// separately via recursion/char-class reduction above), and a quantifier
++// that only appears later in the branch behind a literal prefix (`a*`,
++// `W*, *`) are not ambiguous in the same way and are left alone.
++const hasUnsafeLeadingQuantifier = branch => {
++  let i = 0;
++
++  while (i < branch.length && (branch[i] === '*' || branch[i] === '?') && branch[i + 1] !== '(') {
++    i++;
++  }
++
++  // no leading bare quantifier run, or nothing follows it
++  return i > 0 && i < branch.length;
++};
++
+@@ -334,0 +356,4 @@ const analyzeRepeatedExtglob = (body, options) => {
++    if (hasUnsafeLeadingQuantifier(branch)) {
++      return { risky: true };
++    }
++
