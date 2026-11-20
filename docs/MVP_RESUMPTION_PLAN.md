@@ -140,7 +140,7 @@ expectations. Synthetic test keys are included only for this engineering scope.
 No general operational CLI, real ceremony/key/set, NAS/production access,
 capacity campaign or operational restore is authorized.
 
-Implementation/evidence remain branch-local until an actual merge. Consult
+The slice merged on 20 November 2026 as PR #59 at `a547f412b5048e0bd7c3aef7e3649d87c7e8fd0f` (implementation head `23330405c787173c3bb6802e7a6abcec7fb75b7d`; six exact-head hosted CI jobs passed). Merge is engineering delivery only: no independent verification or owner acceptance. Consult
 [convergence](../specs/075-synthetic-recovery-staging/convergence.md) for observed
 results, not inferred success. Non-Work forgetting reconciliation is not implemented;
 even structurally bound results remain quarantined and ineligible for release/use.

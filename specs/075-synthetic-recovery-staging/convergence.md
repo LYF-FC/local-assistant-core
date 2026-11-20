@@ -42,3 +42,16 @@ bec578444f08c6a933f8ccbccf505cd05480d4201a17c1f2648fbf679c6aeac7  scripts/test-d
 ```
 
 Required hosted-CI convergence remains pending its exact-head result in PR metadata. No merge, independent verification, Spec 074/075 completion or owner acceptance is claimed. Non-Work reconciliation, archive staging/installation, clean-host readiness and actual recovery use remain outside and blocked. Existing task/reviewer/acceptance checkboxes and operational statuses are unchanged.
+
+## Post-merge reconciliation — 20 November 2026
+
+Added after merge. The sections above are the pre-merge record and are preserved unchanged, including their statements that hosted CI was pending; those statements were true when written and are not restated as post-merge evidence.
+
+- Pull request: #59, `feat(spec-075): add bounded synthetic recovery staging and database binding`.
+- Merge commit: `a547f412b5048e0bd7c3aef7e3649d87c7e8fd0f` (merged 20 November 2026).
+- Implementation head: `23330405c787173c3bb6802e7a6abcec7fb75b7d`.
+- Hosted CI: all six exact-head jobs passed at the implementation head.
+- Local failures remain as recorded above and are not superseded by hosted CI: the first runner attempt (9 failed), the corrected CI-shaped backend run (1 failed: `test_jobs.py::test_worker_audit_failure_rolls_back_completion`, cause not established), and the full PostgreSQL run (2 failed: slow-HTTP answer test with unrecorded response, and a document cleanup interaction). Targeted reruns (62 passed; 69 passed on a fresh database) did not turn those runs into passes, and their causes remain unresolved.
+- Not provided by the merge: independent verification and owner acceptance. No MVP gate, task, reviewer or register status is promoted.
+
+Retained deferred work and limitations: non-Work older-backup forgetting reconciliation (DOC-X02); archive staging and installation; large dumps and a general operational restore CLI; real keys, key custody and ceremonies; NAS and production access; capacity measurements; clean-host recovery and RPO/RTO claims; whole-Spec-075 completion; Spec 074 Phase C completion. All restored results remain quarantined and ineligible for release/use.
