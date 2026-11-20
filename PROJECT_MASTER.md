@@ -26,6 +26,13 @@ development HMR parity and browser-tooling remediation. It removes no product
 gate or recovery requirement. See the [owner decision](DECISIONS.md#18-november-2026--defer-experimental-frontend-tooling-replacement-until-the-first-minor-release-after-mvp)
 and [resumption packet](docs/MVP_RESUMPTION_PLAN.md).
 
+
+### Parallel non-blocking picomatch research — 20 November 2026
+
+The owner has authorized a separate, isolated, research-only Claude workstream to investigate a safe picomatch resolution while the current dependency and behavior remain unchanged for MVP delivery. This is not an MVP task or blocker and does not reopen PR #55. Research may not change active MVP branches, `main`, package manifests/lockfiles, dependency versions, audit thresholds, CI workflows or required checks; it may not create a PR, cherry-pick, merge, deploy, waive a check or implement a candidate. Any implementation requires a separate owner decision. The first minor release after an accepted MVP remains the scheduled home for frontend tooling replacement.
+
+The research must prove existing matching compatibility, adversarial ReDoS resistance, bounded performance and maintainability/upstream support, with reproducible evidence. A failed candidate is not to be forced into a patch. A credible material vulnerability in the currently deployed application must be reported immediately; otherwise the stream remains non-blocking. Persistent execution is conditional on the configured Claude environment and must not be claimed unless actually available. See the [formal decision](DECISIONS.md#20-november-2026--run-isolated-picomatch-research-in-parallel-without-blocking-mvp-delivery) and [research protocol](docs/PICOMATCH_RESEARCH_PROTOCOL.md).
+
 Later on 18 November 2026 the owner explicitly authorized the actions needed to
 resume implementation on PRs #54–#56, including an audit exception if required.
 The subsequent check found the advisory withdrawn and two fresh unchanged-lock

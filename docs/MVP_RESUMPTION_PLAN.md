@@ -159,3 +159,20 @@ remain disposable evidence, not an adopted replacement. Only the owner can accep
 the relevant MVP scope after its required evidence exists. The subsequent Spec 075
 authorization in section 5 permits the bounded synthetic helpers and tests only;
 it does not authorize real operations or acceptance/status changes.
+
+
+## 7. Parallel non-blocking picomatch research (owner decision, 20 November 2026)
+
+The owner has agreed to keep picomatch as-is for MVP delivery and commission a separate, isolated, research-only Claude stream. This stream does not enter the MVP critical path. It does not reopen PR #55, select a replacement, change a dependency or grant implementation permission. The first minor release after an accepted MVP remains the scheduled home for frontend tooling replacement.
+
+The research boundaries, acceptance evidence, immediate security-escalation rule and persistent-execution caveat are defined in the [picomatch research protocol](PICOMATCH_RESEARCH_PROTOCOL.md) and [owner decision](../DECISIONS.md#20-november-2026--run-isolated-picomatch-research-in-parallel-without-blocking-mvp-delivery). Research findings are advisory only; any implementation requires a separate explicit owner decision.
+
+## 8. Parallel workstream operating rules
+
+1. **MVP remains priority.** Continue the existing Spec 074 review from the current `main` revision, refreshing evidence and preserving the distinction between AI-assisted inspection and human reviewer findings. Reuse [the existing exact-revision handoff](SPEC_074_REVIEW_TARGET_1C94E445.md); do not create a duplicate.
+2. **Picomatch is isolated.** Experiments belong only in a separate sandbox/worktree/branch. No active MVP branch, `main`, manifests/lockfiles, dependency versions, audit policy, CI workflows or required checks may change.
+3. **No automatic implementation.** A candidate, prototype or report does not authorize a PR, cherry-pick, merge, deployment, dependency change, waiver or schedule change. Obtain a separate owner decision first.
+4. **No forced solution.** If compatibility, security, performance or maintainability cannot be demonstrated, report no viable candidate and stop.
+5. **Escalate only material live risk.** Immediately report credible evidence of a material vulnerability affecting the deployed application. Otherwise, research remains non-blocking.
+6. **Do not invent persistence.** A Claude chat is not an indefinitely running agent. Use persistent/scheduled execution only if the configured environment actually supports it; otherwise report the limitation and work in explicitly initiated sessions.
+7. **Reassess after review.** Once the existing Spec 074 review is resolved and main/docs are reconciled, select the next bounded MVP implementation scope from the actual repository state. No gate or status is promoted by this sequencing decision.
