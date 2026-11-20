@@ -251,6 +251,9 @@ rs_verify 1 "" "$NEWER" "$RS_DIR/out/manifest.json"
 rs_verify 0 "" "$RS_SET" "$RS_DIR/out/manifest.json" --expected-manifest-hash "$RS_OLD_HASH"
 [[ "$(rs_field freshness)" == freshness_match ]]
 printf 'Recovery-set drill (synthetic): valid set verified, %s negative classes and %s different-installation checks rejected; verify elapsed %s ms (informational synthetic timing, not a recovery time)\n' 6 3 "$RS_VERIFY_MS"
+# Spec 075 consumes immutable staged bytes in separate disposable targets. This
+# does not activate a restored database or reconcile older non-Work forgetting.
+(cd backend && BUTLER_CI_POSTGRES_CONTAINER="$CONTAINER_ID" uv run --locked python ../scripts/recovery-staging-fixtures.py)
 BUTLER_SUPPRESSION_EXPECTED_HASH=$(
   (cd backend && uv run --locked python ../scripts/work-suppression-fixtures.py export) |
     python3 -c 'import json,sys; print(json.load(sys.stdin)["checkpoint"]["manifest_hash"])'

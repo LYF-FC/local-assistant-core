@@ -296,3 +296,11 @@ C1–C3 design, C4 planning-only and C5 manual-requirements approval remains the
 baseline. No proposed numeric budget, execution method, environment, campaign or
 ceremony is approved by publication or review of these drafts. Outstanding human
 verification, C1–C5 task states and all operational restrictions remain unchanged.
+
+### 19 November 2026 — Spec075 first synthetic staging and restored binding slice authorized
+
+The owner subsequently authorized the first bounded Spec 075 contract and implementation, disposable PostgreSQL validation and preparation of a draft PR. The [first-slice contract](specs/075-synthetic-recovery-staging/spec.md) limits work to synthetic dump-only private staging/verification, immutable verified-byte handoff into an isolated restore target, and fail-closed binding of actual restored installation singleton/Alembic head to explicit trusted expectations. Internal helpers and the existing guarded engineering drill may be extended; no general operational restore CLI is authorized.
+
+Normal synthetic test keys and synthetic fixtures are authorized only as necessary for this engineering slice and its disposable tests. This is distinct from the real/manual key ceremony, which remains unauthorized. There is no C4 measurement/capacity campaign, real key/set, private-data adoption, NAS/production access, operational recovery, release/deployment or automatic merge permission. No new migration, schema or application permission change is included.
+
+Non-Work older-backup forgetting reconciliation is not implemented by this slice. Every result remains quarantined and ineligible for release/use; a structurally bound synthetic restore is not complete recovery or permission to use an older backup. Archive installation, credential/configuration/model recovery, clean-host independence and RPO/RTO remain later scoped work. Spec 074 Phase C tasks and independent verification remain open. This advances a separately authorized engineering slice without declaring Spec 074 or the whole of Spec 075 complete, changing any gate/status/acceptance or waiving normal quality/CI review. Integration and evidence belong in [PROJECT_MASTER.md](PROJECT_MASTER.md) and the [convergence record](specs/075-synthetic-recovery-staging/convergence.md), not an inferred outcome of this decision.

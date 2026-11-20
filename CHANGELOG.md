@@ -4,6 +4,8 @@
 
 Historical record of changes. Entries before spec 068 were not kept here; merged work from PR #1 onward is indexed in [PROJECT_MASTER.md](PROJECT_MASTER.md#5-stage-and-gate-progress), which owns current status. Nothing here implies a release or MVP acceptance.
 
+- 19 November 2026 authorized Spec 075 first synthetic slice (branch preparation, not merged): dump-only private staging/verification, immutable verified bytes supplied to disposable PostgreSQL restoration, and fail-closed restored installation/Alembic binding. See the [contract and evidence record](specs/075-synthetic-recovery-staging/convergence.md). No real operations, C4 measurements, non-Work reconciliation, whole-Spec-075 completion or acceptance/status promotion; all results remain quarantined and ineligible for release/use.
+
 - 19 November 2026 planning-only preparation: concrete small synthetic C4 proposal and manual-ceremony procedure draft, with proposed budgets/method gates explicitly unapproved. No measurements, key generation, operations, acceptance changes or Spec 075 implementation.
 - 18 November 2026 owner approval: C1–C3 design baselines, C4 planning only and C5 manual-ceremony requirements recorded and reconciled across the worksheet, master and Phase C planning documents. C1–C5 remain unchecked; no acceptance, operational permission, measurement, key operation or tooling implementation.
 - Spec 074 next-step preparation at merged revision `1c94e445` (documentation only): exact-target human-review handoff and C1–C5 owner-decision worksheet; master/resumption/appendix navigation reconciled with merged PR #54 and closed-unmerged #55. No criterion/task/acceptance or operational status changed; no measurements or Spec 075 implementation.

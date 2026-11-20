@@ -126,23 +126,36 @@ This packet completes preparation only. The reviewer must record their actual
 revision, checks and findings. Independent verification, Phase C acceptance and
 operational readiness remain separate decisions with their existing prerequisites.
 
-## 5. Following Spec 074: prepare the reserved Spec 075 contract
+## 5. Spec 075 first synthetic staging/binding slice — authorized 19 November
 
-After the bounded Spec 074 closure/review work, prepare a contract for restore and
-staging from exact verified bytes, restored-database installation binding, older
-non-Work forgetting reconciliation and a clean-host rehearsal/evidence boundary.
-Actual recovery-time/RPO/RTO claims require later measurements and acceptance.
+The later [owner decision](../DECISIONS.md#19-november-2026--spec075-first-synthetic-staging-and-restored-binding-slice-authorized)
+authorizes the first [Spec 075 contract/implementation](../specs/075-synthetic-recovery-staging/spec.md),
+disposable PostgreSQL evidence and a draft PR. This updates the earlier contract-only
+reservation; it does not declare Spec 074/Phase C complete or accept any gate.
 
-The reservation is in [appendix section 10](RECOVERY_INDEPENDENT_VERIFICATION_TRACEABILITY.md)
-and the [Spec 074 task boundary](../specs/074-recovery-set-manifest/tasks.md).
-There is no Spec 075 implementation or accepted gate in this packet. A contract is
-not permission to restore, access NAS/production, create real keys or adopt private
-data. Any implementation batch remains separately scoped and reviewed.
+The bounded dump-only slice privately stages/verifies a synthetic set (at most
+16 MiB), retains an immutable verified dump snapshot for exact restore input, then
+checks actual restored installation singleton and Alembic head against explicit
+expectations. Synthetic test keys are included only for this engineering scope.
+No general operational CLI, real ceremony/key/set, NAS/production access,
+capacity campaign or operational restore is authorized.
+
+Implementation/evidence remain branch-local until an actual merge. Consult
+[convergence](../specs/075-synthetic-recovery-staging/convergence.md) for observed
+results, not inferred success. Non-Work forgetting reconciliation is not implemented;
+even structurally bound results remain quarantined and ineligible for release/use.
+Archive installation, clean-host/configuration/credential recovery, actual RPO/RTO
+and the wider restore envelope remain future separately scoped work. The earlier
+[reservation](RECOVERY_INDEPENDENT_VERIFICATION_TRACEABILITY.md) and
+[Spec 074 boundary](../specs/074-recovery-set-manifest/tasks.md) remain historical/contextual
+references, not new operational permissions.
 
 ## 6. Review boundaries
 
-This scheduling/packet reconciliation edits no runtime, dependency, workflow, migration,
+The earlier scheduling/packet reconciliation edited no runtime, dependency, workflow, migration,
 frozen specification, reviewer record, acceptance contract or generated status
 view. The later owner instruction closes PR #55 without merging; no gate/register/task checkbox changes. Existing trials
 remain disposable evidence, not an adopted replacement. Only the owner can accept
-the relevant MVP scope after its required evidence exists.
+the relevant MVP scope after its required evidence exists. The subsequent Spec 075
+authorization in section 5 permits the bounded synthetic helpers and tests only;
+it does not authorize real operations or acceptance/status changes.

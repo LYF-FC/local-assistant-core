@@ -38,6 +38,12 @@ separately in the completion packet. Implementation continues through normal che
 Recovery requirements, independent verification, acceptance and operational
 restrictions remain outstanding.
 
+### Authorized Spec 075 first synthetic slice — 19 November 2026
+
+The owner subsequently authorized a bounded [Spec 075 contract and implementation](specs/075-synthetic-recovery-staging/spec.md), disposable PostgreSQL tests and preparation of a draft PR. The first slice is dump-only (at most 16 MiB): privately stage/verify a synthetic set, retain immutable verified dump bytes, restore those exact bytes into an isolated disposable database, then fail closed unless the actual installation singleton and Alembic head match explicit trusted expectations. It introduces no public operations CLI. Normal synthetic test keys are allowed for this engineering scope; a real/manual key ceremony is not.
+
+This is **branch work, not merged delivery or whole-Spec-075 completion**. See the [decision](DECISIONS.md#19-november-2026--spec075-first-synthetic-staging-and-restored-binding-slice-authorized) and [convergence evidence](specs/075-synthetic-recovery-staging/convergence.md) for actual implementation/check results as recorded. Non-Work forgetting reconciliation is not implemented: all results stay quarantined and ineligible for release/use. Spec 074 Phase C tasks and independent-review requirements, DOC-X02, gate statuses/counts and acceptance remain unchanged. Real keys/sets, NAS/production access, C4 measurements, operational recovery and clean-host/RPO/RTO claims remain unauthorized.
+
 ## 3. Status model
 
 Five separate facts. None implies another, and "complete" is never derived from them automatically.
@@ -83,6 +89,8 @@ Status narrative reconciled through PR #43 merge `708e813` (15 November 2026), e
 | — | Installation adoption gate (INSTALL-01–12) | INSTALL-01/02/03/06/08 | Foundations only | Merged: #15 | Tested | Not verified | Not accepted | Partially done |
 
 "Tested" means test files for the merged work exist in `backend/tests` or `frontend` and CI passed on each PR head per that PR's metadata; this document did not re-run them, and PR CI results are in general kept in PR metadata, not in the repository, apart from the runs that this file and the specs' own task records cite (for example spec 074 under Gate 11; see §6, evidence gaps).
+
+Gate 11 branch evidence only, 19 November 2026: the authorized [Spec 075 first synthetic slice](specs/075-synthetic-recovery-staging/spec.md) and [actual convergence/check record](specs/075-synthetic-recovery-staging/convergence.md) add a bounded dump-only staging/restored-binding contribution under development. No integration/testing/verification/acceptance cell above is promoted; no independent clean-host or non-Work reconciliation evidence is supplied by this branch pointer.
 
 ## 5. Stage and gate progress
 
