@@ -111,6 +111,12 @@ The owner decides substantive scope or priority changes when not already approve
 
 ## 6. Collaboration and handoffs
 
+## Branch naming and Git-backed handoffs
+
+Every bounded deliverable uses one dedicated branch named `work/<batch>/<role>-<purpose>`, for example `work/mvp01-invoice/a3-implementation`. Use a concise, stable batch identifier and the assigned role; use lowercase kebab-case. Create the branch from the verified base commit SHA. Do not use generated/random names, reuse a branch across batches, or silently substitute another naming scheme. If the required branch cannot be created, report the blocker before proceeding.
+
+Every assignment and return handoff identifies the repository, branch, exact full base commit SHA, exact full branch HEAD SHA, changed paths, and commit SHA(s). Link the branch, commit(s), and PR when present. The receiver must be able to inspect the delivered work in Git at those exact revisions. Report validation commands and exact outcomes, including checks not run or skipped; distinguish agent verification from owner acceptance. Tie review findings and decisions to the exact revision inspected. If any Git-backed evidence is unavailable or inconsistent, stop and report the discrepancy rather than infer or claim completion.
+
 Keep one orchestrator responsible for scope and final reconciliation. Give each assignment exact source documents, bounded questions/files, permissions, independence requirements, and return format. Parallelize read-only research and non-overlapping work only where it helps; avoid concurrent edits in one checkout, and if isolated workspaces are used, verify their base revision and preserve the primary checkout. Require exact revisions and commands, not "it works." Reconcile incompatible claims against source and executable evidence. The orchestrator resolves findings with the implementer, records only owner-approved durable decisions in the existing decision record, and updates the project master or register only when their defined facts change.
 
 Use [handoff-template.md](handoff-template.md) for a fresh session. Handoffs carry assignment and deliverable details plus links/evidence, not copied trackers.
