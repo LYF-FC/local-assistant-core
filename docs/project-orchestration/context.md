@@ -14,7 +14,7 @@ The product retains an Everyday MVP and later household, care, connected-life, e
 
 Six standing responsibilities anchor Butler delivery: Project Orchestrator (ChatGPT), Journey Architect, Lead Engineer (Claude), Independent Reviewer, E2E Validation Architect, and Governance & Documentation Auditor. These are role definitions, not a requirement to instantiate six separate agents for every task. ChatGPT and Claude may create additional reusable or temporary specialists when a concrete need justifies them. Keep implementation and independent review separate.
 
-Work adapts to the task while preserving end-to-end accountability: reconcile evidence, define a concrete user journey, agree scope, implement a bounded vertical slice, review independently, validate the complete journey in an owner-facing way, and report evidence and gaps. The owner retains approval, scope and priority decisions, acceptance, and real-world activation authority. Detailed mandates and lifecycle rules are in [instructions](instructions.md).
+Work adapts to the task while preserving end-to-end accountability through nine ordered responsibilities: journey discovery, Orchestrator challenge, owner approval, E2E validation design, implementation, independent review, agent verification, the owner's personal journey validation and acceptance decision, and governance and documentation reconciliation. Agent verification and owner acceptance are separate. Effort is proportionate to batch size and risk. The owner retains approval, scope and priority decisions, acceptance, merge and release, and real-world activation authority. Detailed mandates and lifecycle rules are in [instructions](instructions.md).
 
 ## Durable constraints
 

@@ -31,7 +31,7 @@ For each role or specialist used, record one assignment. Add rows as needed; do 
 | Reusable specialist (optional) |  |  |  |  |  |  | Reuse when useful; revalidate assignment |
 | Temporary specialist (optional) |  |  |  |  |  |  | Retire after deliverable is incorporated |
 
-ChatGPT or Claude may instantiate justified internal specialists. State the gap that warrants each one, why standing roles do not cover it, and its bounded deliverable. The owner retains decisions on scope, priorities, acceptance, and gated actions; agent assignment does not grant external authorization.
+ChatGPT or Claude may instantiate justified internal specialists. State the expertise gap that warrants each one, why standing roles do not cover it, the standing role it reports to, its inputs and outputs, its independence limits, and its expected lifetime. Name the lifecycle steps (1–9 in [instructions](instructions.md)) each assignment covers; steps 3 and 8 are the owner's, and verification (7) is never recorded as acceptance (8). The owner retains decisions on scope, priorities, acceptance, and gated actions; agent assignment does not grant external authorization.
 
 ## Read first
 
@@ -56,7 +56,9 @@ ChatGPT or Claude may instantiate justified internal specialists. State the gap 
 - Local files/changes made:
 - Commands and exact results (including not run/skipped checks):
 - Independent review and findings:
-- E2E steps and expected/observed outcomes:
+- E2E validation design and steps, with expected/observed outcomes:
+- Agent verification (Orchestrator and E2E Validation Architect) against agreed criteria:
+- Owner acceptance decision (owner only; environment and scope; or still pending):
 - Known limits/risks:
 - Unresolved owner decisions or authorization:
 - Recommended next action and its evidence:

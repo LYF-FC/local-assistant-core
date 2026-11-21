@@ -73,24 +73,35 @@ The standing roles are supplemented by two optional categories:
 - **Reusable specialists:** stable, recurring mandates used across batches when the same distinct expertise is repeatedly needed (for example, privacy threat modeling or migration/recovery analysis). Define their mission, boundaries, activation conditions, and deliverable in the assignment; reuse only when useful.
 - **Temporary specialists:** task-specific expertise for one bounded question or work item, retired after its deliverable is incorporated (for example, a provider capability investigation or accessibility audit).
 
-ChatGPT or Claude may create additional reusable or temporary specialists when needed; no owner approval is required merely to instantiate a bounded internal agent assignment. The creator must state the concrete gap, why an existing role cannot cover it well, category, question/scope, source material, edit permissions, independence/conflict constraints, deliverable, and retirement or reuse condition. Prefer one specialist per distinct need; avoid unnecessary agents, overlapping editors, and permanent roster growth.
+ChatGPT or Claude may create additional reusable or temporary specialists when a task justifies them, with no fixed ceiling on their number; no owner approval is required merely to instantiate a bounded internal agent assignment. The creator records, in the assignment: the concrete expertise gap and why no standing role covers it well; the category; the mandate and the bounded question or scope; the inputs (source material); the outputs and return format; edit permissions; boundaries and independence constraints; its relationship to the standing roles; and its expected lifetime (reuse condition or retirement point). Prefer one specialist per distinct need; avoid unnecessary agents, overlapping editors, and permanent roster growth.
+
+**Relationship to the standing roles.** A specialist supports a standing role; it never replaces one or inherits its authority. Each assignment names the standing role it reports to, normally the Project Orchestrator (A1). Its output is evidence for that role to weigh, not a decision. Responsibilities for orchestration, implementation, independent review, E2E validation design, and governance remain with A1–A6 even when a specialist contributes.
+
+**Protecting independence.** An agent that designed, implemented, or edited a change cannot be the independent reviewer of it, or its independent verifier, even as a specialist. A specialist assigned to implementation support is bound by the Lead Engineer's constraints; one assigned to review or validation support is bound by A4's or A5's and must not edit the reviewed branch. A5's validation design is not derived from the implementer's conclusions, and the specialist's creator must not assign the same patch to two implementers as a substitute for review.
 
 The owner retains authority over product scope, priorities, substantive decisions, acceptance, real/private data access, provider/account use, outbound AI, sending/writing/deletion, production/host operations, credentials, security control changes, and irreversible or release actions. An agent assignment cannot grant those permissions.
 
 ## 4. Adaptive batch lifecycle
 
-Use this standard lifecycle and adapt effort to risk and task size. Do not omit a required gate or evidence merely to shorten a batch. For a narrow task, combine compatible steps or mark a step not applicable with a reason.
+Every batch accounts for the nine responsibilities below, in this order. Responsibilities are always accounted for, but not every batch needs six simultaneously running agents: scale effort to risk and size, combine compatible steps, let one agent carry several roles where independence allows, or mark a step not applicable with a stated reason. Never omit required evidence or a gate merely to shorten a batch. Steps 3 and 8 belong to the owner and are never performed by an agent. Steps 7 and 8 are never merged: agent verification is not owner acceptance.
 
-1. **Orient:** inspect repository state and instructions; preserve current work; identify authoritative sources and task constraints.
-2. **Investigate:** Journey Architect proposes a concrete user journey and smallest complete slice. Orchestrator reconciles requirements, current priorities, live repository evidence, dependencies, and conflicts.
-3. **Decide and brief:** state the user capability, existing requirement IDs/contracts, slice, exclusions, acceptance evidence, dependencies, data-flow assumptions, security boundaries, necessary durable updates, handoff artifacts, and owner-only actions. Ask for owner decisions only where required, after preparing a concrete proposal. Do not start dependent work while a required decision is pending.
-4. **Implement:** Lead Engineer coordinates only justified specialist help and delivers the bounded slice under repository instructions. Preserve unrelated changes.
-5. **Review independently:** Independent Reviewer inspects the exact revision and reports findings. Resolve or explicitly carry findings; implementation self-review is not independent review.
-6. **Validate end to end:** E2E Validation Architect prepares an owner-facing path. Run the task-required checks and journey validation where authorized; show exact expected/observed results and distinguish automated evidence from the owner's acceptance.
-7. **Audit and reconcile:** Governance & Documentation Auditor checks changed claims/links/policies. Update only existing authoritative sources whose defined facts changed; regenerate derived views by their documented process.
-8. **Close out:** Orchestrator checks the exact diff and working tree, reports changed paths, review and validation evidence, skipped checks, limits, unresolved decisions, and next owner action. No status is inferred from another status.
+1. **Journey discovery:** the Journey Architect (A2) investigates and proposes a concrete user journey and the smallest complete vertical slice, with acceptance criteria and failure cases.
+2. **Orchestrator challenge and refinement:** the Project Orchestrator (A1) independently challenges, verifies and refines the proposal against authoritative documents and live GitHub state, resolves dependencies and conflicts, and prepares a concrete proposal and any owner decisions.
+3. **Owner approval:** the owner approves the journey, scope, exclusions and required authorisations. The brief states the user capability, requirement IDs and contracts, slice, exclusions, acceptance evidence, data-flow assumptions, security boundaries, durable documentation updates, handoff artifacts, and owner-only actions. Do not start dependent work while a required decision is pending.
+4. **E2E validation design:** the E2E Validation Architect (A5) prepares the validation plan, executable scenarios and owner-facing test script from the approved criteria, before implementation and independently of the implementer.
+5. **Implementation:** the Lead Engineer (A3) implements the approved vertical slice under repository instructions, coordinating only justified specialist help and preserving unrelated changes.
+6. **Independent review:** the Independent Reviewer (A4) reviews the exact implementation and its evidence. Resolve findings or carry them explicitly; implementation self-review is not independent review.
+7. **Verification:** the Project Orchestrator (A1) and the E2E Validation Architect (A5) independently verify the result against the agreed criteria and scenarios, run the required checks and scenarios where authorised, and report expected and observed results, skipped checks and gaps. This is agent evidence, not acceptance.
+8. **Owner's personal journey validation:** the owner personally tries the delivered journey end to end and decides whether to accept it, naming the environment and scope. Only the owner accepts a gate.
+9. **Governance and documentation reconciliation:** the Governance & Documentation Auditor (A6) reconciles implementation, tests, verification, acceptance (as the owner decided it) and the authoritative documentation, updating only existing authoritative sources whose defined facts changed and regenerating derived views by their documented process.
 
 Every proposed batch names the concrete user capability, related existing requirements, smallest complete implementation, and sufficient acceptance evidence. Prioritize user value over isolated gate sequencing; gates remain acceptance constraints. Avoid perfection loops and documentation churn.
+
+Batch shaping:
+
+- Group related work into one coherent PR where possible. Split only for a distinct safety or review boundary, a required source fix, or an owner-requested separation; do not open a PR solely for evidence, a generated status refresh, or reformatting.
+- Keep design/research, implementation, test-only evidence, documentation reconciliation, provider spikes, host acceptance, and production activation distinct. Do not bundle an unauthorised live integration into coding work.
+- If requirements conflict or an unresolved owner decision changes scope, stop dependent implementation and present the concrete conflict and options.
 
 ## 5. State, scope, and authority
 
@@ -100,11 +111,62 @@ The owner decides substantive scope or priority changes when not already approve
 
 ## 6. Collaboration and handoffs
 
-Keep one orchestrator responsible for scope and final reconciliation. Give each assignment exact source documents, bounded questions/files, permissions, independence requirements, and return format. Parallelize read-only research and non-overlapping work only where it helps; avoid concurrent edits in one checkout. Check isolated workspace base revisions. Require exact revisions and commands, not “it works.” Reconcile claims against source and executable evidence.
-
-Claude is accountable for implementation evidence, not project priority or owner acceptance. ChatGPT independently checks source authority, repository state, diff, tests, security, and claims. Never ask both to implement the same patch as a substitute for review.
+Keep one orchestrator responsible for scope and final reconciliation. Give each assignment exact source documents, bounded questions/files, permissions, independence requirements, and return format. Parallelize read-only research and non-overlapping work only where it helps; avoid concurrent edits in one checkout, and if isolated workspaces are used, verify their base revision and preserve the primary checkout. Require exact revisions and commands, not "it works." Reconcile incompatible claims against source and executable evidence. The orchestrator resolves findings with the implementer, records only owner-approved durable decisions in the existing decision record, and updates the project master or register only when their defined facts change.
 
 Use [handoff-template.md](handoff-template.md) for a fresh session. Handoffs carry assignment and deliverable details plus links/evidence, not copied trackers.
+
+### Operating practice for ChatGPT
+
+The A1–A6 definitions above are authoritative; this subsection adds practice, not roles. Create focused task threads or subagents only when the platform's current controls support them and the task benefits from delegation; do not create a permanent roster or spawn agents for parallelism alone. Give each an isolated question or deliverable, bounded files, source documents, read-only or edit permissions, and a return format.
+
+- The primary ChatGPT session acts as A1: it alone owns the task plan, source reconciliation, batch brief, cross-agent coordination, final review and owner-facing report, and delegates no owner decisions.
+- Independent review is A4's: start from the approved contract and exact diff, not the implementer's self-review, and do not edit the implementation branch.
+- An MVP/dependency analyst (supporting A2/A1) maps candidate work to current master, register and acceptance evidence, blockers and dependencies, and recommends bounded options without changing priority or scope. A governance/documentation reviewer is A6's work: precedence, status vocabulary, links, generated outputs, and whether the correct authoritative records were updated, without broadening the batch.
+- Normally a batch needs the orchestrator plus one independent reviewer; add the other standing roles or a specialist only for a distinct, bounded question. Do not create a second orchestrator or several agents that edit overlapping files.
+
+### Operating practice for Claude
+
+Use Claude Code as the primary implementation collaborator (A3) when the user asks or the established workflow calls for it, and create agents or subagents only for separable work.
+
+- The implementation agent owns the bounded code or specification task and reports changed paths, design choices, tests and results, limitations, and unresolved questions. It follows repository instructions and does not commit, push, create or merge a PR unless the owner separately asks.
+- An independent test/quality specialist (supporting A4/A5) derives negative, boundary, migration, concurrency, restart, or regression checks from the accepted contract and reports executable evidence and gaps, independent of implementation decisions where practical.
+- A research specialist (temporary) investigates one isolated dependency, provider or platform question from primary sources and returns sources, date, assumptions, findings and a recommendation, with no credentials, live account activation or side effects.
+- A documentation/governance specialist (supporting A6) checks the exact documentation and status changes against authoritative sources and creates no parallel status trackers.
+
+Claude is accountable for implementation evidence, not project priority or owner acceptance. ChatGPT independently checks source authority, repository state, diff, tests, security and claims. Never ask both models to implement the same patch as a substitute for review; independent review must not rely on Claude's self-review or ChatGPT's earlier assumptions.
+
+### Ready-to-use prompts
+
+These are templates for assignments under A1–A6; fill in the bracketed fields.
+
+**Claude implementation brief**
+
+> Implement only the bounded task below in LYF-FC/local-assistant-core. First read AGENTS.md, .specify/memory/constitution.md, the named authoritative project sources, and the relevant feature contract. Preserve all existing user changes. Do not expand scope, change frozen requirements, access real/private data, activate a provider, use production services, or weaken security/CI. Do not commit, push, create/merge a PR, or perform external actions unless separately requested by the owner. Before editing, state your understanding, changed-path boundary, tests, and unresolved decisions. At completion report each changed file, behavior and limits, commands and exact results, CI expected, documentation/status updates, risks/gaps, and anything requiring owner authorization.
+>
+> Task: [goal and IDs]
+> Authoritative sources/contracts: [paths]
+> In scope: [items]
+> Out of scope: [items]
+> Acceptance and required evidence: [items]
+> Files or areas to avoid: [paths]
+> Handoff format: changed paths; decisions; tests/results; CI; limits; unresolved questions.
+
+**Claude independent review brief**
+
+> Independently review this exact diff against the named frozen contract and repository rules. Do not edit files. Inspect the full diff and relevant callers/tests/migrations. Do not rely on the implementer's summary or self-review. Report only actionable findings, each with severity, file/line, violated invariant, a concrete failure path, and evidence or a reproduction. Check authorization/privacy, data flow, audit, races/idempotence, migrations/restore, negative tests, scope creep, docs/status accuracy, and claims versus evidence. If no findings, state what you inspected and important coverage limits; do not call the feature accepted or production-ready.
+>
+> Revision/PR: [exact SHA/link]
+> Contract and sources: [paths]
+> Review boundaries: [areas]
+> Return format: findings first; then coverage, missing evidence, and unresolved questions.
+
+**ChatGPT agent task prompt**
+
+> Work only on this isolated question for the Butler orchestration task: [question]. Read [source paths]. Do not infer current GitHub state from local docs; do not edit files or communicate externally unless explicitly assigned. Return concise evidence with file/line or live link, conclusion, uncertainty, and recommendation. Do not make owner decisions or update project status.
+
+**Specialist assignment prompt**
+
+> You are a [reusable|temporary] specialist supporting [standing role] on this Butler batch. Expertise gap: [gap and why no standing role covers it]. Mandate and bounded question: [scope]. Inputs: [source paths/links]. Outputs and return format: [deliverable]. Permissions: [read-only|named files]. Boundaries and independence: [what you must not edit, review or decide]. Lifetime: [reuse condition|retire after incorporation]. Return evidence and uncertainty to [standing role]; do not make owner decisions, accept gates, or claim independence over work you contributed to.
 
 ## 7. Review, validation, and CI
 
