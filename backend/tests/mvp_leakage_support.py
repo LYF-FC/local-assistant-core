@@ -20,6 +20,7 @@ operations listed in the adapters.
 import base64
 import contextlib
 import json
+import random
 import re
 from dataclasses import dataclass, field
 from datetime import date, timedelta
@@ -1467,13 +1468,18 @@ def sweep_shared_legitimacy(world, adapter, seed_):
 
 
 def cleanup(world):
-    """Forget what a sweep committed to the shared scope (the PostgreSQL database keeps rows)."""
+    """Forget what a sweep committed to the shared scope (the PostgreSQL database keeps rows). Every
+    record is attempted; failures are reported together afterwards."""
+    failures = []
     for kind, rec in world.shared_records:
         caller = world.callers[OWNER] if kind == OWNER else world.callers[PEER]
+        if kind == READER:
+            caller = world.callers[READER]
         try:
             rec.adapter.forget(caller, rec)
-        except Exception as error:  # pragma: no cover - reported, never silenced
-            raise AssertionError(("cleanup failed", rec.adapter.name, rec.mark)) from error
+        except (AssertionError, KeyError, ValueError, TypeError) as error:  # reported below
+            failures.append((rec.adapter.name, rec.mark, repr(error)[:120]))
+    assert not failures, ("cleanup failed", failures)
 
 
 def sweep_views(world, adapter, seed_):
@@ -1741,7 +1747,13 @@ def run_operations_sweep(world, caplog):
 # ------------------------------------------------------------------- pagination boundary cases
 
 TOP = 1 << 128
-STEP = 1 << 96
+STEP = 1 << 64
+WINDOW = 64 * STEP
+SLOTS = 256
+RUN_SALT = random.SystemRandom().randrange(
+    1 << 20
+)  # a random band per process: keys are never reused
+_slot = [0]
 
 
 @contextlib.contextmanager
@@ -1778,19 +1790,23 @@ class Scenario:
         return str(UUID(int=min(self.visible + self.foreign) - 1))
 
 
-def scenario(adapter, window, name, visible_count):
+def scenario(adapter, index, name, visible_count):
     """Visible and foreign keys, with foreign keys immediately before and after the keys at both
-    sides of the page boundary, before the first record and after the last. A window per scenario
-    keeps keys unique in the retained PostgreSQL database and at the very top of the key space,
-    where no other test's random key is plausible."""
+    sides of the page boundary, before the first record and after the last. Every scenario has its
+    own window in a random band at the very top of the key space (a random uuid4 is very unlikely to
+    land there, and a retained PostgreSQL database never sees a key twice), and windows rise with
+    each scenario of a process, so a listing from a scenario's own first key holds that scenario's
+    records only."""
     page = adapter.boundary_page
-    base = TOP - (window + 1) * (max(visible_count, page + 1) + 10) * STEP
-    visible = [base + (index + 1) * STEP for index in range(visible_count)]
+    _slot[0] += 1
+    assert _slot[0] < SLOTS, "more scenarios than window slots in one process"
+    base = TOP - (RUN_SALT * SLOTS + (SLOTS - _slot[0])) * WINDOW
+    visible = [base + (position + 1) * STEP for position in range(visible_count)]
     last = visible[-1]
     foreign = {visible[0] - 1, last + 1, last + STEP // 2}
-    for index in {page - 2, page - 1, page}:
-        if 0 <= index < visible_count:
-            foreign.update({visible[index] - 1, visible[index] + 1})
+    for position in {page - 2, page - 1, page}:
+        if 0 <= position < visible_count:
+            foreign.update({visible[position] - 1, visible[position] + 1})
     foreign.difference_update(visible)
     return Scenario(name, visible, sorted(foreign), page)
 
@@ -1814,12 +1830,16 @@ def fetch_pages(fetch, start):
     raise AssertionError("pagination did not end")
 
 
-def verify_pages(sc, pages, expected, where):
+def verify_pages(sc, pages, expected, where, tail=()):
     """Exact sequence, exact page sizes, a continuation only where more records follow, and no key
     outside ``expected`` (every other visible or foreign key of the scenario) in any page or
-    continuation token."""
+    continuation token. ``tail`` holds ids of records above the scenario's window that the actor may
+    legitimately see (scope-based surfaces in a database that retains earlier rows)."""
     flat = [identifier for ids, _, _ in pages for identifier in ids]
-    assert flat == [sc.uid(n) for n in expected], (where, "sequence differs from the expected set")
+    assert flat == [sc.uid(n) for n in expected] + list(tail), (
+        where,
+        "sequence differs from the expected set",
+    )
     assert len(flat) == len(set(flat)), (where, "a record is duplicated")
     forbidden = {sc.uid(n) for n in sc.visible + sc.foreign if n not in expected}
     for index, (ids, following, _) in enumerate(pages):
@@ -1888,23 +1908,44 @@ def seed_scenario(world, adapter, sc):
     return created
 
 
-def sweep_boundaries(new_world, adapter):
+def tails(adapter, sc, kind, fetch, cache):
+    """Records above the scenario's window that ``kind`` legitimately sees. Per-user surfaces have
+    none (the users are new). On a scope-based or shared listing in a database that retains rows of
+    earlier runs, a listing from the window's end shows them; it must hold none of this scenario's
+    keys, and every actor holding the scope must see the same ones."""
+    if adapter.boundary_layout == "same_scope":
+        return []
+    if not cache:
+        end = str(UUID(int=max(sc.visible + sc.foreign)))
+        ids, _, _ = fetch_flat(fetch, end)
+        cache.append(ids)
+    return cache[0]
+
+
+def fetch_flat(fetch, start):
+    pages = fetch_pages(fetch, start)
+    return [i for ids, _, _ in pages for i in ids], len(pages), pages
+
+
+def sweep_boundaries(new_world, adapter, only=None):
     """Page-boundary cases for one listing. ``new_world()`` returns a fresh world; surfaces with a
     per-creator cap get one per scenario. For every actor, the pages are exactly that actor's
     records, in order, while foreign records occupy the keys right around every boundary; foreign,
-    replayed and unauthorized cursors release nothing."""
+    replayed and unauthorized cursors release nothing. ``only`` limits the scenarios by name (the
+    restricted-PostgreSQL job has a time budget; each scenario creates about thirty records)."""
     if adapter.boundary_model is None:
         return
     page = adapter.boundary_page
-    # Windows are lower for earlier scenarios: a listing from a scenario's own first key then holds
-    # that scenario's records only, because every earlier scenario's keys are lower.
     scenarios = [
-        scenario(adapter, 3, "exactly one page", page),
-        scenario(adapter, 2, "one record over a page", page + 1),
-        scenario(adapter, 1, "a short page", min(3, page)),
+        scenario(adapter, 0, "exactly one page", page),
+        scenario(adapter, 1, "one record over a page", page + 1),
+        scenario(adapter, 2, "a short page", min(3, page)),
     ]
     if adapter.boundary_layout == "shared_spread":
         scenarios = scenarios[:2]  # three creators cannot hold more than 30 records
+    if only is not None:
+        scenarios = [sc for sc in scenarios if sc.name in only]
+        assert scenarios, (adapter.name, "no scenario selected")
     scope = listing_scope(adapter)
     world = None
     for sc in scenarios:
@@ -1916,6 +1957,7 @@ def sweep_boundaries(new_world, adapter):
                 where, "the scenario would not expose filtering after the limit",
             )  # fmt: skip
         created = seed_scenario(world, adapter, sc)
+        shared_tail = []
         numbers = {rec.id: n for n, rec, _ in created}
         every = [rec for _, rec, _ in created]
         issued = {}
@@ -1933,10 +1975,15 @@ def sweep_boundaries(new_world, adapter):
                 assert_no_leak(response, withheld, where + (kind,), kind)
                 return adapter.ids(response), adapter.cursor(response), response
 
+            tail = tails(adapter, sc, kind, fetch, shared_tail)
             pages = fetch_pages(fetch, sc.start)
-            verify_pages(sc, pages, expected, where + (kind,))
-            assert len(pages) == max(1, -(-len(expected) // page)), (where, kind, "page count")
-            issued[kind] = (pages[0][1], fetch)
+            verify_pages(sc, pages, expected, where + (kind,), tail)
+            assert len(pages) == max(1, -(-(len(expected) + len(tail)) // page)), (
+                where,
+                kind,
+                "page count",
+            )
+            issued[kind] = (pages[0][1], fetch, tail)
             if kind == PEER and type(adapter).export is not Adapter.export:
                 # The export route pages the same query: the same exact sequence.
                 def fetch_export(
@@ -1948,22 +1995,26 @@ def sweep_boundaries(new_world, adapter):
                     return adapter.ids(response), adapter.cursor(response), response
 
                 exported = fetch_pages(fetch_export, sc.start)
-                verify_pages(sc, exported, expected, where + ("export",))
+                verify_pages(sc, exported, expected, where + ("export",), tail)
         # A cursor issued to the peer, replayed by every other holder: only that holder's own
         # records after it, exactly.
         cursor = issued[PEER][0] if PEER in issued else None
         if cursor:
-            for kind, (_, fetch) in issued.items():
+            for kind, (_, fetch, tail) in issued.items():
                 expected = [n for n in expected_for(adapter, kind, sc) if n > int(UUID(cursor))]
                 verify_pages(
-                    sc, fetch_pages(fetch, cursor), expected, where + (kind, "replayed cursor")
+                    sc,
+                    fetch_pages(fetch, cursor),
+                    expected,
+                    where + (kind, "replayed cursor"),
+                    tail,
                 )
         # A cursor that is only the key of a foreign private record: it reveals nothing about it.
         foreign_key = str(UUID(int=sc.foreign[len(sc.foreign) // 2]))
-        for kind, (_, fetch) in issued.items():
+        for kind, (_, fetch, tail) in issued.items():
             expected = [n for n in expected_for(adapter, kind, sc) if n > int(UUID(foreign_key))]
             verify_pages(
-                sc, fetch_pages(fetch, foreign_key), expected, where + (kind, "foreign key")
+                sc, fetch_pages(fetch, foreign_key), expected, where + (kind, "foreign key"), tail
             )
     revoke(world)
     sc = scenarios[0]
