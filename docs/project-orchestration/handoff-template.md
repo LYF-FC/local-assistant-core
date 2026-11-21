@@ -1,20 +1,37 @@
 # Butler session handoff
 
-Copy this into a fresh ChatGPT or Claude session and fill in only the task-specific fields. Verify all live state when the new session starts; this note is a transfer aid, not current project status.
+Copy this into a fresh ChatGPT or Claude session and fill in task-specific fields. Verify all live state when the new session starts; this is a transfer aid, not current project status.
 
-**North star: MVP-01 — a coherent, usable end-to-end Butler user journey.** Identify the highest-value user journey and propose a coherent deliverable; do not simply pick the next gate. Prioritize complete user-facing capabilities and meaningful vertical slices. Gates are acceptance constraints and evidence, not a sequential project plan. Reconcile any prioritization against existing `docs/MVP_ACCEPTANCE.md`, `docs/FEATURE_REGISTER.md`, `ROADMAP.md`, `PROJECT_MASTER.md`, relevant specs, and live GitHub `main`/PR/CI state. Do not copy unaudited gap analyses or invent current status. Maintain security/governance standards without perfection loops or documentation churn.
+**North star: MVP-01 — a coherent, usable end-to-end Butler user journey.** Identify a concrete user journey and coherent deliverable; do not simply pick the next gate. Prioritize complete user-facing capabilities and meaningful vertical slices. Gates are acceptance constraints and evidence, not a sequential project plan. Reconcile prioritization against existing `docs/MVP_ACCEPTANCE.md`, `docs/FEATURE_REGISTER.md`, `ROADMAP.md`, `PROJECT_MASTER.md`, relevant specs, and live GitHub `main`/PR/CI state. Do not copy unaudited gap analyses or invent current status. Preserve security and governance without perfection loops or documentation churn.
 
-## Task
+## Task and owner decisions
 
 - Intended outcome:
-- Highest-value user journey and why it matters now:
-- Concrete user capability proposed:
-- Requirement/gate IDs:
+- Concrete user capability and journey:
+- Requirement/gate IDs and contracts:
 - Smallest complete implementation:
-- Acceptance evidence tied to existing criteria:
+- Acceptance evidence and owner-facing E2E experience:
 - Approved scope and explicit exclusions:
-- Decision or owner authorization already granted (link/evidence):
+- Owner decision/authorization already granted (link/evidence):
+- Owner decision still required and why (if any):
 - Work mode: read-only / local edits / other specifically authorized action:
+
+## Agent assignments
+
+For each role or specialist used, record one assignment. Add rows as needed; do not create or maintain a standing status registry here.
+
+| Role/category | Agent or owner | Mandate and bounded question | Source material | Files/permissions | Independence or conflict limits | Deliverable and return format | Reuse/retirement condition |
+|---|---|---|---|---|---|---|---|
+| Project Orchestrator (standing) | ChatGPT |  |  |  | Final reconciliation; no owner decisions |  | Standing |
+| Journey Architect (standing) |  |  |  |  | Recommends; does not approve scope | Journey brief and acceptance criteria | Standing |
+| Lead Engineer (standing) | Claude |  |  |  | No self-approval; bounded implementation | Changed paths, decisions, evidence, limits | Standing |
+| Independent Reviewer (standing) |  |  |  | Read-only review | Separate from implementer; no branch edits | Findings, coverage, gaps | Standing |
+| E2E Validation Architect (standing) |  |  |  |  | Separate from implementation and journey design; owner accepts | Owner-facing steps, expected/observed results | Standing |
+| Governance & Documentation Auditor (standing) |  |  |  |  | No duplicate authority or trackers | Policy/link/status findings | Standing |
+| Reusable specialist (optional) |  |  |  |  |  |  | Reuse when useful; revalidate assignment |
+| Temporary specialist (optional) |  |  |  |  |  |  | Retire after deliverable is incorporated |
+
+ChatGPT or Claude may instantiate justified internal specialists. State the expertise gap that warrants each one, why standing roles do not cover it, the standing role it reports to, its inputs and outputs, its independence limits, and its expected lifetime. Name the lifecycle steps (1–9 in [instructions](instructions.md)) each assignment covers; steps 3 and 8 are the owner's, and verification (7) is never recorded as acceptance (8). The owner retains decisions on scope, priorities, acceptance, and gated actions; agent assignment does not grant external authorization.
 
 ## Read first
 
@@ -28,33 +45,22 @@ Copy this into a fresh ChatGPT or Claude session and fill in only the task-speci
 ## Verify live before acting
 
 - Confirm repository, checkout, branch, HEAD, clean/dirty state, remotes, and existing changes; preserve them.
-- Read the live default-branch versions of authoritative docs and compare with the checkout. Do not mistake historical anchors, roadmap text, PR descriptions, or this handoff for current status.
-- Check GitHub's default-branch SHA; relevant open/closed PRs, exact head/base revisions, draft/review/conversation state, and current checks; linked issues and spec state as relevant.
+- Read authoritative sources and compare with the live default branch. Do not mistake historical anchors, roadmap text, PR descriptions, or this handoff for current status.
+- Check GitHub's default-branch SHA; relevant PR state, exact head/base revisions, draft/review/conversation state, current checks, and linked issues/spec state as relevant.
 - Identify conflicting or missing evidence, stale local content, and owner-only decisions. Do not mutate the checkout to catch it up without authorization.
 
-## Relevant evidence and links
+## Evidence and handoff
 
-- Authoritative source paths:
-- Feature contract/spec:
+- Authoritative source paths and contracts:
 - Live PR/issue/CI links and exact revisions:
 - Local files/changes made:
-- Commands and results (include what was not run):
+- Commands and exact results (including not run/skipped checks):
 - Independent review and findings:
+- E2E validation design and steps, with expected/observed outcomes:
+- Agent verification (Orchestrator and E2E Validation Architect) against agreed criteria:
+- Owner acceptance decision (owner only; environment and scope; or still pending):
 - Known limits/risks:
+- Unresolved owner decisions or authorization:
+- Recommended next action and its evidence:
 
-## Agent assignments
-
-- ChatGPT orchestrator:
-- Claude implementation agent/task (if used):
-- Independent reviewer (separate from implementer):
-- Optional research/test/docs role and bounded question:
-- Files or areas each may edit:
-- Return format and due/handoff condition:
-
-Normally ChatGPT owns scope, live-state reconciliation, prioritization proposal, independent review, and final status. Claude owns the bounded implementation and implementation evidence. Add optional agents only for distinct separable work. Do not create overlapping editors or confuse model recommendations with owner decisions.
-
-Every proposed batch identifies its concrete user capability, related existing MVP requirements, smallest complete implementation, and sufficient acceptance evidence. Treat gates as constraints/evidence rather than the project sequence. Preserve security and governance; update existing authoritative records only when their defined facts change.
-
-## Required handoff report
-
-State what is complete, exact revision/paths, behavior and limitations, tests/CI with exact results, review findings, outstanding questions/decisions, authorization still needed, and the next recommended action with its source evidence. Update only the existing authoritative records whose facts changed. Do not create a duplicate roadmap, decision log, batch tracker, active-PR list, or next-batch status.
+The required report states what is complete, exact revision and paths, behavior and limitations, tests/CI with exact results, review findings, outstanding decisions, authorization still needed, and the next evidence-based recommendation. Update only existing authoritative records whose defined facts changed. Do not create a duplicate roadmap, decision log, batch tracker, active-PR list, or next-batch status.

@@ -1,15 +1,21 @@
-# Project orchestration takeover
+# Butler project orchestration
 
-This package helps a fresh ChatGPT session coordinate Butler work in `LYF-FC/local-assistant-core`. It is workflow guidance, not a new source of product scope, delivery status, priorities, decisions, or PR tracking.
+This package guides ChatGPT and Claude in coordinating work for Butler in `LYF-FC/local-assistant-core`. It defines the agent architecture and delivery process; it does not define product scope, project status, priorities, decisions, or PR tracking.
 
-**North star: MVP-01 — a coherent, usable end-to-end Butler user journey.** Prioritize complete user-facing capabilities and meaningful vertical slices over isolated technical gate work. Gates remain acceptance constraints and evidence, not a sequential project plan. Before choosing work, reconcile prioritization against the authoritative [MVP acceptance](../MVP_ACCEPTANCE.md), [feature register](../FEATURE_REGISTER.md), [roadmap](../../ROADMAP.md), [project master](../../PROJECT_MASTER.md), relevant specs, and live GitHub `main`/PR/CI state. Each proposed batch must state the user capability it delivers, related existing MVP requirements, the smallest complete implementation, and sufficient acceptance evidence. Preserve security and governance standards while avoiding perfection loops and documentation churn.
+**North star: MVP-01 — a coherent, usable end-to-end Butler user journey.** Prefer complete user-facing capabilities and meaningful vertical slices. Keep security and governance standards while avoiding perfection loops and documentation churn.
 
-## Read in this order
+## Start here
 
 1. [Stable project context](context.md)
-2. [Durable instructions](instructions.md)
-3. [Handoff template](handoff-template.md)
-4. Repository instructions and authoritative sources below, then the relevant feature contract.
+2. [Orchestration instructions](instructions.md)
+3. [Session handoff template](handoff-template.md)
+4. Follow repository instructions and reconcile authoritative project sources and live GitHub state before selecting work.
+
+## Agent model
+
+Six standing roles provide stable accountability: Project Orchestrator (ChatGPT), Journey Architect, Lead Engineer (Claude), Independent Reviewer, E2E Validation Architect, and Governance & Documentation Auditor. Roles are responsibilities, not a requirement to run six agents on every batch. The orchestrator and Claude may create justified reusable or temporary specialists under the rules in [instructions](instructions.md).
+
+Every batch accounts for nine responsibilities in order: (1) journey discovery by the Journey Architect; (2) Orchestrator challenge and refinement; (3) owner approval of journey, scope, exclusions and authorisations; (4) E2E validation design; (5) implementation of the approved vertical slice; (6) independent review; (7) verification by the Orchestrator and E2E Validation Architect; (8) the owner personally trying the journey and deciding on acceptance; (9) governance and documentation reconciliation. Agent verification (7) and owner acceptance (8) are separate. Effort is proportionate to batch size and risk; not every batch needs every agent. Details are in [instructions](instructions.md).
 
 ## Sources of truth
 
@@ -28,7 +34,9 @@ This package helps a fresh ChatGPT session coordinate Butler work in `LYF-FC/loc
 
 When sources disagree, apply the precedence in `AGENTS.md` and `PROJECT_MASTER.md`; flag unresolved contradictions rather than choosing silently. Architecture and operational procedures retain authority over their own subjects.
 
-## Important boundaries
+## Authority and boundaries
+
+The owner retains authority over approval, scope and priority decisions, acceptance, merge, release, and real-world activation. This package is workflow guidance only. See [stable context](context.md) and [durable instructions](instructions.md).
 
 - Do not create a duplicate roadmap, decision log, batch tracker, active-PR list, or “next batch” status here.
 - A branch, test pass, merged PR, independent verification, owner acceptance, live integration, and production readiness are distinct facts.
