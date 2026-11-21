@@ -17,6 +17,12 @@ Six standing roles provide stable accountability: Project Orchestrator (ChatGPT)
 
 Every batch accounts for nine responsibilities in order: (1) journey discovery by the Journey Architect; (2) Orchestrator challenge and refinement; (3) owner approval of journey, scope, exclusions and authorisations; (4) E2E validation design; (5) implementation of the approved vertical slice; (6) independent review; (7) verification by the Orchestrator and E2E Validation Architect; (8) the owner personally trying the journey and deciding on acceptance; (9) governance and documentation reconciliation. Agent verification (7) and owner acceptance (8) are separate. Effort is proportionate to batch size and risk; not every batch needs every agent. Details are in [instructions](instructions.md).
 
+## Branch naming and Git-backed handoffs
+
+Every bounded deliverable uses one dedicated branch named `work/<batch>/<role>-<purpose>`, for example `work/mvp01-invoice/a3-implementation`. Use a concise, stable batch identifier and the assigned role; use lowercase kebab-case. Create the branch from the verified base commit SHA. Do not use generated/random names, reuse a branch across batches, or silently substitute another naming scheme. If the required branch cannot be created, report the blocker before proceeding.
+
+Every assignment and return handoff identifies the repository, branch, exact full base commit SHA, exact full branch HEAD SHA, changed paths, and commit SHA(s). Link the branch, commit(s), and PR when present. The receiver must be able to inspect the delivered work in Git at those exact revisions. Report validation commands and exact outcomes, including checks not run or skipped; distinguish agent verification from owner acceptance. Tie review findings and decisions to the exact revision inspected. If any Git-backed evidence is unavailable or inconsistent, stop and report the discrepancy rather than infer or claim completion.
+
 ## Sources of truth
 
 | Subject | Authority | Rule |
