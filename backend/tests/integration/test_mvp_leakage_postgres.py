@@ -46,23 +46,31 @@ def new_world(postgres_engine, runtime_engine):
             lk.cleanup(built)
 
 
-# The hosted PostgreSQL job has a 20-minute limit and each page-boundary scenario creates about thirty
-# records (about 0.3 s each on the hosted runner), so this module runs the boundary cases for the
-# listings whose records are created in one request and the scenario that holds the boundary case
-# itself (one record over a page); the exact-page scenario also runs where creation is cheapest. The
-# SQLite module runs all three scenarios for all nine listings. Pagination logic is the same SQL
-# pattern in every module; the restricted role matters for access, which every sweep here exercises.
-PG_BOUNDARY = {
-    "tasks": {"exactly one page", "one record over a page"},
-    "approvals": {"exactly one page", "one record over a page"},
-    "memory": {"exactly one page", "one record over a page"},
-    "finance": {"one record over a page"},
-}
+# Every page-boundary scenario of every listing keyed by record id runs through the restricted role,
+# the same cases as the SQLite module. Calendars and routines have the two scenarios the harness
+# defines for them (a creator may hold at most ten records, so no short page is possible there).
+SCENARIOS = ("exactly one page", "one record over a page", "a short page")
+BOUNDARY_CASES = [
+    (name, scenario_name)
+    for name in sorted(lk.ADAPTERS)
+    if lk.ADAPTERS[name].boundary_model is not None
+    for scenario_name in SCENARIOS[
+        : 2 if lk.ADAPTERS[name].boundary_layout == "shared_spread" else 3
+    ]
+]
 
 
-@pytest.mark.parametrize("name", sorted(PG_BOUNDARY))
-def test_page_boundaries(new_world, name):
-    lk.sweep_boundaries(new_world, lk.ADAPTERS[name], only=PG_BOUNDARY[name])
+def test_boundary_cases_cover_every_paginated_listing():
+    assert sorted({name for name, _ in BOUNDARY_CASES}) == [
+        "approvals", "calendars", "context", "documents", "finance",
+        "memory", "reminders", "routines", "tasks",
+    ]  # fmt: skip
+    assert len(BOUNDARY_CASES) == 25
+
+
+@pytest.mark.parametrize(("name", "scenario_name"), BOUNDARY_CASES)
+def test_page_boundaries(new_world, name, scenario_name):
+    lk.sweep_boundaries(new_world, lk.ADAPTERS[name], only={scenario_name})
 
 
 @pytest.mark.parametrize("name", sorted(lk.ADAPTERS))

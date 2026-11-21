@@ -2001,13 +2001,17 @@ def sweep_boundaries(new_world, adapter, only=None):
         cursor = issued[PEER][0] if PEER in issued else None
         if cursor:
             for kind, (_, fetch, tail) in issued.items():
-                expected = [n for n in expected_for(adapter, kind, sc) if n > int(UUID(cursor))]
+                after = int(UUID(cursor))
+                expected = [n for n in expected_for(adapter, kind, sc) if n > after]
+                # The cursor may itself lie in the legitimate tail (a retained database holds enough
+                # earlier rows to fill the first page): only the tail records after it are listed.
+                later = [i for i in tail if int(UUID(i)) > after]
                 verify_pages(
                     sc,
                     fetch_pages(fetch, cursor),
                     expected,
                     where + (kind, "replayed cursor"),
-                    tail,
+                    later,
                 )
         # A cursor that is only the key of a foreign private record: it reveals nothing about it.
         foreign_key = str(UUID(int=sc.foreign[len(sc.foreign) // 2]))
