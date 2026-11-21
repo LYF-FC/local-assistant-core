@@ -288,16 +288,7 @@ add(
 group(
     "/api/v1/installation",
     [
-        (
-            m,
-            "/" + t,
-            credited(
-                "installation configuration is household-level, not an adult's private record; the tests "
-                "assert non-administrators, other administrator sessions, CSRF/Origin and revocation are refused",
-                "test_installation.py::test_non_admin_csrf_origin_and_session_boundaries",
-                "test_installation.py::test_other_admin_session_cannot_reuse_preview_and_revocation_denies",
-            ),
-        )
+        (m, "/" + t, swept("installation", "admin"))
         for m, t in (
             ("POST", "apply"),
             ("POST", "export"),
@@ -479,3 +470,45 @@ def classified(operations):
             assert (method, path) not in entries, (method, path)
             entries[(method, path)] = excluded(WORK_REASON)
     return entries
+
+
+NOT_PAGINATED = {
+    "view": "a single bounded snapshot (a briefing); it has no cursor",
+    "by_id": "a by-ID operation: its pages, where it has any, are the record's own revisions, "
+    "so no other holder's record can occupy a position in the sequence",
+    "history": "paged per record by revision; the sequence belongs to one record, so no other "
+    "holder's record can occupy a position in it",
+    "export_one": "an export of one record's revisions, paged per record by revision",
+}
+NOT_COVERED_BOUNDARY = {
+    "discovery": "uncovered limitation: the listing orders by a computed score and then the id, "
+    "so a key can be placed relative to a boundary only through the score; multi-page walks, foreign "
+    "cursor replay and exact visible sets are swept, positions around the boundary are not placed",
+}
+
+
+def pagination(entries):
+    """For every swept listing, export or view route, how its pagination is covered:
+    ``boundary`` (page-boundary cases with foreign keys beside every boundary), ``not applicable``
+    (with the reason) or ``uncovered limitation``. Routes without pagination in this suite's sense
+    are not listed."""
+    out = {}
+    for key, entry in entries.items():
+        if entry.kind != "swept":
+            continue
+        kind, _, _ = entry.what.partition(":")
+        if kind in {"listing", "export"}:
+            out[key] = (
+                ("uncovered limitation", NOT_COVERED_BOUNDARY[entry.adapter])
+                if entry.adapter in NOT_COVERED_BOUNDARY
+                else ("boundary", entry.adapter)
+            )
+        elif kind == "view":
+            out[key] = (
+                ("uncovered limitation", NOT_COVERED_BOUNDARY[entry.adapter])
+                if entry.adapter in NOT_COVERED_BOUNDARY
+                else ("not applicable", NOT_PAGINATED["view"])
+            )
+        elif kind in {"history", "export_one"}:
+            out[key] = ("not applicable", NOT_PAGINATED["history"])
+    return out

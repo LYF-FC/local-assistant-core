@@ -181,3 +181,73 @@ def test_the_sweep_catches_a_leaked_log_line(world, caplog):
     caplog.clear()
     lk.sweep_by_id(world, lk.ADAPTERS["tasks"], seeded)
     lk.assert_logs_clean(caplog.records, lk.content_marks([seeded]))
+
+
+# ------------------------------------- page-boundary controls: an in-memory listing, correct or not
+
+
+class FakeAdapter:
+    name = "fake"
+    boundary_page = 25
+
+
+def paged(sc, actor_visible, mode):
+    """A listing over the scenario's keys. ``actor_visible`` are the keys the actor may see; the
+    others are foreign. ``mode`` selects a correct keyset listing or one deliberate defect."""
+    everything = sorted(sc.visible + sc.foreign)
+    page = sc.page
+
+    def fetch(cursor):
+        after = int(__import__("uuid").UUID(cursor)) if cursor else 0
+        if mode == "filter_after_limit":
+            window = [n for n in everything if n > after][: page + 1]
+            rows = [n for n in window if n in actor_visible]
+        else:
+            greater = (lambda n: n >= after) if mode == "duplicate" else (lambda n: n > after)
+            rows = [n for n in everything if greater(n) and n in actor_visible][: page + 1]
+        more = len(rows) > page
+        if mode == "has_more_from_unfiltered":
+            more = len([n for n in everything if n > after]) > page and len(rows) >= 1
+        shown = rows[:page]
+        following = None
+        if more and shown:
+            last = rows[page] if mode == "skip_one" and len(rows) > page else shown[-1]
+            following = sc.uid(last)
+        return [sc.uid(n) for n in shown], following, None
+
+    return fetch
+
+
+def check(mode, visible_count=26):
+    sc = lk.scenario(FakeAdapter(), 1, "control", visible_count)
+    pages = lk.fetch_pages(paged(sc, set(sc.visible), mode), sc.start)
+    lk.verify_pages(sc, pages, sc.visible, ("control", mode))
+
+
+def test_the_boundary_check_passes_a_correct_listing_and_catches_each_paging_defect():
+    check("correct")
+    check("correct", 25)  # exactly one page: no continuation although foreign keys follow
+    with pytest.raises(AssertionError, match="sequence differs"):
+        check(
+            "filter_after_limit"
+        )  # visibility applied after the limit: short pages, skipped records
+    with pytest.raises(AssertionError, match="continuation leads to an empty page"):
+        check("has_more_from_unfiltered", 25)  # a continuation caused by a foreign key
+    with pytest.raises(AssertionError, match="sequence differs"):
+        check("skip_one")  # the continuation token skips the first record of the next page
+    with pytest.raises(AssertionError, match="(duplicated|sequence differs)"):
+        check("duplicate")  # the boundary record is listed twice
+
+
+def test_the_scenarios_would_expose_filtering_after_the_limit():
+    for count in (25, 26):
+        sc = lk.scenario(FakeAdapter(), 1, "control", count)
+        assert lk.naive_first_page(sc) != sc.visible[:25]
+        foreign = sc.foreign
+        around = [
+            n
+            for n in foreign
+            if sc.visible[23] < n < sc.visible[24] + 2
+            or n in (sc.visible[24] - 1, sc.visible[24] + 1)
+        ]
+        assert around, "foreign keys sit immediately beside the page-boundary key"

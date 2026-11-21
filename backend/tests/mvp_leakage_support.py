@@ -18,18 +18,20 @@ operations listed in the adapters.
 """
 
 import base64
+import contextlib
 import json
 import re
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from email import policy as email_policy
 from email.message import EmailMessage
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import documents_isolation_support as support
 from conftest import SYNTHETIC_PASSWORD
-from sqlalchemy import select
+from sqlalchemy import event, select
 from test_document_answers import reviewed
+from test_documents import upload
 from test_invoice_review import call as invoice_call
 from test_invoice_review import decisions as _invoice_decisions
 
@@ -92,7 +94,7 @@ class World:
     owner: object
     log: list = field(default_factory=list)  # every record this harness created, for cleanup
     shared_records: list = field(default_factory=list)
-    hits: set = field(default_factory=set)  # (METHOD, normalised path) of every request made
+    hits: set = field(default_factory=set)  # (actor kind, METHOD, normalised path) of every request
 
 
 UUID_SEGMENT = re.compile(r"/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
@@ -102,13 +104,13 @@ def normalise(path):
     return UUID_SEGMENT.sub("/{identifier}", path.split("?")[0])
 
 
-def record_requests(client, hits):
+def record_requests(client, hits, kind):
     """Record every request an actor client makes, so a classification of a route as swept can be
     checked against the routes this suite really called."""
     original = client.request
 
     def recording(method, url, *args, **kwargs):
-        hits.add((method.upper(), normalise(str(url))))
+        hits.add((kind, method.upper(), normalise(str(url))))
         return original(method, url, *args, **kwargs)
 
     client.request = recording
@@ -132,8 +134,8 @@ def build_world(env):
     anonymous = support.Actor("anonymous", "none", None, env.open_client(), {}, "")
     actors[ANON] = anonymous
     hits = set()
-    for actor in actors.values():
-        record_requests(actor.client, hits)
+    for kind, actor in actors.items():
+        record_requests(actor.client, hits, kind)
     callers = {kind: Caller(a.client, a.headers, kind) for kind, a in actors.items()}
     world = World(env, callers, actors, actors[OWNER])
     world.hits = hits
@@ -204,13 +206,13 @@ def header_text(response):
 
 
 def strip_filters(response):
-    """Drop the echo of the caller's own request filters from a body (it repeats the caller's term)."""
+    """Drop the echo of the caller's own request (filters, starting cursor) from a body."""
     try:
         value = response.json()
     except ValueError:
         return response.text
     if isinstance(value, dict):
-        value = {key: item for key, item in value.items() if key != "filters"}
+        value = {key: item for key, item in value.items() if key not in {"filters", "after"}}
     return json.dumps(value, sort_keys=True)
 
 
@@ -286,6 +288,10 @@ class Adapter:
     not_visible = 404  # status for a foreign private record in a scope the caller holds
     page_size = None  # records needed on one actor to force a second page (None: single page)
     mutations = ()  # names of mutation operations this surface supports on a record
+    boundary_model = None  # ORM model whose primary key orders the listing (None: no boundary case)
+    boundary_page = 25  # records per page of that listing
+    boundary_layout = "same_scope"  # see ``seed_scenario``
+    boundary_fresh_world = False  # a world per scenario (surfaces with a per-creator cap)
     scope_denied = 403  # by-ID status when the caller holds no grant for the record's scope
     scope_denied_list = 403  # listing status for the same case ("empty": a 200 with nothing in it)
 
@@ -1069,6 +1075,17 @@ class Documents(Adapter):
     def shared_status(self, is_creator, op):
         return 200 if is_creator or op in {"read", "original", "excerpt"} else 403
 
+    def create(self, actor, scope, label):
+        return upload(
+            actor.client,
+            actor.headers,
+            scope=scope,
+            title=f"Doc {label}",
+            filename=f"{label}.md",
+            source_reference=f"Ref {label}",
+            original_base64=base64.b64encode(f"Record {label}".encode()).decode(),
+        )
+
     def create_row(self, actor, scope, label):
         text = f"Synthetic isolation record {label}\nREF {label} value 100\n"
         doc = reviewed(
@@ -1579,6 +1596,32 @@ def assert_audit_clean(env, marks):
             assert value not in text, "content canary in an audit row"
 
 
+def configure_boundaries():
+    """Which ORM model orders each paginated listing and how many records a page holds. Each
+    listing orders a keyset by the record's UUID primary key after filtering visibility in SQL;
+    discovery orders by a computed score and is not given a boundary case."""
+    from app import models
+
+    table = {
+        "tasks": (models.ManualTask, 25),
+        "finance": (models.FinancialRecord, 25),
+        "routines": (models.Routine, 25),
+        "calendars": (models.CalendarSource, 25),
+        "reminders": (models.TaskReminder, 25),
+        "approvals": (models.Approval, 25),
+        "documents": (models.DocumentRecord, 25),
+        "memory": (models.MemoryRecord, 2),  # the memory adapter lists with limit=2
+        "context": (models.MemoryRecord, 25),
+    }
+    for name, (model, page) in table.items():
+        ADAPTERS[name].boundary_model = model
+        ADAPTERS[name].boundary_page = page
+    ADAPTERS["approvals"].boundary_layout = "foreign_scope"
+    for name in ("calendars", "routines"):  # a creator may hold at most ten
+        ADAPTERS[name].boundary_layout = "shared_spread"
+        ADAPTERS[name].boundary_fresh_world = True
+
+
 def sweep_reminder_preferences(world):
     """Reminder preferences have no identifier: the row is the caller's own for a scope. Another
     holder of the same private scope reads their own defaults, never the owner's; a caller without
@@ -1688,7 +1731,309 @@ def run_operations_sweep(world, caplog):
     seeds = [seed(world, ADAPTERS[name]) for name in ("tasks", "memory", "finance")]
     revoke(world)
     sweep_operations(world, seeds)
+    sweep_installation(world, seeds)
     marks = content_marks(seeds)
     assert_logs_clean(caplog.records, marks)
     assert_audit_clean(world.env, marks)
     return set(world.hits)
+
+
+# ------------------------------------------------------------------- pagination boundary cases
+
+TOP = 1 << 128
+STEP = 1 << 96
+
+
+@contextlib.contextmanager
+def planned_ids(model, ids):
+    """The next ORM inserts of ``model`` in this process take these primary keys, in order. The
+    application code runs in-process under the test client, so a ``before_insert`` listener fixes
+    each record's position in the listing's sort order without touching application code."""
+    queue = list(ids)
+
+    def assign(mapper, connection, target):
+        if queue:
+            target.id = queue.pop(0)
+
+    event.listen(model, "before_insert", assign)
+    try:
+        yield queue
+    finally:
+        event.remove(model, "before_insert", assign)
+    assert not queue, "a planned primary key was not used"
+
+
+@dataclass
+class Scenario:
+    name: str
+    visible: list  # ints, ascending
+    foreign: list  # ints, ascending
+    page: int
+
+    def uid(self, number):
+        return str(UUID(int=number))
+
+    @property
+    def start(self):
+        return str(UUID(int=min(self.visible + self.foreign) - 1))
+
+
+def scenario(adapter, window, name, visible_count):
+    """Visible and foreign keys, with foreign keys immediately before and after the keys at both
+    sides of the page boundary, before the first record and after the last. A window per scenario
+    keeps keys unique in the retained PostgreSQL database and at the very top of the key space,
+    where no other test's random key is plausible."""
+    page = adapter.boundary_page
+    base = TOP - (window + 1) * (max(visible_count, page + 1) + 10) * STEP
+    visible = [base + (index + 1) * STEP for index in range(visible_count)]
+    last = visible[-1]
+    foreign = {visible[0] - 1, last + 1, last + STEP // 2}
+    for index in {page - 2, page - 1, page}:
+        if 0 <= index < visible_count:
+            foreign.update({visible[index] - 1, visible[index] + 1})
+    foreign.difference_update(visible)
+    return Scenario(name, visible, sorted(foreign), page)
+
+
+def naive_first_page(sc):
+    """What a listing that took the first ``page`` rows of the unfiltered table and filtered
+    afterwards would return. The scenario must make that differ from the correct page."""
+    union = sorted(sc.visible + sc.foreign)
+    return [number for number in union[: sc.page] if number in sc.visible]
+
+
+def fetch_pages(fetch, start):
+    """Follow a listing from ``start``; ``fetch(cursor)`` returns (ids, next_cursor, response)."""
+    pages, cursor = [], start
+    for _ in range(12):
+        ids, following, response = fetch(cursor)
+        pages.append((ids, following, response))
+        if not following:
+            return pages
+        cursor = following
+    raise AssertionError("pagination did not end")
+
+
+def verify_pages(sc, pages, expected, where):
+    """Exact sequence, exact page sizes, a continuation only where more records follow, and no key
+    outside ``expected`` (every other visible or foreign key of the scenario) in any page or
+    continuation token."""
+    flat = [identifier for ids, _, _ in pages for identifier in ids]
+    assert flat == [sc.uid(n) for n in expected], (where, "sequence differs from the expected set")
+    assert len(flat) == len(set(flat)), (where, "a record is duplicated")
+    forbidden = {sc.uid(n) for n in sc.visible + sc.foreign if n not in expected}
+    for index, (ids, following, _) in enumerate(pages):
+        last = index == len(pages) - 1
+        assert bool(following) is (not last), (where, "continuation does not match the visible set")
+        if not last:
+            assert len(ids) == sc.page, (where, "a non-final page is not full")
+            assert not any(f in str(following) for f in forbidden), (
+                where,
+                "token names a key the actor may not see",
+            )
+        else:
+            assert len(ids) <= sc.page, (where, "final page too long")
+            assert ids or len(pages) == 1, (where, "a continuation leads to an empty page")
+        assert not (set(ids) & forbidden), (where, "a record the actor may not see is listed")
+
+
+def expected_for(adapter, kind, sc):
+    """The keys ``kind`` may list in the scenario, in order; None where the scope is not granted."""
+    layout = adapter.boundary_layout
+    if kind in SESSION_DENIED:
+        return None
+    if layout == "same_scope":  # the peer's records; the owner holds the foreign ones
+        return {PEER: sc.visible, OWNER: sc.foreign, ADMIN_SAME: []}.get(kind)
+    if layout == "foreign_scope":  # scope-based: every holder of the scope sees the whole scope
+        return sc.visible if kind in {PEER, OWNER, ADMIN_SAME} else None
+    return sc.visible if kind in SHARED_GRANTED else None  # shared_spread: the shared scope
+
+
+def listing_scope(adapter):
+    return SHARED if adapter.boundary_layout == "shared_spread" else adapter.private_scope
+
+
+def seed_scenario(world, adapter, sc):
+    """Create the visible records and the foreign records, each with its planned key. Returns a
+    list of (key, record, is_visible). Layouts: ``same_scope`` (the peer's records are visible, the
+    owner's records in the same private scope are foreign), ``foreign_scope`` (foreign records are in
+    a scope the peer does not hold) and ``shared_spread`` (visible records are in the shared scope,
+    spread over three creators because a creator may hold only ten calendars or routines; foreign
+    records are in a scope no shared reader holds)."""
+    layout = adapter.boundary_layout
+    created = []
+    plan = [(n, True) for n in sc.visible] + [(n, False) for n in sc.foreign]
+    plan.sort(
+        key=lambda item: (item[0] * 2654435761) % (1 << 61)
+    )  # a fixed shuffle of creation order
+    spread = [OWNER, PEER, READER]
+    for number, is_visible in plan:
+        if layout == "same_scope":
+            kind, scope = (PEER if is_visible else OWNER), adapter.private_scope
+        elif layout == "foreign_scope":
+            kind = PEER if is_visible else STRANGER
+            scope = adapter.private_scope if is_visible else OTHER_PRIVATE
+        else:
+            kind = spread[sc.visible.index(number) % 3] if is_visible else STRANGER
+            scope = SHARED if is_visible else OTHER_PRIVATE
+        label = mark(f"{adapter.name[:3]}-bd-")
+        with planned_ids(adapter.boundary_model, [UUID(int=number)]):
+            row = adapter.create_row(world.actors[kind], scope, label)
+        assert row["id"] == sc.uid(number), (adapter.name, "the planned key was not used")
+        rec = adapter.rec_from(row, scope, label)
+        created.append((number, rec, is_visible))
+        if scope == SHARED:
+            world.log.append((kind, rec))
+            world.shared_records.append((kind, rec))
+    return created
+
+
+def sweep_boundaries(new_world, adapter):
+    """Page-boundary cases for one listing. ``new_world()`` returns a fresh world; surfaces with a
+    per-creator cap get one per scenario. For every actor, the pages are exactly that actor's
+    records, in order, while foreign records occupy the keys right around every boundary; foreign,
+    replayed and unauthorized cursors release nothing."""
+    if adapter.boundary_model is None:
+        return
+    page = adapter.boundary_page
+    # Windows are lower for earlier scenarios: a listing from a scenario's own first key then holds
+    # that scenario's records only, because every earlier scenario's keys are lower.
+    scenarios = [
+        scenario(adapter, 3, "exactly one page", page),
+        scenario(adapter, 2, "one record over a page", page + 1),
+        scenario(adapter, 1, "a short page", min(3, page)),
+    ]
+    if adapter.boundary_layout == "shared_spread":
+        scenarios = scenarios[:2]  # three creators cannot hold more than 30 records
+    scope = listing_scope(adapter)
+    world = None
+    for sc in scenarios:
+        if world is None or adapter.boundary_fresh_world:
+            world = new_world()
+        where = (adapter.name, sc.name)
+        if len(sc.visible) >= page:
+            assert naive_first_page(sc) != sc.visible[:page], (
+                where, "the scenario would not expose filtering after the limit",
+            )  # fmt: skip
+        created = seed_scenario(world, adapter, sc)
+        numbers = {rec.id: n for n, rec, _ in created}
+        every = [rec for _, rec, _ in created]
+        issued = {}
+        for kind in (PEER, OWNER, ADMIN_SAME, READER):
+            expected = expected_for(adapter, kind, sc)
+            if expected is None:
+                continue
+            withheld = [r for r in every if numbers[r.id] not in expected]
+
+            def fetch(
+                cursor, caller=world.callers[kind], withheld=withheld, kind=kind, where=where
+            ):
+                response = adapter.listing(caller, scope, cursor)
+                assert response.status_code == 200, (where, kind, response.status_code)
+                assert_no_leak(response, withheld, where + (kind,), kind)
+                return adapter.ids(response), adapter.cursor(response), response
+
+            pages = fetch_pages(fetch, sc.start)
+            verify_pages(sc, pages, expected, where + (kind,))
+            assert len(pages) == max(1, -(-len(expected) // page)), (where, kind, "page count")
+            issued[kind] = (pages[0][1], fetch)
+            if kind == PEER and type(adapter).export is not Adapter.export:
+                # The export route pages the same query: the same exact sequence.
+                def fetch_export(
+                    cursor, caller=world.callers[kind], withheld=withheld, where=where
+                ):
+                    response = adapter.export(caller, scope, cursor)
+                    assert response.status_code == 200, (where, "export", response.status_code)
+                    assert_no_leak(response, withheld, where + ("export",), PEER)
+                    return adapter.ids(response), adapter.cursor(response), response
+
+                exported = fetch_pages(fetch_export, sc.start)
+                verify_pages(sc, exported, expected, where + ("export",))
+        # A cursor issued to the peer, replayed by every other holder: only that holder's own
+        # records after it, exactly.
+        cursor = issued[PEER][0] if PEER in issued else None
+        if cursor:
+            for kind, (_, fetch) in issued.items():
+                expected = [n for n in expected_for(adapter, kind, sc) if n > int(UUID(cursor))]
+                verify_pages(
+                    sc, fetch_pages(fetch, cursor), expected, where + (kind, "replayed cursor")
+                )
+        # A cursor that is only the key of a foreign private record: it reveals nothing about it.
+        foreign_key = str(UUID(int=sc.foreign[len(sc.foreign) // 2]))
+        for kind, (_, fetch) in issued.items():
+            expected = [n for n in expected_for(adapter, kind, sc) if n > int(UUID(foreign_key))]
+            verify_pages(
+                sc, fetch_pages(fetch, foreign_key), expected, where + (kind, "foreign key")
+            )
+    revoke(world)
+    sc = scenarios[0]
+    for kind, caller in world.callers.items():
+        if expected_for(adapter, kind, sc) is not None and kind != GRANT_REVOKED:
+            continue
+        response = adapter.listing(caller, scope, sc.start)
+        where = (adapter.name, kind, "denied cursor")
+        if kind in SESSION_DENIED:
+            assert response.status_code == 401, (where, response.status_code)
+        elif adapter.scope_denied_list == "empty":
+            assert response.status_code == 200 and adapter.ids(response) == [], where
+        else:
+            assert response.status_code == adapter.scope_denied_list, (where, response.status_code)
+        body = text_of(response)
+        for number in sc.visible + sc.foreign:
+            assert sc.uid(number) not in body, (where, "a record id in a denied response")
+
+
+configure_boundaries()
+
+
+INSTALLATION = "/api/v1/installation/"
+INSTALLATION_TEMPLATE = {
+    "schema_version": 1,
+    "defaults": {"languages": ["en", "fr"], "timezone": "UTC"},
+}
+
+
+def sweep_installation(world, seeds):
+    """Installation configuration is household-level and technical-administrator only. Nobody else
+    reads, previews, exports, applies or reads the history of it, and a refused apply changes
+    nothing; the administrator's own read carries no record content."""
+    everything = [r for seed_ in seeds for r in seed_.everything]
+    admin = world.callers[ADMIN_ONLY]
+    current = admin.post(INSTALLATION + "read", {"scope": ADMIN})
+    assert current.status_code == 200, current.text[:200]
+    record = current.json()["record"]
+    binding = {
+        "expected_revision": record["revision"],
+        "expected_installation_id": record["installation_id"],
+    }
+    bodies = {
+        "read": {},
+        "history": {"after": 0},
+        "export": {**binding, "acknowledge_copy_limits": True},
+        "preview": {**binding, "template": INSTALLATION_TEMPLATE},
+        "apply": {
+            **binding,
+            "template": INSTALLATION_TEMPLATE,
+            "preview_token": "0" * 64,
+            "expires_at": (identity.now_utc() + timedelta(minutes=5)).isoformat(),
+            "confirm": True,
+        },
+    }
+    for kind, caller in world.callers.items():
+        for operation, body in bodies.items():
+            if kind in {ADMIN_SAME, ADMIN_ONLY} and operation not in {"read", "history"}:
+                continue  # an administrator may export, preview and apply; only refusals are exercised
+            response = caller.post(INSTALLATION + operation, {"scope": ADMIN, **body})
+            where = ("installation", kind, operation)
+            if kind in SESSION_DENIED:
+                assert response.status_code == 401, (where, response.status_code)
+            elif kind in {ADMIN_SAME, ADMIN_ONLY}:
+                if operation in {"read", "history"}:
+                    assert response.status_code == 200, (where, response.status_code)
+                else:
+                    continue  # an administrator may export, preview and apply; only refusals are exercised
+            else:
+                assert response.status_code == 403, (where, response.status_code)
+            assert_no_leak(response, everything, where, kind)
+    after = admin.post(INSTALLATION + "read", {"scope": ADMIN}).json()["record"]
+    assert after == record, "a refused installation request changed the configuration"

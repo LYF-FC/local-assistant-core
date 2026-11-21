@@ -30,6 +30,30 @@ def world(postgres_engine, runtime_engine):
         lk.cleanup(world)
 
 
+@pytest.fixture
+def new_world(postgres_engine, runtime_engine):
+    admin = sessionmaker(bind=postgres_engine, expire_on_commit=False)
+    with ExitStack() as stack:
+        env = lk.support.postgres_environment(admin, runtime_engine, stack)
+        made = []
+
+        def build():
+            made.append(lk.build_world(env))
+            return made[-1]
+
+        yield build
+        for built in made:
+            lk.cleanup(built)
+
+
+BOUNDARY = sorted(name for name in lk.ADAPTERS if lk.ADAPTERS[name].boundary_model is not None)
+
+
+@pytest.mark.parametrize("name", BOUNDARY)
+def test_page_boundaries(new_world, name):
+    lk.sweep_boundaries(new_world, lk.ADAPTERS[name])
+
+
 @pytest.mark.parametrize("name", sorted(lk.ADAPTERS))
 def test_sweep(world, name, caplog):
     lk.run_sweep(world, name, caplog)

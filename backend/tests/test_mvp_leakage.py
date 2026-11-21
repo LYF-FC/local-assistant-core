@@ -23,6 +23,30 @@ def world(auth_client, auth_store):
         lk.cleanup(world)
 
 
+@pytest.fixture
+def new_world(auth_client, auth_store):
+    """A factory of fresh worlds (surfaces with a per-creator cap need one per scenario)."""
+    with ExitStack() as stack:
+        env = lk.support.sqlite_environment(auth_store, stack)
+        made = []
+
+        def build():
+            made.append(lk.build_world(env))
+            return made[-1]
+
+        yield build
+        for built in made:
+            lk.cleanup(built)
+
+
+BOUNDARY = sorted(name for name in lk.ADAPTERS if lk.ADAPTERS[name].boundary_model is not None)
+
+
+@pytest.mark.parametrize("name", BOUNDARY)
+def test_page_boundaries(new_world, name):
+    lk.sweep_boundaries(new_world, lk.ADAPTERS[name])
+
+
 @pytest.mark.parametrize("name", sorted(lk.ADAPTERS))
 def test_sweep(world, name, caplog):
     REQUESTED[name] = lk.run_sweep(world, name, caplog)
@@ -53,9 +77,16 @@ def test_every_swept_route_was_requested(auth_client, auth_store, caplog):
                 REQUESTED["operations"] = lk.run_operations_sweep(world, caplog)
             finally:
                 lk.cleanup(world)
-    requested = set().union(*REQUESTED.values())
+    # Only requests made by a caller other than the owner count: seeding the data is not a test of
+    # a route's authorization.
+    requested = {
+        (method, path)
+        for hits in REQUESTED.values()
+        for kind, method, path in hits
+        if kind != lk.OWNER
+    }
     entries = inventory.classified(lk.registered_operations())
     never = sorted(
         key for key, entry in entries.items() if entry.kind == "swept" and key not in requested
     )
-    assert not never, f"routes classified as swept that no sweep requested: {never}"
+    assert not never, f"routes classified as swept that no negative actor requested: {never}"

@@ -14,7 +14,7 @@ import mvp_leakage_support as lk
 import pytest
 
 TESTS = Path(__file__).parent
-SPECIAL = {("operations", "admin"), ("reminders", "preferences")}
+SPECIAL = {("operations", "admin"), ("installation", "admin"), ("reminders", "preferences")}
 
 
 def operations():
@@ -133,3 +133,25 @@ def test_the_classification_is_summarised_for_review():
     )
     print("classification:", counts, "uncovered limitations:", len(uncovered))
     assert sum(counts.values()) == len(operations())
+
+
+def test_every_listing_route_has_a_pagination_classification():
+    entries = classified()
+    table = inventory.pagination(entries)
+    listing_routes = {
+        key
+        for key, entry in entries.items()
+        if entry.kind == "swept" and entry.what.partition(":")[0] in {"listing", "export", "view"}
+    }
+    assert listing_routes <= set(table)
+    boundary = {key for key, (kind, _) in table.items() if kind == "boundary"}
+    assert boundary, "no listing route has boundary cases"
+    for key in boundary:
+        adapter = lk.ADAPTERS[entries[key].adapter]
+        assert adapter.boundary_model is not None, (
+            key,
+            "classified as boundary-covered without a model",
+        )
+    uncovered = sorted(key for key, (kind, _) in table.items() if kind == "uncovered limitation")
+    print("pagination:", len(boundary), "boundary-covered routes; uncovered:", uncovered)
+    assert uncovered == [("GET", "/api/v1/discovery"), ("POST", "/api/v1/discovery/inbox")]
