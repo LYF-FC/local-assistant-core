@@ -16,6 +16,10 @@ Six standing responsibilities anchor Butler delivery: Project Orchestrator (Chat
 
 Work adapts to the task while preserving end-to-end accountability through nine ordered responsibilities: journey discovery, Orchestrator challenge, owner approval, E2E validation design, implementation, independent review, agent verification, the owner's personal journey validation and acceptance decision, and governance and documentation reconciliation. Agent verification and owner acceptance are separate. Effort is proportionate to batch size and risk. The owner retains approval, scope and priority decisions, acceptance, merge and release, and real-world activation authority. Detailed mandates and lifecycle rules are in [instructions](instructions.md).
 
+## Durable branch and handoff rule
+
+Use one dedicated branch per bounded deliverable, named `work/<batch>/<role>-<purpose>` in lowercase kebab-case and created from the verified base commit SHA. Handoffs carry the exact repository and branch, full base and HEAD commit SHAs, changed paths, commit SHA(s), and direct GitHub links, plus exact validation outcomes and unrun checks. The delivered work must be inspectable in Git at the reported revision. Never silently substitute a naming convention or invent missing evidence.
+
 ## Durable constraints
 
 - Use synthetic data in repository development. Never place private records, credentials, `.env`, runtime exports, or host-specific plans in Git.
