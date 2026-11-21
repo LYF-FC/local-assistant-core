@@ -1,6 +1,6 @@
 # Butler project context
 
-This is stable orientation for a new orchestrator. The north star is **MVP-01: a coherent, usable end-to-end Butler user journey**. Prefer complete user-facing capabilities and meaningful vertical slices over isolated technical gate work. MVP gates constrain acceptance and define evidence; they are not a sequential project plan. Product status, current priorities, open PRs and the next task are intentionally omitted because they change and have authoritative homes elsewhere.
+This is stable orientation for a new orchestrator. The north star is **MVP-01: a coherent, usable end-to-end Butler user journey**. Prefer complete user-facing capabilities and meaningful vertical slices over isolated technical gate work. Product status, current priorities, open PRs, and the next task are intentionally omitted because they change and have authoritative homes elsewhere.
 
 ## Product and engineering shape
 
@@ -9,6 +9,12 @@ Butler (Local Assistant Core) is a local-first assistant for private and shared 
 The current engineering baseline is FastAPI, PostgreSQL, and React/TypeScript. Windmill is the preferred deterministic workflow orchestrator; Home Assistant owns deterministic physical-home automation. Accelerated/native workloads are separately reviewed; ordinary platform services remain portable. Read the constitution and architecture before design or implementation work.
 
 The product retains an Everyday MVP and later household, care, connected-life, education/NOMAD, professional, creative, financial, and governed-platform scope. The [feature register](../FEATURE_REGISTER.md) preserves requirement IDs and scope. The [project master](../../PROJECT_MASTER.md) owns current status and approved priorities; the [roadmap](../../ROADMAP.md) is a sequencing view. The [MVP acceptance contract](../MVP_ACCEPTANCE.md) owns gate criteria. Reconcile these sources and relevant specs with live GitHub state before prioritizing; do not infer current work from this context.
+
+## Durable orchestration model
+
+Six standing responsibilities anchor Butler delivery: Project Orchestrator (ChatGPT), Journey Architect, Lead Engineer (Claude), Independent Reviewer, E2E Validation Architect, and Governance & Documentation Auditor. These are role definitions, not a requirement to instantiate six separate agents for every task. ChatGPT and Claude may create additional reusable or temporary specialists when a concrete need justifies them. Keep implementation and independent review separate.
+
+Work adapts to the task while preserving end-to-end accountability through nine ordered responsibilities: journey discovery, Orchestrator challenge, owner approval, E2E validation design, implementation, independent review, agent verification, the owner's personal journey validation and acceptance decision, and governance and documentation reconciliation. Agent verification and owner acceptance are separate. Effort is proportionate to batch size and risk. The owner retains approval, scope and priority decisions, acceptance, merge and release, and real-world activation authority. Detailed mandates and lifecycle rules are in [instructions](instructions.md).
 
 ## Durable constraints
 
