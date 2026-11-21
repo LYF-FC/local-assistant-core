@@ -51,6 +51,14 @@ ChatGPT or Claude may instantiate justified internal specialists. State the expe
 
 ## Evidence and handoff
 
+- Repository and remote:
+- Dedicated branch (`work/<batch>/<role>-<purpose>`):
+- Exact full base commit SHA:
+- Exact full branch HEAD commit SHA:
+- Commit SHA(s) and direct commit link(s):
+- Changed paths (exact, complete list):
+- Branch link and PR link/status (if applicable):
+
 - Authoritative source paths and contracts:
 - Live PR/issue/CI links and exact revisions:
 - Local files/changes made:
@@ -64,3 +72,8 @@ ChatGPT or Claude may instantiate justified internal specialists. State the expe
 - Recommended next action and its evidence:
 
 The required report states what is complete, exact revision and paths, behavior and limitations, tests/CI with exact results, review findings, outstanding decisions, authorization still needed, and the next evidence-based recommendation. Update only existing authoritative records whose defined facts changed. Do not create a duplicate roadmap, decision log, batch tracker, active-PR list, or next-batch status.
+
+
+## Fresh-session takeover test
+
+Before relying on this package for a new handoff, test it in a fresh ChatGPT conversation with no access to the prior conversation. Provide only the current four orchestration files, repository access, and any task-specific handoff completed above. Ask the new session to independently state the repository and north star; identify the six standing roles and nine-step lifecycle, including that owner approval and acceptance remain owner-only and agent verification is separate; identify the permanent branch format and required Git evidence; locate current project authority and verify live GitHub state; summarize the assigned work and next evidence-based action without inventing missing status; and name the exact branch, base SHA, HEAD SHA, changed paths, commits, links, and validation evidence it can verify. The test passes only when the new session gives a source-grounded, internally consistent takeover, preserves the approved architecture and lifecycle, identifies missing evidence as missing, and creates no extra file, registry, PR tracker, or next-batch tracker. Record the prompt, response, and pass/fail outcome in the conversation used for the test; do not add a fifth project file or treat the test as owner acceptance.
