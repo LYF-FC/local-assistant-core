@@ -20,7 +20,7 @@ import time
 from sqlalchemy import or_, select
 from sqlalchemy.exc import SQLAlchemyError
 
-from app import filing, identity
+from app import filing, identity, synthetic_ledger
 from app import queue_eligibility as eligible
 from app.config import settings
 from app.db import SessionLocal
@@ -280,12 +280,23 @@ def main():
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--once", action="store_true")
     group.add_argument("--loop", action="store_true")
+    parser.add_argument(
+        "--destination",
+        choices=["memory", "durable"],
+        default="memory",
+        help="memory (default, forgets on restart) or the opt-in durable synthetic ledger",
+    )
+    parser.add_argument("--interval", type=int, default=30, choices=range(1, 301))
     args = parser.parse_args()
     if settings.env not in {"development", "test"} or settings.postgres_user != "butler_runtime":
         raise RuntimeError("Filing worker requires development/test restricted runtime credentials")
     if settings.env == "test" and not settings.postgres_db.startswith("butler_test"):
         raise RuntimeError("Disposable test database required")
-    destination = filing.SyntheticDestination()
+    if args.destination == "durable":
+        # Explicit opt-in; the ledger is verified (environment, marker, directory) on construction.
+        destination = synthetic_ledger.DurableSyntheticDestination()
+    else:
+        destination = filing.SyntheticDestination()
     while True:
         result = run_once(destination)
         print(
@@ -296,7 +307,7 @@ def main():
             if result.get("errors"):
                 raise SystemExit(1)
             return
-        time.sleep(30)
+        time.sleep(args.interval)
 
 
 if __name__ == "__main__":

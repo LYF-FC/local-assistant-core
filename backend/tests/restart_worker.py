@@ -33,12 +33,19 @@ def main():
     maker = sessionmaker(bind=create_engine(args["db_url"]), expire_on_commit=False)
     target = UUID(args["target"])
     hook = rendezvous(args["crash_at"])
-    if args["kind"] == "filing":
+    if args["kind"] in {"filing", "filing_durable"}:
         from app import filing_worker
 
         model = FilingExecution
         columns = (model.id, model.owner_id, model.scope_key, model.document_id)
-        process, collaborator = filing_worker.process, FileDestination(args["ledger"], hook)
+        if args["kind"] == "filing":
+            collaborator = FileDestination(args["ledger"], hook)
+        else:
+            # Spec 076: the production-path durable synthetic destination, not test infrastructure.
+            from app.synthetic_ledger import DurableSyntheticDestination
+
+            collaborator = DurableSyntheticDestination(args["ledger"], hook)
+        process = filing_worker.process
     else:
         from app import notification_worker
 

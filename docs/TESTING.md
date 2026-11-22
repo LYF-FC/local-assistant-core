@@ -64,3 +64,6 @@ Focused queue tests must not leave dispatchable work for unrelated worker checks
 
 
 Spec067 uses existing calendar-phase users and protected APIs for keyword search, private/shared owner isolation, source change/navigation, two-library paging, partial/malformed/denied results, hidden/expiry/late requests and real session revocation. Client cases pin scope/owner/edit attribution/filters/cursors/freshness and current source identity/revision, and ensure list/body/navigation minimization. No backend/schema/grant/fixture/harness change; interface CI retains frontend/containers plus mandatory scope/final gate.
+
+
+Spec076 (MVP-01 rehearsal): `test_synthetic_ledger.py` (ledger guards, exclusivity, real-process SIGKILL), `integration/test_mvp01_journey_postgres.py` (journey and negative cases with real worker processes against the durable synthetic ledger; restricted runtime role; guarded disposable target), `filing-api.test.ts` (strict client) and the live driver `scripts/mvp01-owner-check.py` against the running rehearsal. `test-ci-browser.sh` stays CI/Linux-only; the Mac rehearsal exports only the public CA for the owner's deliberate trust. No full-MVP or host claim follows from these synthetic checks.

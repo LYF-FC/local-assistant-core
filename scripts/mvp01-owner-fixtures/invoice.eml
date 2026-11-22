@@ -1,0 +1,25 @@
+From: billing@vendor.example.invalid
+To: household@example.invalid
+Subject: Synthetic MVP-01 rehearsal invoice MVP01-2026-001
+Date: Fri, 20 Nov 2026 09:00:00 +0000
+Message-ID: <mvp01-rehearsal-001@example.invalid>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="===============3212519805578769450=="
+
+--===============3212519805578769450==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+Synthetic forwarded invoice for the local MVP-01 rehearsal. No real data.
+
+--===============3212519805578769450==
+Content-Type: text/plain
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="invoice-MVP01-2026-001.txt"
+MIME-Version: 1.0
+
+SXNzdWVyOiBTeW50aGV0aWMgUmVoZWFyc2FsIFZlbmRvcgpJbnZvaWNlIG51bWJlcjogTVZQMDEt
+MjAyNi0wMDEKSW52b2ljZSBkYXRlOiAyMDI2LTExLTIwCkR1ZSBkYXRlOiAyMDI2LTEyLTIwClRv
+dGFsOiAxMjMuNDUKQ3VycmVuY3k6IEVVUgo=
+
+--===============3212519805578769450==--

@@ -1,0 +1,64 @@
+# MVP-01 owner rehearsal (spec 076): synthetic data only, local loopback only, single stack.
+# Used together with compose.yml and answers-synthetic.override.yml (the explicit simulated model,
+# `synthetic_answer_model`, which is a fixed script and never a real model or inference service).
+# This file adds only the restricted synthetic filing worker and its durable synthetic ledger.
+# Host mounts of the whole rehearsal (source -> container, purpose, mode):
+#   ./Caddyfile -> /etc/caddy/Caddyfile        caddy configuration                      read-only
+#   scripts/synthetic-answer-model.py -> /opt/synthetic-answer-model.py  simulated model  read-only
+# Named volumes are project-prefixed: postgres_data, caddy_data, caddy_config, synthetic_filing.
+# No calendar fixture directory is mounted: the synthetic calendar is a manual snapshot imported
+# through the real API. Nothing mounts .env, credentials, private records, the repository or $HOME.
+services:
+  synthetic_ledger_init:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    restart: 'no'
+    command: [python, -m, app.synthetic_ledger, init]
+    environment:
+      BUTLER_ENV: ${BUTLER_ENV:-development}
+      BUTLER_POSTGRES_DB: ${BUTLER_POSTGRES_DB:-butler}
+      BUTLER_POSTGRES_USER: butler_runtime
+      BUTLER_POSTGRES_PASSWORD: ${BUTLER_RUNTIME_PASSWORD:?BUTLER_RUNTIME_PASSWORD is required}
+      BUTLER_FILING_SYNTHETIC_LEDGER_DIRECTORY: /var/lib/butler-synthetic-filing
+    volumes:
+      - synthetic_filing:/var/lib/butler-synthetic-filing
+    network_mode: none
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    cap_drop: [ALL]
+    tmpfs: [/tmp]
+    pids_limit: 32
+    mem_limit: 128m
+  filing_worker:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    depends_on:
+      role_setup:
+        condition: service_completed_successfully
+      synthetic_ledger_init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    command: [python, -m, app.filing_worker, --loop, --destination, durable, --interval, '5']
+    environment:
+      BUTLER_ENV: ${BUTLER_ENV:-development}
+      BUTLER_APP_VERSION: 0.1.0-dev
+      BUTLER_POSTGRES_DB: ${BUTLER_POSTGRES_DB:-butler}
+      BUTLER_POSTGRES_USER: butler_runtime
+      BUTLER_POSTGRES_PASSWORD: ${BUTLER_RUNTIME_PASSWORD:?BUTLER_RUNTIME_PASSWORD is required}
+      BUTLER_POSTGRES_HOST: postgres
+      BUTLER_POSTGRES_PORT: '5432'
+      BUTLER_AUTH_ORIGIN: ${BUTLER_AUTH_ORIGIN:-https://localhost:8443}
+      BUTLER_FILING_SYNTHETIC_LEDGER_DIRECTORY: /var/lib/butler-synthetic-filing
+    volumes:
+      - synthetic_filing:/var/lib/butler-synthetic-filing
+    networks: [data]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    cap_drop: [ALL]
+    tmpfs: [/tmp]
+    pids_limit: 128
+    mem_limit: 512m
+volumes:
+  synthetic_filing: null
