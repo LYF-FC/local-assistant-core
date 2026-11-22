@@ -2,7 +2,7 @@
 
 ## Toolchain
 
-Python 3.12; uv 0.13.4; Node 22; npm lockfile; Docker Engine/Compose on Linux or compatible macOS runtime. Accelerated AI remains native on the Mac. make check does not require a model, NAS, cloud account or database.
+Python 3.12; uv 0.13.4; Node 22; npm lockfile; Docker Engine/Compose on Linux or compatible macOS runtime. Prefer host-side development in the owner's local Mac checkout/worktree; agents do code edits and routine host checks there when available. Local Compose runs services and container-specific checks. Accelerated AI remains native on the Mac. `make check` does not require a model, NAS, cloud account or database.
 
 ```sh
 cd backend
@@ -19,14 +19,16 @@ npm run build
 
 Use separate checkout/worktree, credentials, database, Compose project, port, mailbox/calendar test account and NAS share for each environment. The initial compose supports development/test only; API refuses staging and production. Never copy a production .env or data snapshot into development.
 
-Development: BUTLER_ENV=development, COMPOSE_PROJECT_NAME=butler-dev, port 8080. Test: BUTLER_ENV=test, COMPOSE_PROJECT_NAME=butler-test, port 18080, disposable synthetic DB. Future staging/prod use separately reviewed deployment manifests and secret provisioning after readiness gates pass.
+Development: `BUTLER_ENV=development`, `COMPOSE_PROJECT_NAME=local-assistant-core-dev`, HTTP port 8080 and HTTPS port 8443. Test: `BUTLER_ENV=test`, `COMPOSE_PROJECT_NAME=local-assistant-core-test`, HTTP port 18080, a separate HTTPS port and disposable synthetic DB. For each parallel batch worktree use a unique lowercase Compose project name `local-assistant-core-<batch>-<purpose>` and nonconflicting host ports. Future staging/prod use separately reviewed deployment manifests and secret provisioning after readiness gates pass.
+
+The project name is the stable environment prefix. Keep the Compose service keys, volume keys (`postgres_data`, `caddy_data`, `caddy_config`) and network keys (`edge`, `app`, `data`, `ingress`) explicit in `infra/core/compose.yml`; Compose derives unique container, volume and network names from the project prefix and those keys. Do not assign a fixed `container_name` or a fixed global volume/network name, because that prevents isolated worktrees from coexisting. Current host bind mounts are limited to the read-only Caddy configuration and the optional read-only synthetic calendar fixture. The application source is built into images rather than mounted; rebuild after edits.
 
 ```sh
-docker compose --env-file .env -p butler-dev -f infra/core/compose.yml config --quiet
-docker compose --env-file .env -p butler-dev -f infra/core/compose.yml up -d --build
+docker compose --env-file .env -p local-assistant-core-dev -f infra/core/compose.yml config --quiet
+docker compose --env-file .env -p local-assistant-core-dev -f infra/core/compose.yml up -d --build
 ```
 
-No shared explicitly named volumes or networks. PostgreSQL remains internal. Only Caddy joins the non-internal ingress network needed for reliable host port publishing on Linux; API, migrations and web stay on internal networks. Never use down -v on a deployment containing valuable records. .env is not sourced as shell code. Treat first-run.sh as a developer helper, not CD.
+PostgreSQL remains internal. Only Caddy joins the non-internal ingress network needed for reliable host port publishing on Linux; API, migrations and web stay on internal networks. Never use `down -v` on a deployment containing valuable records. `.env` is not sourced as shell code. Treat `first-run.sh` as a developer helper, not CD.
 
 ## Dependency updates
 

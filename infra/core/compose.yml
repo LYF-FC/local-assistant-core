@@ -1,4 +1,4 @@
-name: ${COMPOSE_PROJECT_NAME:-butler-dev}
+name: ${COMPOSE_PROJECT_NAME:-local-assistant-core-dev}
 services:
   postgres:
     image: postgres:17

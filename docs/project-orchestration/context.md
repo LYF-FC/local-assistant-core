@@ -20,6 +20,10 @@ Work adapts to the task while preserving end-to-end accountability through nine 
 
 Use one dedicated branch per bounded deliverable, named `work/<batch>/<role>-<purpose>` in lowercase kebab-case and created from the verified base commit SHA. Handoffs carry the exact repository and branch, full base and HEAD commit SHAs, changed paths, commit SHA(s), and direct GitHub links, plus exact validation outcomes and unrun checks. The delivered work must be inspectable in Git at the reported revision. Never silently substitute a naming convention or invent missing evidence.
 
+## Owner Mac development and named local environments
+
+The preferred development loop is in the owner's local macOS checkout/worktree: agents make most code changes and run host-side tooling there, while local Docker Compose supplies the app and required services. Remote/cloud development is an exception that must be explained in its handoff. Identify the repository as `local-assistant-core`, the product as **Butler**, and use explicit environment names (`local-assistant-core-dev`, `local-assistant-core-test`, or unique `local-assistant-core-<batch>-<purpose>`). Keep Compose services, volumes, networks, ports and host mounts traceable by name. Every batch handoff includes an owner-runnable startup/rebuild command, URL, synthetic journey fixture/steps/expected result, and safe stop/reset instructions. State exactly what is mounted, where, why and whether it is read-only; do not mount `.env`, credentials, private records or the entire home directory.
+
 ## Durable constraints
 
 - Use synthetic data in repository development. Never place private records, credentials, `.env`, runtime exports, or host-specific plans in Git.

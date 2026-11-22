@@ -16,6 +16,21 @@ Copy this into a fresh ChatGPT or Claude session and fill in task-specific field
 - Owner decision still required and why (if any):
 - Work mode: read-only / local edits / other specifically authorized action:
 
+## Local development and owner journey
+
+- Preferred execution: owner's local Mac checkout/worktree; if elsewhere, state why and the environment difference:
+- Exact checkout path, repository, branch and head:
+- Compose environment/project name (`local-assistant-core-dev`, `local-assistant-core-test`, or unique batch name):
+- Named services, host ports and browser URL:
+- Host-to-container mounts (source → destination, purpose, read/write mode):
+- Owner start/rebuild command:
+- Synthetic fixture and setup:
+- Owner journey steps and expected result:
+- Safe reset/stop command and what persists:
+- Owner acceptance decision (owner only; environment and scope; or pending):
+
+For any mount, identify the exact narrow host path; do not mount `.env`, credentials, private records or the home directory. If the task cannot provide a local owner-tryable journey, state the reason and the evidence the owner can still inspect.
+
 ## Agent assignments
 
 For each role or specialist used, record one assignment. Add rows as needed; do not create or maintain a standing status registry here.

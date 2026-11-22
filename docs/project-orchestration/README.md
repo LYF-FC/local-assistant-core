@@ -17,6 +17,12 @@ Six standing roles provide stable accountability: Project Orchestrator (ChatGPT)
 
 Every batch accounts for nine responsibilities in order: (1) journey discovery by the Journey Architect; (2) Orchestrator challenge and refinement; (3) owner approval of journey, scope, exclusions and authorisations; (4) E2E validation design; (5) implementation of the approved vertical slice; (6) independent review; (7) verification by the Orchestrator and E2E Validation Architect; (8) the owner personally trying the journey and deciding on acceptance; (9) governance and documentation reconciliation. Agent verification (7) and owner acceptance (8) are separate. Effort is proportionate to batch size and risk; not every batch needs every agent. Details are in [instructions](instructions.md).
 
+## Local development and owner journey checks
+
+Default to code edits and routine host-side checks in the owner's local macOS checkout or a separate local worktree. Agents should work there when available; local Docker Compose runs the application and any required services or container-specific checks. Use another host only for a concrete constraint and state the exception, exact revision and how its environment differs from the owner's setup.
+
+Every batch handoff gives the owner a runnable local path to try the complete agreed journey: exact start/rebuild command, local URL, synthetic fixture, ordered steps, expected result, and safe reset/stop command. Name the checkout/repository, Compose environment/project, services, host ports and every host-to-container mount with purpose and read/write mode. Use unique project/resource prefixes per environment or worktree; never mount private records, credentials, `.env`, or the entire home directory.
+
 ## Branch naming and Git-backed handoffs
 
 Every bounded deliverable uses one dedicated branch named `work/<batch>/<role>-<purpose>`, for example `work/mvp01-invoice/a3-implementation`. Use a concise, stable batch identifier and the assigned role; use lowercase kebab-case. Create the branch from the verified base commit SHA. Do not use generated/random names, reuse a branch across batches, or silently substitute another naming scheme. If the required branch cannot be created, report the blocker before proceeding.

@@ -121,6 +121,14 @@ Keep one orchestrator responsible for scope and final reconciliation. Give each 
 
 Use [handoff-template.md](handoff-template.md) for a fresh session. Handoffs carry assignment and deliverable details plus links/evidence, not copied trackers.
 
+### Local Mac development and named Docker environments
+
+The default is local macOS development in the owner's checkout or a separate local worktree. Agents perform most source edits and host-side checks there when available; local Docker Compose runs the application and dependencies needed for integration or owner trials. Do not silently move implementation to a cloud/remote machine. If a local Mac constraint requires another environment, report why, its exact host/revision, any differences from the owner environment, and how the owner can reproduce the result locally.
+
+Use explicit, stable names: repository `local-assistant-core`, product `Butler`, development Compose project `local-assistant-core-dev`, test project `local-assistant-core-test`, and unique lowercase `local-assistant-core-<batch>-<purpose>` projects for parallel worktrees. Keep service, volume and network keys explicit in Compose and rely on the project prefix to isolate generated container/resource names. Do not add fixed `container_name` or globally shared volume/network names that collide across worktrees. Record each host mount's source path, container path, purpose and read/write mode; mount only required synthetic fixtures, read-only by default. Never mount secrets, private records, `.env` or the whole home directory.
+
+For every batch, the handoff names the owner's exact local start/rebuild command and URL, the synthetic fixture, ordered end-to-end steps and expected result, and the safe reset/stop command. If a task has no owner-tryable journey or needs a different host, state why and what evidence remains for the owner. The owner still personally tries the journey and decides acceptance; agent checks are not acceptance. See [Development](../DEVELOPMENT.md) and [Setup](../../SETUP.md) for the current stack behavior and commands.
+
 ### Operating practice for ChatGPT
 
 The A1–A6 definitions above are authoritative; this subsection adds practice, not roles. Create focused task threads or subagents only when the platform's current controls support them and the task benefits from delegation; do not create a permanent roster or spawn agents for parallelism alone. Give each an isolated question or deliverable, bounded files, source documents, read-only or edit permissions, and a return format.
