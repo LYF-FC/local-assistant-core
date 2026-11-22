@@ -55,3 +55,25 @@ Later investigation acceptance requires a sourced current shortlist, declared ta
 Prioritize feasibility and baseline work alongside scoped local answers/coordinator design. Multi-model execution or MoE adoption is not an unconditional MVP blocker. No existing requirement is removed; no provider, private-data processing, production change or model license is selected here. No data leaves the installation as a result of this documentation-only change.
 
 Planning convergence: all 147 prior references remain; register and dependency tables each contain the same 149 unique IDs. Changed links/anchors, privacy review, repository invariants and all 14 CI policy tests pass locally. Source secret scanning reports no findings. No model comparison or runtime acceptance is claimed. Exact-head hosted policy evidence belongs in PR metadata, and owner review/merge is still required.
+
+## Dated candidate observation — 22 November 2026: a community Qwen3.8-27B fine-tune
+
+Owner-requested desk check of one community build, "Qwen3.8-27B TURBO Fable Cold-Fusion 735/882 Heretic Uncensored NEO CODER MAX MTP GGUF". This is an input to the shortlist step above, **not a shortlist entry, adoption, rejection of the base family, approval or recommendation to download or run anything**. Nothing was downloaded or run. It selects no model, runtime or license and changes no requirement, gate, status or priority; no model choice is recorded in this repository. Facts were read from the pages cited below on 22 November 2026 and may change; items marked *self-reported* are the packager's own, unverified claims.
+
+**What the build is (per its Ollama listing).** A community multi-stage merge, refusal-removal ("Heretic" abliteration) and quantization of Qwen3.8-27B, published under the `lucloner` namespace with one `mtp-q4km` tag (about 18 GB, 256K context, text input, tools and thinking capabilities). The derivative's license is not stated on the page; only the base is said to be Apache 2.0. The name's "735/882" are the packager's own ARC-Challenge/ARC-Easy scores on an mxfp8 quant (*self-reported*); "Cold Fusion" and "NEO CODER MAX" are not defined by a cited method, paper or code. The packager reports that a stock Ollama import corrupts the file and that appending an extra tensor fixes it (*self-reported*, not verified).
+
+**The base model (vendor and press reports).** Qwen3.8-27B was released on 14 August 2026 under Apache 2.0 as a dense 27B vision-language model with a 262,144-token native context (extendable by YaRN) and switchable thinking. The separate 2.4T-A95B "Max" model has a different license; that does not apply to the 27B. Published benchmarks are largely the vendor's own, partly on its own harness, and are not like-for-like comparisons. Third-party size figures for 4-bit weights are roughly 17–19 GB (community-reported).
+
+**Assessment against the requirements above (an observation for the shortlist step, not a decision).**
+
+| Concern | Observation |
+|---|---|
+| Refusal removal | The build's purpose is reducing refusals. Butler relies on application-enforced permissions, not on a model, but a private-records assistant also benefits from a model that abstains and resists hostile document content; this must be measured, not assumed. |
+| Provenance and supply chain | A merge across several individuals without a reproducible recipe, and a packaging workaround, cannot be audited at reasonable cost. |
+| License | The derivative's license is unstated; a derivative needs its own license review before any use. |
+| Evidence | The benchmark table, speed and token-saving claims are *self-reported* or marketing, on different quantizations than the listed tag. |
+| Task fit | The build's "coder" emphasis does not match Butler's runtime tasks; repository coding workers are a separate row in the task matrix. |
+
+If the family is revisited, evaluate **official weights from the vendor and reputable quantizers** (pinned revisions, recorded license text) under the protocol above, alongside other dense and MoE candidates, on synthetic fixtures only, with refusal, abstention and hostile-document behavior in the evaluation set and the owner's actual hardware recorded first. The base's vision capability may be relevant to scanned-invoice and document tasks (compare against OCR and deterministic parsing). Any download, license acceptance or benchmark remains a separately scoped, owner-approved experiment.
+
+Sources read on 22 November 2026: [Ollama listing](https://ollama.com/lucloner/qwen38-27b-turbofcfusion); [eWeek on the Qwen3.8-27B license](https://www.eweek.com/news/alibaba-qwen3-8-27b-license-apac-china/); [NYU Shanghai RITS on Qwen3.8-27B](https://rits.shanghai.nyu.edu/ai/qwen3-8-27b-one-gpu/). The official model card and the packager's Hugging Face page were linked from these pages but not read.
