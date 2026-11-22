@@ -186,6 +186,8 @@ to the immutable `1c94e445` review target; no operation or measurement is author
 
 ## 7. Current-main review refresh — 22 November 2026
 
+**Project context:** Butler’s north star is MVP-01: a coherent, usable end-to-end user journey. This packet covers the bounded Spec 074 review; for project-wide batch and journey guidance, see [orchestration instructions](project-orchestration/instructions.md). This review does not change priorities or constitute owner acceptance.
+
 **Assistant preparation only. Human V1–V13 findings/sign-off remain pending.**
 This section explicitly refreshes the review target; it does not rewrite the historical
 packet, the original human record or the appendix checklist. No criterion, C1–C5 task,
@@ -205,7 +207,7 @@ current main, identify reusable/missing evidence and prepare this human handoff.
   authorized committing this packet locally. The containing Git commit identifies
   the delivery revision; obtain its full SHA with `git log -1 --format=%H --
   docs/SPEC_074_REVIEW_TARGET_1C94E445.md`. That delivery revision is separate from
-  the immutable runtime review/CI target above. No push or PR is included.
+  the immutable runtime review/CI target above. At the time this handoff was prepared, it had not been pushed or submitted as a PR. It was later published with owner authorization in [PR #72](https://github.com/LYF-FC/local-assistant-core/pull/72); the review target above remains unchanged. Publication does not constitute reviewer sign-off or owner acceptance.
 - The unrelated dirty `codex/approval-review-inbox` checkout was preserved.
 
 Before review, re-query main and pin the actual revision. If it moved, inspect the
@@ -434,7 +436,7 @@ acceptance remain pending. No acceptance or reviewer checkbox was changed.
 
 Only this existing handoff file was edited. The owner subsequently authorized a
 local commit on the dedicated branch; the base and runtime review target in 7.1
-remain unchanged. No push or PR is included. Repository
+remain unchanged. At the time this handoff was prepared, it had not been pushed or submitted as a PR. It was later published with owner authorization in [PR #72](https://github.com/LYF-FC/local-assistant-core/pull/72); the review target above remains unchanged. Publication does not constitute reviewer sign-off or owner acceptance. Repository
 policy, all 23 CI-scope tests, generated-view verification, Markdown/local-link
 validation and `git diff --check` were rerun after the evidence update. No runtime,
 dependency, workflow, migration, master/register status or generated file changed.
