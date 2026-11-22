@@ -6,7 +6,7 @@ Counted views are generated: [feature overview](docs/FEATURE_OVERVIEW.md) and [d
 
 ## Where the MVP stands and what is next
 
-Gate-by-gate progress, evidence and blockers: [PROJECT_MASTER.md, section 5](PROJECT_MASTER.md#5-stage-and-gate-progress). Ordered priorities with reasons: [section 7](PROJECT_MASTER.md#7-dependencies-order-and-priorities). Work already merged (specs 050–074, PRs #2–#40) is recorded there and in the historical notes at the end of this page. No gate is accepted.
+Gate-by-gate progress, evidence and blockers: [PROJECT_MASTER.md, section 5](PROJECT_MASTER.md#5-stage-and-gate-progress). Ordered priorities with reasons: [section 7](PROJECT_MASTER.md#7-dependencies-order-and-priorities). Work already merged is indexed there (section 5, PR index and spec ↔ PR map) and in the historical notes at the end of this page, which are partial (they link only some merged PRs, up to #29) and are not maintained as status. No gate is accepted.
 
 ### Post-MVP engineering follow-up
 
