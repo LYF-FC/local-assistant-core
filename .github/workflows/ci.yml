@@ -35,6 +35,7 @@ jobs:
         working-directory: backend
       - run: uv run --locked python ../scripts/check_repository.py && uv run --locked python ../scripts/test_ci_scope.py
         working-directory: backend
+      - run: python3 scripts/test_mvp01_owner.py
       - id: scope
         env:
           BUTLER_CI_EVENT: ${{ github.event_name }}
