@@ -78,3 +78,14 @@ it("cancels one exact revision and requires a cancelled result for the same fili
  vi.stubGlobal("fetch",reply({schema_version:1,filing:row({state:"filed",resolved_at:"2026-11-22T10:02:00+00:00"})}));
  await expect(cancelFiling(doc,row(),"c",signal)).rejects.toThrow();
 });
+
+const editor="55555555-5555-4555-8555-555555555555";
+it("accepts an empty listing for a non-owner editor who is the caller, and refuses anything else for them",async()=>{
+ const listing=(items:unknown[],owner=editor)=>({schema_version:1,checked_at:"2026-11-22T10:00:00+00:00",owner_id:owner,scope:"household_shared",state:"all",items,next_cursor:null,notice:"n"});
+ vi.stubGlobal("fetch",reply(listing([])));
+ expect((await queryFilings(doc,"c",signal,editor)).items).toEqual([]);
+ vi.stubGlobal("fetch",reply(listing([row({owner_id:editor})])));
+ await expect(queryFilings(doc,"c",signal,editor)).rejects.toThrow();
+ vi.stubGlobal("fetch",reply(listing([],owner)));
+ await expect(queryFilings(doc,"c",signal,editor)).rejects.toThrow();
+});

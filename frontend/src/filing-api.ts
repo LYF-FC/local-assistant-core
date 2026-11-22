@@ -15,9 +15,9 @@ const date=(v:unknown):v is string=>typeof v==="string"&&v.length<=40&&Number.is
 const maybeDate=(v:unknown):boolean=>v===null||date(v);
 const reasons=/^[a-z_]{1,48}$/;
 function invalid():never{throw new Error("Invalid synthetic filing response");}
-export function parseFiling(v:unknown,doc:Document,historical=false):Filing{
+export function parseFiling(v:unknown,doc:Document,historical=false,owner:string=doc.owner_id):Filing{
  if(!obj(v)||!uuid(v.id)||!uuid(v.owner_id)||v.scope!==doc.scope||v.destination!=="synthetic"||!states.includes(v.state as FilingState)||!int(v.revision)||!int(v.attempts,0)||v.attempts>3||!maybeDate(v.next_attempt_at)||!maybeDate(v.resolved_at)||!(v.reason===null||(typeof v.reason==="string"&&reasons.test(v.reason)))||!date(v.created_at)||!date(v.updated_at)||(historical?v.scrubbed!==undefined:typeof v.scrubbed!=="boolean"))invalid();
- if(v.owner_id!==doc.owner_id)invalid();
+ if(v.owner_id!==owner)invalid();
  if(v.scrubbed){if(v.document_id!==null||v.plan_revision!==null||v.source_revision!==null)invalid();}
  else if(v.document_id!==doc.id||!int(v.plan_revision)||!int(v.source_revision))invalid();
  const final=v.state==="filed"||v.state==="failed"||v.state==="cancelled";
@@ -33,10 +33,12 @@ export async function requestFiling(doc:Document,receipt:Receipt,csrf:string,sig
  if(filing.scrubbed||filing.plan_revision!==receipt.review_revision||filing.source_revision!==doc.revision)invalid();
  return {replayed:v.replayed,filing};
 }
-export async function queryFilings(doc:Document,csrf:string,signal:AbortSignal):Promise<Listing>{
+// `caller` is the signed-in user: the server lists only the caller's own filings, so for anyone but the document owner the list is empty.
+export async function queryFilings(doc:Document,csrf:string,signal:AbortSignal,caller:string=doc.owner_id):Promise<Listing>{
  const v=await send("query",{scope:doc.scope,state:"all",document_id:doc.id},csrf,signal);
- if(!obj(v)||v.schema_version!==1||v.scope!==doc.scope||v.owner_id!==doc.owner_id||v.state!=="all"||!date(v.checked_at)||typeof v.notice!=="string"||v.notice.length>200||!Array.isArray(v.items)||v.items.length>25||!(v.next_cursor===null||uuid(v.next_cursor)))invalid();
- const items=v.items.map(i=>parseFiling(i,doc));
+ if(!obj(v)||v.schema_version!==1||v.scope!==doc.scope||v.owner_id!==caller||v.state!=="all"||!date(v.checked_at)||typeof v.notice!=="string"||v.notice.length>200||!Array.isArray(v.items)||v.items.length>25||!(v.next_cursor===null||uuid(v.next_cursor)))invalid();
+ const items=v.items.map(i=>parseFiling(i,doc,false,caller));
+ if(caller!==doc.owner_id&&items.length>0)invalid();
  if(new Set(items.map(i=>i.id)).size!==items.length)invalid();
  return {items,next_cursor:v.next_cursor as string|null,notice:v.notice,checked_at:v.checked_at};
 }

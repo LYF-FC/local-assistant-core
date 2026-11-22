@@ -53,7 +53,7 @@ ensure_config() {
   if [ ! -f "$ENV_FILE" ]; then
     # A volume without its generated credentials cannot be opened: refuse instead of guessing.
     if docker volume ls -q --filter "label=com.docker.compose.project=${PROJECT}" | grep -q .; then
-      die "volumes of ${PROJECT} exist but ${ENV_FILE} is missing; run 'reset' (destructive; you type the project name to confirm) to start over"
+      die "volumes of ${PROJECT} exist but ${ENV_FILE} is missing; run 'reset' (destructive; you type the project name to confirm) to start over. The project name is global on this Mac: this also removes a rehearsal that was started from ANOTHER checkout of this repository"
     fi
     {
       printf 'BUTLER_ENV=test\n'
@@ -355,6 +355,7 @@ cmd_reset() {
   say "  containers : $(echo "$containers" | tr '\n' ' ')"
   say "  volumes    : $(echo "$volumes" | tr '\n' ' ')"
   [ "$have_config" = 1 ] || say "  note       : the generated config is missing; the project is removed by its exact Compose label and name prefix"
+  say "The project name is global on this Mac: this also removes a rehearsal that was started from ANOTHER checkout."
   say "Nothing else is removed (no prune, no other project, no images)."
   local answer="${BUTLER_MVP01_RESET_CONFIRM:-}"
   if [ -z "$answer" ]; then

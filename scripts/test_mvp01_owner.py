@@ -57,6 +57,15 @@ class OwnerScriptTests(unittest.TestCase):
         self.log.write_text("")
         self.state = self.tmp / ".local" / "mvp01-owner"
 
+    def require_free_ports(self):
+        # Preflight checks the real loopback ports before the (faked) Docker networks; a running rehearsal on this
+        # host legitimately holds them, so those cases are skipped rather than disturbed.
+        for port in (18081, 18444):
+            with socket.socket() as probe:
+                probe.settimeout(1)
+                if probe.connect_ex(("127.0.0.1", port)) == 0:
+                    self.skipTest(f"loopback port {port} is in use on this host")
+
     def run_script(self, *args, extra=None, stdin=subprocess.DEVNULL):
         env = {
             "PATH": f"{self.tmp / 'bin'}:{os.environ['PATH']}",
@@ -96,6 +105,7 @@ class OwnerScriptTests(unittest.TestCase):
         return json.dumps([{"Id": "n1", "Name": name, "Labels": {"com.docker.compose.project": project} if project else {}, "IPAM": {"Config": [{"Subnet": subnet}]}}])
 
     def test_subnet_collision_is_refused_naming_the_environment_and_stopping_nothing(self):
+        self.require_free_ports()
         result = self.run_script("start", extra={"FAKE_NETWORKS": self.network("butler-poc_app", "172.29.243.0/28", "butler-poc")})
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("butler-poc_app", result.stderr)
@@ -107,11 +117,13 @@ class OwnerScriptTests(unittest.TestCase):
         self.assertFalse(any(" up " in f" {c} " for c in self.calls()))
 
     def test_overlapping_larger_foreign_network_is_also_refused(self):
+        self.require_free_ports()
         result = self.run_script("start", extra={"FAKE_NETWORKS": self.network("vpn", "172.29.0.0/16")})
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("vpn", result.stderr)
 
     def test_unrelated_subnet_passes_preflight_and_reaches_the_build(self):
+        self.require_free_ports()
         result = self.run_script("start", extra={"FAKE_NETWORKS": self.network("other", "172.29.244.0/28", "other"), "FAKE_UP_FAILS": "1"})
         self.assertNotEqual(result.returncode, 0)
         self.assertTrue(any("compose" in c and " up -d --build" in c for c in self.calls()), self.calls())
@@ -195,6 +207,7 @@ class OwnerScriptTests(unittest.TestCase):
         refused = self.run_script("start", extra={"FAKE_VOLUMES": volumes})
         self.assertNotEqual(refused.returncode, 0)
         self.assertIn("reset", refused.stderr)
+        self.assertIn("ANOTHER checkout", refused.stderr)
         self.assertFalse(self.state.joinpath("mvp01-owner.env").exists())
         # The exact recovery the message promises: reset works without the generated config...
         wrong = self.run_script("reset", extra={"FAKE_VOLUMES": volumes, "BUTLER_MVP01_RESET_CONFIRM": "nope"})
