@@ -32,9 +32,13 @@ Downgrading `0034_invoice_filing_execution` permanently deletes `filing_executio
 
 After a downgrade and re-upgrade the same approved plan revision can be requested again and starts as a new, unconsumed request. Only the destination's own no-overwrite rule then prevents a second write; the filing would fail with `collision` because the existing file belongs to the earlier filing. This is deliberate: the migration does not refuse a downgrade when rows exist. Schema downgrades are test tooling, not a production rollback strategy. Take a protected backup first, stop the worker, and prefer rolling forward with a repair migration. A restored older backup does not recreate consumed-request evidence newer than the backup.
 
+## Local rehearsal path (spec 076)
+
+`python -m app.filing_worker --destination durable` selects an opt-in **durable synthetic** destination (`app.synthetic_ledger`): a marked ledger directory holding one metadata entry per filing (filing key, canonical logical path, original SHA-256, size; never invoice bytes), published exclusively and fsynced so it survives the worker, its transaction and a container restart. The default stays the in-memory destination above. It is still a simulation, not a filing adapter or a real destination, and the original-byte copy limit below is unchanged. The document view now has a separate *Request synthetic filing* control (two acknowledgements, bound to the exact source/plan) with status, history and cancel of an unstarted request. See the [owner rehearsal guide](MVP01_OWNER_REHEARSAL.md) and [spec 076](../specs/076-mvp01-synthetic-invoice-journey/spec.md).
+
 ## Using it
 
-`POST /api/v1/filing/request` (document, expected document and review revisions, two explicit acknowledgements), `/cancel`, `/query` (state filter, cursor, 25 per page) and `/history`. Owner-only, audited, metadata only: no path, file name or invoice field appears in any response, history or audit. No web screen is added.
+`POST /api/v1/filing/request` (document, expected document and review revisions, two explicit acknowledgements), `/cancel`, `/query` (state filter, cursor, 25 per page) and `/history`. Owner-only, audited, metadata only: no path, file name or invoice field appears in any response, history or audit. The web screen was added later by spec 076 (above).
 
 ## Running the worker (development/test only)
 
@@ -42,7 +46,7 @@ After a downgrade and re-upgrade the same approved plan revision can be requeste
 
 ## Known limits
 
-See the [spec](../specs/069-invoice-filing-execution/spec.md). Limits: effect survival across a process restart is evidenced only for the synthetic directory-backed destination, not for a real one; there is no real adapter; the original bytes are not copied (the destination entry records only the source checksum and size, and the email lineage resolves through the filing's document, not through the destination); there is no screen; non-ASCII case folding follows the database locale; a poison row is retried each pass; a lookup that answers "absent" just before a stalled write lands is inherent to any destination, so a real adapter needs a hard write timeout below the five-minute in-flight deadline.
+See the [spec](../specs/069-invoice-filing-execution/spec.md). Limits: effect survival across a process restart is evidenced only for the synthetic directory-backed destination, not for a real one; there is no real adapter; the original bytes are not copied (the destination entry records only the source checksum and size, and the email lineage resolves through the filing's document, not through the destination); the screen added by spec 076 is a request/status/history view only; non-ASCII case folding follows the database locale; a poison row is retried each pass; a lookup that answers "absent" just before a stalled write lands is inherent to any destination, so a real adapter needs a hard write timeout below the five-minute in-flight deadline.
 
 ## Evidence in tests
 

@@ -45,3 +45,7 @@ The API must run as butler_runtime in development, with a generated runtime pass
 The default Compose migration owner is **`butler`**, not `postgres`; `migrate` and privileged `role_setup` use `BUTLER_POSTGRES_USER`. The API and DB-backed workers use **`butler_runtime`** with a distinct secret. The separate disposable PostgreSQL integration/restore harness explicitly uses **`postgres`**. Never infer authority from the engine/image name or copy a fixed-harness username assertion into a portable container fixture.
 
 Before adding or changing a fixture, follow the [test-harness role matrix and ownership preflight](TESTING.md#database-users-container-tests-and-postgresql-tests-differ). Validate actual required ownership, retain synthetic target guards, prove runtime refusal before privileged seeding, and exercise CI's default owner rather than only a local override. Existing fixed-harness restore guards remain deliberate.
+
+## MVP-01 owner rehearsal
+
+For the named single-stack Mac rehearsal of the synthetic invoice journey (project `local-assistant-core-mvp01-owner`, ports 18081/18444) use `bash scripts/mvp01-owner.sh`; mounts, credentials, fixture and limits are in [MVP01_OWNER_REHEARSAL.md](MVP01_OWNER_REHEARSAL.md). It is not the CI harness and never replaces it.

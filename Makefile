@@ -9,3 +9,4 @@ frontend:
 policy:
 	cd backend && uv run --locked python ../scripts/check_repository.py
 	cd backend && uv run --locked python ../scripts/test_ci_scope.py
+	python3 scripts/test_mvp01_owner.py

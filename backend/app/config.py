@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     calendar_lease_seconds: int = 120
     calendar_fetch_timeout_seconds: float = 30.0
     document_archive_directory: Path | None = None
+    filing_synthetic_ledger_directory: Path | None = None
     pdf_socket_directory: Path | None = None
     document_answers_enabled: bool = False
     document_answer_model: str = ""
