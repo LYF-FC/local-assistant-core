@@ -45,6 +45,14 @@ class Session:
         except urllib.error.HTTPError as error:
             return error.code, {}
 
+    def get(self, path):
+        request = urllib.request.Request(self.origin + path, headers={"Origin": self.origin})
+        try:
+            with self.opener.open(request, timeout=20) as response:
+                return response.status, json.loads(response.read() or b"{}")
+        except urllib.error.HTTPError as error:
+            return error.code, {}
+
     def login(self, slug, password):
         status, data = self.call("/api/v1/auth/login", {"slug": slug, "password": password})
         if status != 200:

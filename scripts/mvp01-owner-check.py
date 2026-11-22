@@ -2,7 +2,7 @@
 """Executable evidence for the MVP-01 synthetic journey against the running local rehearsal (spec 076).
 
 Standard library only; real HTTPS API with the exported public CA (no certificate bypass).
-  journey  <origin> <ca> <state-file>   drive AC1-AC7, AC10, AC11 once (idempotent where possible)
+  journey  <origin> <ca> <state-file>   drive AC1-AC7, AC10 (owner-side refusals), AC11 once (idempotent where possible)
   verify   <origin> <ca> <state-file>   after a restart: same records, review, lineage, history
 The synthetic owner password comes from BUTLER_MVP01_OWNER_PASSWORD only; nothing secret is printed.
 """
@@ -59,7 +59,8 @@ def filings(session, document_id):
 def journey(origin, ca, state_file):
     s = login(origin, ca)
     # AC1: identified synthetic user with exactly the intended scopes; TLS was validated against the public CA.
-    status, me = s.call("/api/v1/auth/me", {}) if False else (200, None)
+    status, me = s.get("/api/v1/auth/me")
+    check("AC1 signed in as the synthetic owner with exactly the intended scopes", status == 200 and me.get("display_name", "").startswith("Synthetic MVP-01") and sorted(me.get("scopes", [])) == ["household_shared", "member_a_private"], me)
     # AC2: agenda for the fixture day: event and task once, no peer-private record.
     status, brief = s.call("/api/v1/calendars/briefing", {"scope": SCOPE, "day": DAY, "timezone": ZONE})
     check("AC2 briefing for the fixture day and timezone", status == 200 and brief["day"] == DAY and brief["timezone"] == ZONE)
@@ -69,10 +70,13 @@ def journey(origin, ca, state_file):
     titles = [t["title"] for t in tasks["items"]]
     check("AC2 task appears once", titles.count(seed.TASK) == 1, titles)
     everything = text + json.dumps(tasks)
-    for other in ("member_b_private", "member_a_private"):
-        _, extra = s.call("/api/v1/tasks/query", {"scope": other, "status": "all", "due": "all", "search": ""})
-        everything += json.dumps(extra)
-    check("AC2/AC10 no peer-private record is visible to the owner", "PEER-PRIVATE-MARKER" not in everything)
+    status_a, own_private = s.call("/api/v1/tasks/query", {"scope": "member_a_private", "status": "all", "due": "all", "search": ""})
+    check("AC2 the owner's own private scope is readable", status_a == 200 and own_private.get("items") is not None, status_a)
+    status_b, _ = s.call("/api/v1/tasks/query", {"scope": "member_b_private", "status": "all", "due": "all", "search": ""})
+    check("AC2/AC10 the peer's private scope is explicitly denied (403), not merely empty", status_b == 403, status_b)
+    everything += json.dumps(own_private)
+    check("AC2 no peer-private record is visible to the owner", "PEER-PRIVATE-MARKER" not in everything)
+    print("NOTE AC10 peer isolation by a signed-in peer, revoked grants/sessions and concurrent requests are evidenced by backend/tests/integration/test_mvp01_journey_postgres.py (and the leakage suite), not by this driver: the peer password is random and never retained.")
     # AC3: the exact same email twice: one document, visible replay, original title preserved.
     raw = EML.read_bytes()
     body = {"scope": SCOPE, "title": "MVP-01 rehearsal invoice", "message_base64": base64.b64encode(raw).decode()}
@@ -124,7 +128,6 @@ def journey(origin, ca, state_file):
     _, after = s.call("/api/v1/tasks/query", {"scope": SCOPE, "status": "open", "due": "all", "search": "MVP-01 synthetic"})
     check("AC5 acknowledgement does not complete the task", seed.TASK in [t["title"] for t in after["items"]])
     # AC6: candidates, intentional unknown, contained plan; plan approval alone causes no effect.
-    status, doc = s.call(f"/api/v1/documents/{doc['id']}/read", {"scope": SCOPE}) if False else (200, doc)
     status, receipt = s.call(f"/api/v1/invoices/{doc['id']}/prepare", {"scope": SCOPE, "expected_document_revision": doc["revision"], "expected_review_revision": None})
     check("AC6 candidates prepared", status == 200, status)
     values = {"issuer": "Synthetic Rehearsal Vendor", "invoice_number": "MVP01-2026-001", "issued_on": "2026-11-20", "total": "123.45", "currency": "EUR"}
@@ -139,7 +142,7 @@ def journey(origin, ca, state_file):
     plan = receipt["review"]["data"]["filing_plan"]
     check("AC6 plan approved but execution not authorized", status == 200 and plan["state"] == "approved" and plan["execution_authorized"] is False and plan["relative_path"].startswith("invoices/"))
     check("AC6 plan approval alone caused no filing", filings(s, doc["id"]) == [])
-    # AC10: a peer without the owner's grant is refused; stale/unacknowledged requests fail closed.
+    # AC10 (owner-side only): unacknowledged and stale requests fail closed and start nothing.
     bad = {"scope": SCOPE, "document_id": doc["id"], "expected_document_revision": doc["revision"], "expected_review_revision": receipt["review_revision"]}
     check("AC10 missing acknowledgements are refused", s.call("/api/v1/filing/request", {**bad, "acknowledge_synthetic_destination": True})[0] == 422)
     check("AC10 stale source revision is refused", s.call("/api/v1/filing/request", {**bad, "expected_document_revision": doc["revision"] + 1, "acknowledge_synthetic_destination": True, "acknowledge_exact_plan": True})[0] == 409)
@@ -155,7 +158,7 @@ def journey(origin, ca, state_file):
     status, hist = s.call("/api/v1/filing/history", {"scope": SCOPE, "execution_id": done["id"]})
     ops = [e["operation"] for e in hist["items"]]
     check("AC7 history shows request, attempt, filed", ops == ["requested", "attempted", "filed"], ops)
-    # AC10 peer: the peer holds only member_b_private and must not reach the owner's records.
+    # Persist identifiers for the post-restart verify phase.
     state = {"document_id": doc["id"], "document_revision": doc["revision"], "title": doc["title"], "review_revision": receipt["review_revision"], "filing_id": done["id"], "filing_revision": done["revision"], "path": plan["relative_path"], "reminder_task": task["id"]}
     Path(state_file).write_text(json.dumps(state, indent=1))
     print(f"journey complete; state written ({len(results)} checks passed)")

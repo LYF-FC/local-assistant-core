@@ -155,6 +155,8 @@ class DurableSyntheticDestination(filing.SyntheticDestination):
             value = json.loads((self.root / "objects" / name).read_text())
         except FileNotFoundError:
             return None
+        except ValueError as error:  # includes JSON decoding and invalid UTF-8
+            raise LedgerError("A ledger entry is unreadable") from error
         if (
             not isinstance(value, dict)
             or value.get("schema") != SCHEMA

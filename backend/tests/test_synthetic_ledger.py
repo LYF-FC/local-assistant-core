@@ -130,8 +130,10 @@ def test_corrupt_or_foreign_entry_is_refused_not_trusted(ledger):
     with pytest.raises(LedgerError):
         destination(ledger).lookup(KEY)
     entry.write_text("{not json")
-    with pytest.raises(ValueError):
+    with pytest.raises(LedgerError):
         destination(ledger).put(KEY, "invoices/manual/a.txt", SHA, 7)
+    with pytest.raises(LedgerError):
+        destination(ledger).lookup(KEY)
 
 
 def test_lookup_control_is_inconclusive_and_clears(ledger):

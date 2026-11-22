@@ -53,7 +53,7 @@ ensure_config() {
   if [ ! -f "$ENV_FILE" ]; then
     # A volume without its generated credentials cannot be opened: refuse instead of guessing.
     if docker volume ls -q --filter "label=com.docker.compose.project=${PROJECT}" | grep -q .; then
-      die "volumes of ${PROJECT} exist but ${ENV_FILE} is missing; run 'reset' (destructive) to start over"
+      die "volumes of ${PROJECT} exist but ${ENV_FILE} is missing; run 'reset' (destructive; you type the project name to confirm) to start over"
     fi
     {
       printf 'BUTLER_ENV=test\n'
@@ -123,9 +123,11 @@ if ids:
                 continue
             if other.version == subnet.version and other.overlaps(subnet):
                 owner = (net.get("Labels") or {}).get("com.docker.compose.project") or "no Compose project"
-                print(f"\n[mvp01-owner] REFUSED: subnet {subnet} overlaps Docker network '{net['Name']}' ({other}) of {owner}.\n"
-                      "Only one stack may use the fixed proxy-trust subnet. Nothing was stopped: stop that environment yourself "
-                      "(for example 'docker compose -p <project> down' for its project) and run this command again.", file=sys.stderr)
+                hint = f"docker compose -p {owner} down" if owner != "no Compose project" else f"docker network rm {net['Name']} (after stopping whatever uses it)"
+                print(f"\n[mvp01-owner] REFUSED: subnet {subnet} overlaps Docker network '{net['Name']}' ({other}) of Compose project '{owner}'.\n"
+                      "Only one stack may use the fixed proxy-trust subnet. Nothing was stopped or removed.\n"
+                      f"Stop that environment yourself, WITHOUT -v so its data volumes survive:  {hint}\n"
+                      "Then run this command again.", file=sys.stderr)
                 sys.exit(1)
 PY
 }
@@ -329,16 +331,22 @@ cmd_scenario() {
 
 cmd_reset() {
   need_tools
-  [ -f "$ENV_FILE" ] || die "no rehearsal configuration found; nothing to reset"
-  validate_config
   [ "$PROJECT" = "local-assistant-core-mvp01-owner" ] || die "unexpected project name"
-  # Every object to be removed must belong to this exact Compose project.
+  local have_config=0
+  if [ -f "$ENV_FILE" ]; then
+    validate_config
+    have_config=1
+  fi
+  # Every object to be removed must belong to this exact Compose project (label AND name prefix).
   local volumes containers
   volumes="$(docker volume ls -q --filter "label=com.docker.compose.project=${PROJECT}")"
   containers="$(docker ps -a --format '{{.Names}}' --filter "label=com.docker.compose.project=${PROJECT}")"
   for v in $volumes; do
     case "$v" in "${PROJECT}_"*) ;; *) die "volume ${v} is not prefixed by ${PROJECT}" ;; esac
   done
+  if [ "$have_config" = 0 ] && [ -z "$volumes" ] && [ -z "$containers" ]; then
+    die "no rehearsal configuration and no ${PROJECT} containers or volumes found; nothing to reset"
+  fi
   say "This will PERMANENTLY delete the disposable synthetic rehearsal:"
   say "  project    : ${PROJECT}"
   say "  database   : ${DATABASE} (volume ${PROJECT}_postgres_data)"
@@ -346,6 +354,7 @@ cmd_reset() {
   say "  local files: ${STATE} (generated credentials, exported public CA, fixture copy)"
   say "  containers : $(echo "$containers" | tr '\n' ' ')"
   say "  volumes    : $(echo "$volumes" | tr '\n' ' ')"
+  [ "$have_config" = 1 ] || say "  note       : the generated config is missing; the project is removed by its exact Compose label and name prefix"
   say "Nothing else is removed (no prune, no other project, no images)."
   local answer="${BUTLER_MVP01_RESET_CONFIRM:-}"
   if [ -z "$answer" ]; then
@@ -353,7 +362,15 @@ cmd_reset() {
     read -r -p "Type the project name to confirm: " answer
   fi
   [ "$answer" = "$PROJECT" ] || die "confirmation did not match; nothing was deleted"
-  compose down -v --remove-orphans
+  if [ "$have_config" = 1 ]; then
+    compose down -v --remove-orphans
+  else
+    # Compose only needs the required variables present for interpolation; `down` never uses their values.
+    BUTLER_POSTGRES_PASSWORD=reset-only-unused BUTLER_RUNTIME_PASSWORD=reset-only-unused \
+      docker compose --env-file /dev/null -p "$PROJECT" --profile reminders \
+      -f infra/core/compose.yml -f infra/core/answers-synthetic.override.yml -f infra/core/mvp01-owner.override.yml \
+      down -v --remove-orphans
+  fi
   rm -rf "$STATE"
   say "[mvp01-owner] reset complete. Remove the old CA fingerprint from your keychain yourself if you imported it."
 }

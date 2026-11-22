@@ -44,7 +44,7 @@ test("journey: same email twice, review, plan-only approval, separate exact requ
  // Plan approval alone must not offer or cause any filing effect.
  await expect(filing(page)).toHaveCount(0);
  await plan.getByLabel("I approve only this saved plan; no filing or future execution is authorized.",{exact:true}).check();await plan.getByLabel("I understand duplicate hints do not verify destination collisions.",{exact:true}).check();await plan.getByRole("button",{name:"Approve filing plan only",exact:true}).click();await expect(plan).toContainText("Plan status: approved");
- const exec=filing(page);await expect(exec).toContainText("synthetic metadata simulation");await expect(exec).toContainText("No filing requested for this document").catch(()=>{});
+ const exec=filing(page);await expect(exec).toContainText("synthetic metadata simulation");
  await exec.getByRole("button",{name:"Refresh filing status",exact:true}).click();await expect(exec).toContainText("No filing requested for this document");
  const request=exec.getByRole("button",{name:"Request synthetic filing",exact:true});await expect(request).toBeDisabled();
  await exec.getByLabel("I authorize one filing of exactly this saved source and approved plan to the synthetic metadata destination.",{exact:true}).check();await expect(request).toBeDisabled();

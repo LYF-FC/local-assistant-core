@@ -55,6 +55,7 @@ AC1–AC8 are the ordered owner journey. AC9–AC11 have automated negative/rest
 - In-process tests are not restart proof; the real-process, SIGKILL and container-restart evidence is labelled as such. A host reboot and a clean-host recovery are not exercised and are not claimed.
 - The simulated model is a fixed script that echoes a cited source line; it is not a model-quality or no-egress proof for a real model. The calendar is one manual snapshot imported through the real API.
 - Single stack only: the fixed proxy-trust subnet and Caddy address cannot be shared; names and ports alone do not isolate concurrent stacks. Proxy trust is not loosened.
+- The filing panel lists and shows history for the first 25 entries only and says so; older entries are not paged in the browser. Request/cancel controls are shown only to the document owner (the server refuses everyone else regardless).
 - The owner journey needs the owner's personal run; agent evidence is not acceptance.
 
 ## Acceptance of this extension

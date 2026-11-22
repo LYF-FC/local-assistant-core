@@ -100,7 +100,9 @@ class OwnerScriptTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("butler-poc_app", result.stderr)
         self.assertIn("butler-poc", result.stderr)
-        self.assertIn("Nothing was stopped", result.stderr)
+        self.assertIn("Nothing was stopped or removed", result.stderr)
+        self.assertIn("WITHOUT -v", result.stderr)
+        self.assertIn("docker compose -p butler-poc down", result.stderr)
         self.assert_nothing_removed()
         self.assertFalse(any(" up " in f" {c} " for c in self.calls()))
 
@@ -187,6 +189,37 @@ class OwnerScriptTests(unittest.TestCase):
         for call in self.calls():
             self.assertFalse(any(word in f" {call} " for word in ("prune", "rmi", "volume rm", "network rm", "system ")), call)
         self.assertFalse(self.state.exists())
+
+    def test_start_refusal_for_orphaned_volumes_is_recoverable_by_a_confirmed_reset(self):
+        volumes = f"{PROJECT}_postgres_data\n{PROJECT}_synthetic_filing"
+        refused = self.run_script("start", extra={"FAKE_VOLUMES": volumes})
+        self.assertNotEqual(refused.returncode, 0)
+        self.assertIn("reset", refused.stderr)
+        self.assertFalse(self.state.joinpath("mvp01-owner.env").exists())
+        # The exact recovery the message promises: reset works without the generated config...
+        wrong = self.run_script("reset", extra={"FAKE_VOLUMES": volumes, "BUTLER_MVP01_RESET_CONFIRM": "nope"})
+        self.assertNotEqual(wrong.returncode, 0)
+        self.assertFalse(any(" down" in c for c in self.calls()))
+        done = self.run_script("reset", extra={"FAKE_VOLUMES": volumes, "BUTLER_MVP01_RESET_CONFIRM": PROJECT})
+        self.assertEqual(done.returncode, 0, done.stderr)
+        downs = [c for c in self.calls() if " down" in c]
+        self.assertEqual(len(downs), 1)
+        # ...and only for the exact project, scoped by name, with no other removal-style call.
+        self.assertIn(f"-p {PROJECT}", downs[0])
+        self.assertIn("down -v --remove-orphans", downs[0])
+        self.assertIn("--env-file /dev/null", downs[0])
+        for call in self.calls():
+            self.assertFalse(any(word in f" {call} " for word in ("prune", "rmi", "volume rm", "network rm", "system ")), call)
+        self.assertFalse(self.state.exists())
+
+    def test_reset_without_config_refuses_foreign_volumes_and_empty_environments(self):
+        empty = self.run_script("reset", extra={"BUTLER_MVP01_RESET_CONFIRM": PROJECT})
+        self.assertNotEqual(empty.returncode, 0)
+        self.assertIn("nothing to reset", empty.stderr)
+        foreign = self.run_script("reset", extra={"FAKE_VOLUMES": "butler-poc_postgres_data", "BUTLER_MVP01_RESET_CONFIRM": PROJECT})
+        self.assertNotEqual(foreign.returncode, 0)
+        self.assertIn("not prefixed", foreign.stderr)
+        self.assertFalse(any(" down" in c for c in self.calls()))
 
     def test_scenario_and_usage_reject_unknown_input(self):
         self.assertEqual(self.run_script().returncode, 2)

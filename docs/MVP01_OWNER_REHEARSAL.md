@@ -53,6 +53,7 @@ Seeded once and idempotently: users `mvp01-owner` (scopes `household_shared`, `m
 
 ## Ordered journey
 
+0. **Free the fixed subnet.** Only one stack can use `172.29.243.0/28`. If `start` refuses and names a Compose project (for example `butler-poc`), stop that environment yourself **without `-v`** so its data survives: `docker compose -p <that project> down`. The script never stops or removes anything outside this rehearsal. The loopback ports 18081/18444 must also be free.
 1. Open `https://localhost:18444/`, sign in as `mvp01-owner` (no warning bypass); try a mobile-width window too.
 2. Daily overview for 2026-11-24 / Europe/Zurich: the event and task once each; freshness and zone shown; no peer marker.
 3. Import `invoice.eml` through *Import forwarded email* twice: one document, "Exact email already imported", original title preserved; inspect the email original.
@@ -70,4 +71,4 @@ Process kill, container restart, host reboot and clean-host recovery are differe
 
 ## Stop and reset
 
-`stop` keeps everything. `reset` deletes, after you type the exact project name, only the containers, network and volumes carrying the `local-assistant-core-mvp01-owner` Compose label and prefix (verified before deletion) and `.local/mvp01-owner/`. It refuses to run if the generated config does not name the exact rehearsal database and synthetic marker. No prune, no other project, no images. Remove the old CA fingerprint from your keychain yourself.
+`stop` keeps everything. `reset` also works when the generated config is gone (for example after deleting `.local/`) while the project's volumes remain: it then identifies the project by its exact Compose label and name prefix. It deletes, after you type the exact project name, only the containers, network and volumes carrying the `local-assistant-core-mvp01-owner` Compose label and prefix (verified before deletion) and `.local/mvp01-owner/`. It refuses to run if the generated config does not name the exact rehearsal database and synthetic marker. No prune, no other project, no images. Remove the old CA fingerprint from your keychain yourself.

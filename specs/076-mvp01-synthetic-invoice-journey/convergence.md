@@ -1,6 +1,6 @@
 # Spec 076 convergence record (22 November 2026)
 
-Engineering evidence on the **unmerged** branch `work/mvp01-invoice/a3-implementation`, base `e088626331aff57d630d95faa721353a27bd468f`, working tree uncommitted. Host: owner's Mac (Darwin, Python 3.13.5, Docker 29.9.3). Implementation, integration, testing, verification and acceptance are separate: **not merged, not independently reviewed, not verified, not accepted.** Nothing here is CI evidence.
+Engineering evidence on the **unmerged** branch `work/mvp01-invoice/a3-implementation`, base `e088626331aff57d630d95faa721353a27bd468f`. First commit `67bae82d053c9f9e0b09747acabf447064600109` (local only, not pushed); a follow-up commit applies the review fixes below. The results in the table were obtained on the working tree that became `67bae82` unless the follow-up section says otherwise. Host: owner's Mac (Darwin, Python 3.13.5, Docker 29.9.3). Implementation, integration, testing, verification and acceptance are separate: **not merged, not independently reviewed, not verified, not accepted.** Nothing here is CI evidence.
 
 ## Results
 
@@ -11,7 +11,7 @@ Engineering evidence on the **unmerged** branch `work/mvp01-invoice/a3-implement
 | `tests/test_synthetic_ledger.py` | 14 passed (incl. real-process SIGKILL before/after effect) |
 | Frontend `npm test` / `npm run build` | 34 files, 846 tests passed / build ok (incl. `filing-api.test.ts`, 22) |
 | `scripts/test_mvp01_owner.py` | 11 passed (fake docker: subnet/port/config/volume/reset refusals) |
-| `check_repository.py`, `test_ci_scope.py`, `build_feature_overview.py --check` | run after the master edit; re-run after this file exists (see final report) |
+| `check_repository.py`, `test_ci_scope.py`, `build_feature_overview.py --check` | pass; re-run immediately before `67bae82` (repository policy, feature overview 155 references) and again for the follow-up commit |
 | Disposable PostgreSQL 17 (own container, `butler_test`, `BUTLER_ENV=test`, `BUTLER_RUN_DB_TESTS=1`), full `-m integration` incl. existing `mvp03_journey`, `filing_restart`, `notification_restart` and 10 new `mvp01_journey` tests | **1207 passed** on a freshly recreated database. An earlier run on a reused database showed 2 failures in `test_document_answers_postgres`/`test_documents_postgres` caused by a document left active by my first, failed test teardown (a scope-revocation test); no guard was bypassed — the database was recreated and the test now restores the scope. |
 | Live rehearsal, API driver `scripts/mvp01-owner-check.py journey` then `verify` after `restart` and after `restart --kill` | 30 checks passed on `journey` (AC2–AC7, AC10, AC11); `verify` passed after both restarts (same document/title/revision, review, plan, one terminal filing, history, reminder not redelivered, agenda unchanged); ledger `effects: 1, calls: 1` before and after both |
 | Live rehearsal, browser (`mvp01-owner.spec.ts`, Chromium 1.65 in a Linux container; public CA in its NSS store, `ignoreHTTPSErrors` false, no flags) | `journey` passed (same email twice, replay, review, plan-only approval offers no filing, separate request, Filed, history, mobile-width no overflow); `resume` after container restart (first attempt failed on a faulty selector in my spec, corrected) and after process kill passed |
@@ -33,3 +33,21 @@ AC1 partial (stack/TLS/sign-in exercised on the deviation stack; real-subnet sta
 ## Open
 
 Independent review (A4), A1+A5 verification, owner's personal run on the real stack, CI evidence, and Linux confirmation of the `recovery_*` modules remain. Register status labels were deliberately not changed (the register fingerprint is tied to the hand-curated snapshot; the label changes only after merge).
+
+## Independent findings and follow-up (commit after `67bae82`)
+
+A4 (independent review of `67bae82`) reported no high-severity defect; A5 (verification) reported the backend journey, restarts (including SIGKILL) and failure scenarios passing on a scratch-patched stack, with the browser UI **not** run by A5. Neither is acceptance. Reports were relayed by A1; their files were not readable from this session, so the fixes follow A1's summary of the findings.
+
+Changed in the follow-up:
+- `reset` now works when the generated config is missing but project volumes exist (the recovery the `start` refusal message tells the owner to use). It is still limited to the exact project by Compose label and name prefix and needs the typed project name. Tested through the real recovery path (refused `start` with orphaned volumes, wrong confirmation, confirmed reset, foreign-prefixed volume, empty environment).
+- Subnet refusal now names the conflicting Compose project and says to stop it without `-v`; guide step 0 says the same.
+- `scripts/mvp01-owner-check.py`: dead `if False` code removed; AC1 checks the real `/auth/me` identity and exact scopes; AC2/AC10 require an explicit 403 for the peer scope and a readable own private scope instead of passing on empty denials; the peer-login claim was removed and the output states that signed-in peer isolation is evidenced only by the PostgreSQL tests (the peer password is random and never retained).
+- Ledger: undecodable entries raise the fixed `LedgerError` instead of a raw decode error; a test pins both `put` and `lookup`.
+- Revoked-scope PostgreSQL test renamed to what it proves (scope revocation only; session revocation not covered by this test).
+- Browser spec: removed the swallowed `.catch`. Panel: polling no longer starts while a request is in flight; request and cancel controls are shown only to the document owner (a short note explains it to others); first-page-only listing and history are stated in the panel and the spec.
+
+Re-run for the follow-up (this Mac, 22 November 2026): ruff check/format; ledger unit tests (14); `scripts/test_mvp01_owner.py` (13); frontend typecheck, full suite (846) and build; repository policy and feature-overview checks; disposable PostgreSQL 17 (fresh database, `BUTLER_ENV=test`) `test_mvp01_journey_postgres`, `test_filing_restart_postgres`, `test_notification_restart_postgres`, `test_mvp03_journey_postgres`, `test_filing_fence_postgres` = **70 passed** (the earlier 1207-test full run predates the follow-up and was not repeated); live driver on the patched verify stack = **35 checks passed** (AC1 identity/scopes, explicit 403 for the peer scope, journey), then SIGKILL restart and `verify` passed; `reset` with the generated config deleted and volumes present was refused by `start` and then recovered by a confirmed `reset` (volumes 0 afterwards); on a fresh database the browser spec `journey` and, after a container restart, `resume` passed (ledger `effects: 1, calls: 1`). The verify project, temporary compose copy and test PostgreSQL container were removed.
+
+## Real limits to keep in view
+
+Live evidence came from a patched copy of the script/compose on a different subnet, ports and project (the fixed subnet was held by another stack); the real `start` has not been run by an agent. A5 did not run the browser UI; this session's earlier browser run used a Linux Playwright container and predates the follow-up. The sign-in limiter allows 5 attempts per account per 15 minutes and was never cleared, which constrains repeated runs. A host reboot and a clean-host recovery are not exercised. Whether CI should run `scripts/test_mvp01_owner.py` and the exact wording of the 22 November decision on commit authorization are owner/A6 decisions and were not changed.

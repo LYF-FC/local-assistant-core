@@ -242,7 +242,7 @@ def test_a_plan_changed_after_the_request_cancels_it_with_no_effect(
     assert stale.status_code == 409  # the old source revision cannot authorize anything
 
 
-def test_a_revoked_scope_or_inactive_owner_cancels_without_effect(scenario, runtime_engine, ledger):
+def test_a_revoked_scope_cancels_the_request_without_effect(scenario, runtime_engine, ledger):
     _client, _h, _, admin, user_id = scenario
     maker, admin, _raw, _original, doc, _, _path, row = journey_to_request(scenario, runtime_engine)
     with admin.begin() as db:
