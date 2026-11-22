@@ -53,6 +53,10 @@ class OwnerScriptTests(unittest.TestCase):
         docker = self.tmp / "bin" / "docker"
         docker.write_text(SHIM)
         docker.chmod(docker.stat().st_mode | stat.S_IEXEC)
+        # An isolated throwaway repository: the script only reads its revision; the real repository is never used.
+        git = ["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid", "-c", "commit.gpgsign=false"]
+        subprocess.run(["git", "init", "-q"], cwd=self.tmp, check=True, capture_output=True)
+        subprocess.run([*git, "commit", "-q", "--allow-empty", "-m", "synthetic"], cwd=self.tmp, check=True, capture_output=True)
         self.log = self.tmp / "docker.log"
         self.log.write_text("")
         self.state = self.tmp / ".local" / "mvp01-owner"
@@ -71,9 +75,6 @@ class OwnerScriptTests(unittest.TestCase):
             "PATH": f"{self.tmp / 'bin'}:{os.environ['PATH']}",
             "HOME": str(self.tmp),
             "FAKE_DOCKER_LOG": str(self.log),
-            # Read-only revision queries for the temporary copy; nothing is ever written to this repository.
-            "GIT_DIR": str(REPO / ".git"),
-            "GIT_WORK_TREE": str(self.tmp),
             **(extra or {}),
         }
         return subprocess.run(
