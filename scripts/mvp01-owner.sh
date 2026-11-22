@@ -237,7 +237,7 @@ Ordered steps
  3  Documents > Import forwarded email: choose ${EML}; import it twice. Expect one document and "Exact email already imported".
  4  Open the document, review its source (correct and review), inspect the email original.
  5  Ask the question above in the answers panel; expect the exact quotation "Total: 123.45" cited at line 5 with document, revision and SHA-256, and a link to the current source.
- 6  My reminders > preferences: enable your in-app reminders (opt-in). Then schedule a reminder for the task a couple of minutes ahead; the reminder worker delivers it once; acknowledge it (the task stays open).
+ 6  In-app reminders are enabled by default (preferences are only for different quiet hours or limits). In Tasks and agenda, select the task and use the 'Remind me in Butler' control at the bottom of its details to schedule a reminder a couple of minutes ahead; the reminder worker delivers it once; acknowledge it (the task stays open).
  7  Invoice field review: prepare candidates, confirm issuer/number/issue date/total/currency, leave Due date Unknown, save; suggest and approve the filing plan only.
  8  "Synthetic filing execution": tick both acknowledgements and request the filing; watch Pending -> Filed and open its history.
  9  bash scripts/mvp01-owner.sh restart   (container restart)   then   bash scripts/mvp01-owner.sh restart --kill   (process kill).

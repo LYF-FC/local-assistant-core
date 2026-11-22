@@ -65,4 +65,23 @@ Recorded as fixes or documented limits, from A1's relay of the owner's trial and
 
 Ran on this Mac: ruff check/format (pass); ledger unit tests (14 pass); frontend full suite (847 pass), typecheck and build (pass; there is no separate lint step beyond `tsc`); `check_repository.py` (pass); `test_ci_scope.py` (23 tests pass, before and after the workflow edit); `build_feature_overview.py --check` (155 references, pass); workflow YAML parses; `scripts/test_mvp01_owner.py` = OK with **4 skipped** (the owner's running rehearsal held loopback ports 18081/18444, and the port-dependent cases skip by design rather than disturb it; they last ran and passed with the ports free, before the test was changed to use an isolated throwaway git repository instead of reading this repository's `.git`, so those four are unverified against that change until CI); browser spec `journey` and, after a container restart, `resume` passed on a separate verify project after the panel changes (Linux Playwright container, public CA only), which was then torn down with the owner's stack untouched.
 
-**Not run** for these commits: the PostgreSQL suites (no backend code changed), the live API driver, the real `start`, a Linux run of `scripts/test_mvp01_owner.py` and of the `recovery_*` modules (first exercised by CI), a host reboot and clean-host recovery. **The owner's acceptance covers `17628594e037397ad013333b5e6dc785757aa8c7` only;** these later commits are not covered unless the owner re-confirms.
+**Not run** for these commits: the PostgreSQL suites (no backend code changed), the live API driver, the real `start`, a Linux run of `scripts/test_mvp01_owner.py` and of the `recovery_*` modules (first exercised by CI), a host reboot and clean-host recovery. On 22 November 2026 the owner accepted the journey as tried on `17628594e037397ad013333b5e6dc785757aa8c7` and re-confirmed it for `193ccb865eaa63cb85b408b734778ad2629fa920` after trying the three changed screens (see PROJECT_MASTER.md and DECISIONS.md); commits after `193ccb8` change documentation or printed text only and are not separately accepted.
+
+## Owner-observed evidence (22 November 2026)
+
+Links the steps the owner personally ran to the scope they answer. Labels: *owner-run, result not reported individually*; *owner-reported*; *A1-database/ledger-confirmed* (read-only, 22 Nov 2026); *agent-only*. This promotes no gate.
+
+| # | Owner step | Spec 076 | Underlying spec / gate | Evidence level |
+|---|---|---|---|---|
+| 1 | Start stack, HTTPS sign-in (CA trusted by the owner) | AC1, R6, R7 | Gate 1/2 (CORE-02/08/09, UI-01) | owner-run; healthy start and CA fingerprint seen by A1; mobile viewport **not** reported |
+| 2 | Daily overview 2026-11-24 | AC2, R8 | Gate 4 (ORG-01/02, MVP-02; spec 062) | owner-run, result not reported individually |
+| 3 | Import the same `.eml` twice, review the source | AC3, AC4 | Gate 7 (DOC-01/02/03, MVP-03; specs 056, 058) | owner-run, result not reported individually; document `22d01f58-c5f7-437d-984f-eaae15be01bd` seen in API logs |
+| 4 | Cited question "What is the total amount?" | AC4, AC11 | Gate 3 (CORE-06/10; spec 053) | owner-reported ("seems good"); the model is **simulated** |
+| 5 | Reminder scheduled, delivered, acknowledged | AC5 | Gate 5 (ORG-03, CORE-11/13, REM-01; spec 047) | A1-database-confirmed: scheduled 20:37:14, delivered 20:38:08, acknowledged 20:40:42 (Europe/Zurich), each once; task stayed open |
+| 6 | Invoice review, filing plan, approve plan only | AC6, R1 | Gate 7 (specs 056, 057) | owner-run; API logs show review/plan/approve_plan 200 (after earlier 422s on plan suggestion with unconfirmed fields) |
+| 7 | Request synthetic filing | AC7, R1–R3 | Gate 7 (MVP-03; spec 069) | A1-ledger-confirmed: calls 1, effects 1, entries 1; recorded sha256 `cf33de5445929268ba31d57594c2cbfa05e978ffe18268b1c6b4ec991f2b8223` and size 140 equal the fixture attachment's |
+| 8 | `restart`, `restart --kill` (twice), stop + start, second container restart | AC8, R5, R6 | Gate 5/10 (OPS-09/10) | A1-ledger-confirmed after each: same entry, effects 1, no re-delivered reminder |
+| 9 | Rebuild to `193ccb865eaa63cb85b408b734778ad2629fa920`; plan-suggestion screen, reminder-preferences screen, filing panel after sign-in | AC6, AC7, R1 | Gate 7 | owner-reported ("All three screens work"); ledger unchanged after the rebuild (A1-confirmed) |
+| 10 | stop; reset guard; subnet refusal | AC12, R6, R7 | INSTALL-01/02 | owner ran `stop` (data kept); reset guard and subnet refusal are **agent-only** |
+
+AC9 (failure scenarios) and AC10 (peer, stale, malicious-path refusals) were **not** exercised by the owner's own run: agent-only (A5 live run, author's PostgreSQL tests). This mapping promotes no gate; Gates 3, 4, 5 and 7 stay partial and not accepted; Gate 7 real-destination evidence remains missing; the composite MVP-01 acceptance is for the stated synthetic scope only.
