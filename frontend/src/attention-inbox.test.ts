@@ -357,3 +357,19 @@ describe("approvals paging and honest section wording", () => {
     expect(await moreApprovals(inbox, session, signal())).toBe(inbox);
   });
 });
+
+describe("spec 077 filing wording", () => {
+  it("an unconfirmed filing card explains that nothing was lost and nothing will be written blindly twice", async () => {
+    mock({ "/api/v1/filing/query:unknown": () => new Response(JSON.stringify(filingPage("unknown", [filingRow(1, "unknown", { reason: "ambiguous_outcome", attempts: 1 })]))) });
+    const [card] = groups(await loadInbox(session, scope, signal())).find(g => g.id === "filing")!.cards;
+    expect(card.status).toBe("Outcome not confirmed");
+    expect(card.uncertainty.join(" ")).toContain("Nothing was lost");
+    expect(card.uncertainty.join(" ")).toContain("will not write a second time blindly");
+  });
+  it("a filing that failed after three attempts says the request is final", async () => {
+    mock({ "/api/v1/filing/query:failed": () => new Response(JSON.stringify(filingPage("failed", [filingRow(2, "failed", { reason: "attempts_exhausted" })]))) });
+    const [card] = groups(await loadInbox(session, scope, signal())).find(g => g.id === "filing")!.cards;
+    expect(card.status).toBe("Filing failed");
+    expect(card.uncertainty.join(" ")).toContain("final");
+  });
+});

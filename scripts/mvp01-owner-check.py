@@ -4,6 +4,7 @@
 Standard library only; real HTTPS API with the exported public CA (no certificate bypass).
   journey  <origin> <ca> <state-file>   drive AC1-AC7, AC10 (owner-side refusals), AC11 once (idempotent where possible)
   verify   <origin> <ca> <state-file>   after a restart: same records, review, lineage, history
+  outage-journey / outage-end / peer    spec 077: bad-connection day (outage already ON / after OFF / live peer negatives)
 The synthetic owner password comes from BUTLER_MVP01_OWNER_PASSWORD only; nothing secret is printed.
 """
 
@@ -184,7 +185,137 @@ def verify(origin, ca, state_file):
     print("verify complete")
 
 
+EML2 = HERE / "mvp01-owner-fixtures" / "invoice-002.eml"
+TITLE2 = "MVP-01 outage-day invoice"
+SECOND_STATE_KEYS = ("document_id", "document_title", "filing_id", "path", "calendar_id")
+
+
+def outage_journey(origin, ca, state_file):
+    """Spec 077: run with `outage on` already applied by the caller. One owner sign-in."""
+    s = login(origin, ca)
+    status, me = s.get("/api/v1/auth/me")
+    check("AC1 signed in as the synthetic owner", status == 200 and sorted(me.get("scopes", [])) == ["household_shared", "member_a_private"], me)
+    # C1: the calendar source is marked offline by the owner's existing control; the overview must not claim a free day.
+    status, listing = s.call("/api/v1/calendars/query", {"scope": SCOPE})
+    source = next(i for i in listing["items"] if i.get("label") == seed.CALENDAR)
+    if source.get("status") != "offline":
+        status, _ = s.call(f"/api/v1/calendars/{source['id']}/unavailable", {"scope": SCOPE, "expected_revision": source["revision"], "reason": "offline"})
+        check("C1 the calendar source is marked offline (existing control)", status == 200, status)
+    status, brief = s.call("/api/v1/calendars/briefing", {"scope": SCOPE, "day": DAY, "timezone": ZONE})
+    blob = json.dumps(brief).lower()
+    check("C1 overview keeps the last-known event and says offline", status == 200 and "family planning call" in blob and "offline" in blob, blob[:300])
+    check("C1 overview makes no free-day claim", "free day" not in blob.replace("not establish a free day", "").replace("does not mean a free day", ""))
+    # C2 (tasks) first; the question needs a reviewed source, so it follows the review below.
+    status, tasks = s.call("/api/v1/tasks/query", {"scope": SCOPE, "status": "open", "due": "all", "search": "MVP-01 synthetic"})
+    check("C2 manual tasks still work during the outage", status == 200 and seed.TASK in [t["title"] for t in tasks["items"]])
+    # C3: invoice 2 twice, review, plan approval alone starts nothing, then the exact request.
+    raw = EML2.read_bytes()
+    body = {"scope": SCOPE, "title": TITLE2, "message_base64": base64.b64encode(raw).decode()}
+    first = s.call("/api/v1/email-intake", body)
+    second = s.call("/api/v1/email-intake", {**body, "title": "A replay must not rename"})
+    doc = second[1]["document"]
+    check("C3 invoice 2 imported once and replayed", first[0] in (200, 201) and second[0] == 200 and second[1]["status"] == "replayed" and doc["title"] == TITLE2)
+    if not doc.get("reviewed"):
+        status, doc = s.call(f"/api/v1/documents/{doc['id']}/correct", {"scope": SCOPE, "expected_revision": doc["revision"], "title": doc["title"], "source_reference": doc["source_reference"], "reviewed": True})
+        check("C3 source reviewed (works during the outage)", status == 200, status)
+    # C2: with the reviewed source present and the model stopped, the answer is an explicit unavailable.
+    status, answer = s.call("/api/v1/document-answers", {"scope": SCOPE, "question": QUESTION})
+    check("C2 stopped answer service gives an explicit 'unavailable', not an error or a made-up answer", status == 200 and answer.get("status") == "unavailable" and not answer.get("passages"), json.dumps(answer)[:200])
+    status, receipt = s.call(f"/api/v1/invoices/{doc['id']}/prepare", {"scope": SCOPE, "expected_document_revision": doc["revision"], "expected_review_revision": None})
+    check("C3 candidates prepared", status == 200, status)
+    values = {"issuer": "Synthetic Rehearsal Vendor", "invoice_number": "MVP01-2026-002", "issued_on": "2026-11-21", "total": "245.60", "currency": "EUR"}
+    lines = {"issuer": 1, "invoice_number": 2, "issued_on": 3, "total": 5, "currency": 6}
+    decisions = {f: {"state": "confirmed", "value": v, "line": lines[f], "note": ""} for f, v in values.items()}
+    decisions["due_on"] = {"state": "unknown", "value": None, "line": None, "note": "Left unknown on purpose"}
+    status, receipt = s.call(f"/api/v1/invoices/{doc['id']}/review", {"scope": SCOPE, "expected_document_revision": doc["revision"], "expected_review_revision": receipt["review_revision"], "attest_original": True, "decisions": decisions})
+    check("C3 review saved", status == 200 and receipt["status"] == "reviewed", status)
+    status, receipt = s.call(f"/api/v1/invoices/{doc['id']}/plan", {"scope": SCOPE, "expected_document_revision": doc["revision"], "expected_review_revision": receipt["review_revision"]})
+    status, receipt = s.call(f"/api/v1/invoices/{doc['id']}/approve_plan", {"scope": SCOPE, "expected_document_revision": doc["revision"], "expected_review_revision": receipt["review_revision"], "acknowledge_plan_only": True, "acknowledge_duplicate_limits": True})
+    plan = receipt["review"]["data"]["filing_plan"]
+    check("C3 plan approved; approval alone started nothing", status == 200 and plan["execution_authorized"] is False and filings(s, doc["id"]) == [])
+    request = {"scope": SCOPE, "document_id": doc["id"], "expected_document_revision": doc["revision"], "expected_review_revision": receipt["review_revision"], "acknowledge_synthetic_destination": True, "acknowledge_exact_plan": True}
+    status, created = s.call("/api/v1/filing/request", request)
+    check("C3 exact request recorded", status in (200, 201), status)
+    filing_id = created["filing"]["id"]
+    # C4: waiting, never failed, never filed; listed where the Attention inbox reads it.
+    waiting = wait(lambda: next((f for f in filings(s, doc["id"]) if f["state"] == "unknown"), None), 120, 3)
+    check("C4 the filing waits as 'unknown' (not failed, not filed)", waiting and waiting["id"] == filing_id and waiting["state"] == "unknown" and waiting["reason"] == "ambiguous_outcome", waiting)
+    status, inbox = s.call("/api/v1/filing/query", {"scope": SCOPE, "state": "unknown", "document_id": None, "after": None})
+    check("C4 the Attention inbox source lists it with its document link target", status == 200 and any(i["id"] == filing_id and i["document_id"] == doc["id"] for i in inbox["items"]))
+    status, hist = s.call("/api/v1/filing/history", {"scope": SCOPE, "execution_id": filing_id})
+    ops = [e["operation"] for e in hist["items"]]
+    check("C4 history shows request and attempt only, then the unknown outcome", ops[:2] == ["requested", "attempted"] and "filed" not in ops and "failed" not in ops, ops)
+    Path(state_file).write_text(json.dumps({"document_id": doc["id"], "document_title": TITLE2, "filing_id": filing_id, "path": plan["relative_path"], "calendar_id": source["id"]}, indent=1))
+    print("outage-journey complete; run the restart and `outage off`, then outage-end")
+
+
+def outage_end(origin, ca, state_file, effects_before=None, effects_after=None):
+    """After `outage off`: one owner sign-in. Ledger counts come from `status` (before the outage ended, after filing)."""
+    state = json.loads(Path(state_file).read_text())
+    s = login(origin, ca)
+    done = wait(lambda: next((f for f in filings(s, state["document_id"]) if f["state"] in ("filed", "failed")), None), 150, 3)
+    check("C6 the waiting filing resolves to Filed", done and done["id"] == state["filing_id"] and done["state"] == "filed", done)
+    items = filings(s, state["document_id"])
+    check("C6 still exactly one request for invoice 2", len(items) == 1)
+    status, hist = s.call("/api/v1/filing/history", {"scope": SCOPE, "execution_id": state["filing_id"]})
+    ops = [e["operation"] for e in hist["items"]]
+    check("C6 history is complete and ends Filed", ops[0] == "requested" and ops[-1] == "filed", ops)
+    if effects_before is not None and effects_after is not None:
+        check("C6 the ledger gained exactly one effect", int(effects_after) == int(effects_before) + 1, (effects_before, effects_after))
+    else:
+        print("NOTE the ledger +1-effect check was not run: pass the `status` effects counts before and after as arguments")
+    raw = EML2.read_bytes()
+    third = s.call("/api/v1/email-intake", {"scope": SCOPE, "title": "Replay after filing", "message_base64": base64.b64encode(raw).decode()})
+    check("C6 a further import of invoice 2 replays and starts nothing", third[0] == 200 and third[1]["status"] == "replayed" and len(filings(s, state["document_id"])) == 1)
+    status, answer = s.call("/api/v1/document-answers", {"scope": SCOPE, "question": QUESTION})
+    check("C6 answers work again once the assistant is back", status == 200 and answer.get("status") in ("answered", "insufficient", "conflicting"), answer.get("status"))
+    print("outage-end complete")
+
+
+def peer(origin, ca, state_file):
+    """Live peer-side negatives (one peer sign-in). Needs BUTLER_MVP01_PEER_PASSWORD, set for this one command only."""
+    state = json.loads(Path(state_file).read_text())
+    p = seed.Session(origin, ca)
+    p.login("mvp01-peer", os.environ["BUTLER_MVP01_PEER_PASSWORD"])
+    status, me = p.get("/api/v1/auth/me")
+    check("C7 the peer is a different user with only its own private scope", status == 200 and me.get("scopes") == ["member_b_private"], me)
+    owner_ids = (state["document_id"], state["filing_id"], state["document_title"])
+    every = ""
+    for scope in ("household_shared", "member_a_private"):
+        code, _ = p.call("/api/v1/filing/query", {"scope": scope, "state": "all", "document_id": state["document_id"]})
+        check(f"C7 filing query in {scope} is refused", code in (403, 404), code)
+        code, _ = p.call("/api/v1/filing/history", {"scope": scope, "execution_id": state["filing_id"]})
+        check(f"C7 filing history in {scope} is refused", code in (403, 404), code)
+        code, _ = p.call("/api/v1/filing/cancel", {"scope": scope, "execution_id": state["filing_id"], "expected_revision": 1})
+        check(f"C7 filing cancel in {scope} is refused", code in (403, 404), code)
+        code, _ = p.call("/api/v1/filing/request", {"scope": scope, "document_id": state["document_id"], "expected_document_revision": 1, "expected_review_revision": 1, "acknowledge_synthetic_destination": True, "acknowledge_exact_plan": True})
+        check(f"C7 filing request in {scope} is refused", code in (403, 404), code)
+        code, _ = p.call("/api/v1/documents/query", {"scope": scope})
+        check(f"C7 document list in {scope} is refused", code in (403, 404), code)
+    own = "member_b_private"
+    for name, path, body in (
+        ("filing unknown", "/api/v1/filing/query", {"scope": own, "state": "unknown", "document_id": None, "after": None}),
+        ("filing failed", "/api/v1/filing/query", {"scope": own, "state": "failed", "document_id": None, "after": None}),
+        ("filing all", "/api/v1/filing/query", {"scope": own, "state": "all", "document_id": None, "after": None}),
+        ("documents", "/api/v1/documents/query", {"scope": own}),
+        ("reminders", "/api/v1/reminders/query", {"scope": own, "state": "all"}),
+        ("approvals", "/api/v1/approvals/query", {"scope": own}),
+        ("briefing", "/api/v1/calendars/briefing", {"scope": own, "day": DAY, "timezone": ZONE}),
+    ):
+        code, data = p.call(path, body)
+        every += json.dumps(data)
+        check(f"C7 peer {name} read is allowed and shows nothing of the owner", code == 200 and not any(x in json.dumps(data) for x in owner_ids), code)
+    code, own_tasks = p.call("/api/v1/tasks/query", {"scope": own, "status": "all", "due": "all", "search": ""})
+    check("C7 positive control: the peer sees its own marker task", code == 200 and any("PEER-PRIVATE-MARKER" in t["title"] for t in own_tasks["items"]))
+    check("C7 no owner title, id or filing id appears anywhere in the peer's responses", not any(x in every + json.dumps(own_tasks) for x in owner_ids))
+    print("NOTE a non-owner EDITOR (same scope, different user) needs a third fixture user with household_shared; it is covered by the PostgreSQL tests only.")
+    print("peer complete")
+
+
+
+COMMANDS = {"journey": journey, "verify": verify, "outage-journey": outage_journey, "outage-end": outage_end, "peer": peer}
+
 if __name__ == "__main__":
-    if len(sys.argv) != 5 or sys.argv[1] not in {"journey", "verify"}:
-        raise SystemExit("usage: mvp01-owner-check.py journey|verify <origin> <ca> <state-file>")
-    {"journey": journey, "verify": verify}[sys.argv[1]](*sys.argv[2:])
+    if len(sys.argv) < 5 or sys.argv[1] not in COMMANDS:
+        raise SystemExit("usage: mvp01-owner-check.py journey|verify|outage-journey|outage-end|peer <origin> <ca> <state-file> [effects-before effects-after for outage-end]")
+    COMMANDS[sys.argv[1]](*sys.argv[2:])

@@ -1,0 +1,26 @@
+From: billing@vendor.example.invalid
+To: household@example.invalid
+Subject: Synthetic MVP-01 outage-day invoice MVP01-2026-002
+Date: Sat, 21 Nov 2026 09:00:00 +0000
+Message-ID: <mvp01-outage-002@example.invalid>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="===============4287002815820502045=="
+
+--===============4287002815820502045==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+Synthetic forwarded invoice for the bad-connection-day rehearsal. No real dat=
+a.
+
+--===============4287002815820502045==
+Content-Type: text/plain
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="invoice-MVP01-2026-002.txt"
+MIME-Version: 1.0
+
+SXNzdWVyOiBTeW50aGV0aWMgUmVoZWFyc2FsIFZlbmRvcgpJbnZvaWNlIG51bWJlcjogTVZQMDEt
+MjAyNi0wMDIKSW52b2ljZSBkYXRlOiAyMDI2LTExLTIxCkR1ZSBkYXRlOiAyMDI2LTEyLTIzClRv
+dGFsOiAyNDUuNjAKQ3VycmVuY3k6IEVVUgo=
+
+--===============4287002815820502045==--

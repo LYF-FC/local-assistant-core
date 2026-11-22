@@ -235,6 +235,63 @@ class OwnerScriptTests(unittest.TestCase):
         self.assertIn("not prefixed", foreign.stderr)
         self.assertFalse(any(" down" in c for c in self.calls()))
 
+    def ledger_controls(self):
+        return [c for c in self.calls() if "synthetic_ledger control" in c]
+
+    def test_outage_on_composes_only_existing_controls_and_off_removes_them(self):
+        self.config()
+        on = self.run_script("outage", "on", extra={"FAKE_RUNNING": "caddy"})
+        self.assertEqual(on.returncode, 0, on.stderr)
+        self.assertTrue((self.state / "outage.on").exists())
+        self.assertEqual(len(self.ledger_controls()), 2)
+        self.assertTrue(any("lookup-unavailable on" in c for c in self.ledger_controls()))
+        self.assertTrue(any("timeout-before-effect on" in c for c in self.ledger_controls()))
+        self.assertTrue(any(" stop synthetic_answer_model" in c for c in self.calls()))
+        self.assertIn("SIMULATED", on.stdout)
+        off = self.run_script("outage", "off", extra={"FAKE_RUNNING": "caddy"})
+        self.assertEqual(off.returncode, 0, off.stderr)
+        self.assertFalse((self.state / "outage.on").exists())
+        self.assertTrue(any("lookup-unavailable off" in c for c in self.ledger_controls()))
+        self.assertTrue(any(" start synthetic_answer_model" in c for c in self.calls()))
+        self.assert_nothing_removed_except_the_model_stop()
+
+    def assert_nothing_removed_except_the_model_stop(self):
+        for call in self.calls():
+            if " stop synthetic_answer_model" in call:
+                continue
+            self.assertFalse(any(word in f" {call} " for word in REMOVAL), call)
+
+    def test_outage_needs_a_running_stack_and_a_valid_argument(self):
+        self.config()
+        self.assertNotEqual(self.run_script("outage", "on").returncode, 0)  # not running
+        self.assertFalse((self.state / "outage.on").exists())
+        bad = self.run_script("outage", "sideways", extra={"FAKE_RUNNING": "caddy"})
+        self.assertNotEqual(bad.returncode, 0)
+        self.assertEqual(self.ledger_controls(), [])
+
+    def test_a_restart_keeps_the_answer_model_stopped_while_the_outage_flag_is_set(self):
+        self.config()
+        self.state.joinpath("outage.on").write_text("")
+        curl = self.tmp / "bin" / "curl"  # the TLS check itself is covered live; here only the sequencing matters
+        curl.write_text("#!/bin/sh\nexit 0\n")
+        curl.chmod(curl.stat().st_mode | stat.S_IEXEC)
+        result = self.run_script("restart", "--kill", extra={"FAKE_RUNNING": "caddy"})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        calls = self.calls()
+        last_up = max(i for i, c in enumerate(calls) if " up -d" in c)
+        self.assertTrue(any(" stop synthetic_answer_model" in c for c in calls[last_up:]), calls)
+        self.assertIn("outage is still ON", result.stdout)
+
+    def test_second_fixture_checksum_is_published_and_matches_the_file(self):
+        import hashlib
+
+        data = (REPO / "scripts" / "mvp01-owner-fixtures" / "invoice-002.eml").read_bytes()
+        digest = hashlib.sha256(data).hexdigest()
+        text = (REPO / "scripts" / "mvp01-owner.sh").read_text()
+        self.assertIn(f'EXPECTED_SHA2="{digest}"', text)
+        self.assertIn(b"Message-ID: <mvp01-outage-002@example.invalid>", data)
+        self.assertIn(b"invoice-MVP01-2026-002.txt", data)
+
     def test_scenario_and_usage_reject_unknown_input(self):
         self.assertEqual(self.run_script().returncode, 2)
         self.assertEqual(self.run_script("explode").returncode, 2)

@@ -50,6 +50,10 @@ with SessionLocal.begin() as db:
             else:
                 replace_password(db, peer, peer_password)
                 print("peer=password-replaced")
+    elif action == "calendar":
+        rows = db.execute(select(CalendarSource.data)).scalars().all() if owner else []
+        parts = [f"{r['label']}: {r['status']}" + (f" (last good snapshot fetched {r['window']['fetched_at']})" if r.get("window") else "") for r in rows]
+        print("calendar=" + ("; ".join(parts) if parts else "none"))
     elif action == "identity":
         head = db.scalar(text("SELECT version_num FROM alembic_version"))
         installation = db.execute(text("SELECT revision, created_at FROM installation_config WHERE id=1")).one_or_none()

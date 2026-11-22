@@ -22,6 +22,10 @@ CA_FILE="$STATE/butler-mvp01-dev-root.crt"
 REV_FILE="$STATE/installed-revision.txt"
 SOURCE_EML="$ROOT/scripts/mvp01-owner-fixtures/invoice.eml"
 EML="$FIXTURES/invoice.eml"
+SOURCE_EML2="$ROOT/scripts/mvp01-owner-fixtures/invoice-002.eml"
+EML2="$FIXTURES/invoice-002.eml"
+EXPECTED_SHA2="bc1865c1b375de7f34054102f95daea067d8c4ef619796dd8fab8b110f28f58c"
+OUTAGE_FLAG="$STATE/outage.on"
 FIXTURE_DAY="2026-11-24"
 FIXTURE_ZONE="Europe/Zurich"
 EXPECTED_SHA="a1b6c2eb631bfe14e6dbbeed559cba75acb0e5640b820a026110d78aee1a9d97"
@@ -151,6 +155,21 @@ install_fixture() {
     cp "$SOURCE_EML" "$EML"
     chmod 600 "$EML"
   fi
+  [ -f "$SOURCE_EML2" ] || die "second fixture source missing"
+  [ "$(shasum -a 256 "$SOURCE_EML2" | cut -d' ' -f1)" = "$EXPECTED_SHA2" ] || die "second fixture checksum differs from the documented value"
+  if [ ! -f "$EML2" ] || ! cmp -s "$SOURCE_EML2" "$EML2"; then
+    cp "$SOURCE_EML2" "$EML2"
+    chmod 600 "$EML2"
+  fi
+}
+
+# The simulated outage (spec 077) is composed only from existing controls: the answer model container is stopped
+# (a real connection refusal), and the synthetic ledger answers no lookups and times out its next write. It is a
+# switch, not a real failure of anything. A flag file lets start/rebuild/restart keep the outage in force.
+outage_apply_model() {
+  if [ -f "$OUTAGE_FLAG" ]; then
+    compose stop synthetic_answer_model >/dev/null 2>&1 || true
+  fi
 }
 
 wait_ca() {
@@ -242,6 +261,16 @@ Ordered steps
  8  "Synthetic filing execution": tick both acknowledgements and request the filing; watch Pending -> Filed and open its history.
  9  bash scripts/mvp01-owner.sh restart   (container restart)   then   bash scripts/mvp01-owner.sh restart --kill   (process kill).
     Sign in again; records, review, plan and the filed status are unchanged and no second effect exists (see 'status').
+Second journey, "the bad-connection day" (spec 077): second fixture ${EML2}
+  SHA-256   : ${EXPECTED_SHA2}   (invoice MVP01-2026-002, total 245.60 EUR, due date left Unknown; the attachment's SHA-256 is 074f8e82...2102, 140 bytes)
+  Keep the Mac awake for this journey: Docker pauses when it sleeps and the timings below assume it does not.
+  A  bash scripts/mvp01-owner.sh outage on      (answer model stopped, destination cannot be asked; SIMULATED. 'status' shows it)
+  B  Calendar screen: mark the synthetic source offline (existing control); the overview then says stale/offline with the last-good time and makes no free-day claim.
+  C  Ask the question: expect "Local model unavailable"; tasks, reminders and documents keep working. Import invoice-002.eml twice, review, approve the plan only, then request the filing.
+  D  The filing waits as "Outcome not confirmed" with a plain reason; the Attention inbox lists it with "Open related document" (load the invoice review there to see the filing panel).
+  E  bash scripts/mvp01-owner.sh restart --kill ; sign in again; the same waiting filing, no second effect (see 'status' ledger).
+  F  bash scripts/mvp01-owner.sh outage off ; the filing becomes Filed with exactly one new ledger effect; import invoice-002.eml once more: replay. Mark the calendar online and import a fresh snapshot yourself.
+  Sign-ins: at most 3 for the whole journey (the limit is 5 per 15 minutes per account and is never cleared).
 Optional failure rehearsals (synthetic ledger controls): bash scripts/mvp01-owner.sh scenario timeout-after-effect on  (before step 8)
 Stop (keeps data and certificate): bash scripts/mvp01-owner.sh stop     Destructive reset of ONLY this rehearsal: bash scripts/mvp01-owner.sh reset
 =====================================================================
@@ -256,6 +285,7 @@ cmd_start() {
   revision_line > "$REV_FILE"
   say "[mvp01-owner] building and starting ${PROJECT} (images are built from this checkout; rebuild after edits)"
   compose up -d --build --wait --wait-timeout 300
+  outage_apply_model
   wait_ca
   verify_tls
   seed_fixture
@@ -271,6 +301,7 @@ cmd_rebuild() {
   say "[mvp01-owner] rebuilding images and recreating containers; named volumes (database, certificates, synthetic ledger) are preserved"
   compose build
   compose up -d --force-recreate --wait --wait-timeout 300
+  outage_apply_model
   wait_ca
   verify_tls
   seed_fixture
@@ -292,8 +323,10 @@ cmd_restart() {
     compose restart $services
     compose up -d --wait --wait-timeout 300
   fi
+  outage_apply_model
   verify_tls
   say "[mvp01-owner] done. Sign in again if needed; run 'status' to compare the ledger counts."
+  if [ -f "$OUTAGE_FLAG" ]; then say "[mvp01-owner] the simulated outage is still ON (answer model stays stopped, destination controls persist); 'outage off' ends it."; fi
 }
 
 cmd_stop() {
@@ -320,6 +353,34 @@ cmd_status() {
   compose run --rm -T migrate python - identity < scripts/mvp01-owner-fixtures.py 2>/dev/null | tail -n 1 || true
   compose run --rm -T migrate python - check < scripts/mvp01-owner-fixtures.py 2>/dev/null | tail -n 1 || true
   say "ledger      : $(compose exec -T filing_worker python -m app.synthetic_ledger status 2>/dev/null || echo unavailable)"
+  local model_state
+  model_state="$(compose ps --status running --services 2>/dev/null | grep -c '^synthetic_answer_model$' || true)"
+  if [ -f "$OUTAGE_FLAG" ]; then say "outage      : ON (simulated). answer model $([ "$model_state" = 0 ] && echo stopped || echo RUNNING-unexpectedly); destination: lookups unavailable and one write armed to time out (see ledger controls above)"; else say "outage      : off. answer model $([ "$model_state" = 0 ] && echo STOPPED-unexpectedly || echo running)"; fi
+  say "calendar    : $(compose run --rm -T migrate python - calendar < scripts/mvp01-owner-fixtures.py 2>/dev/null | tail -n 1 || echo unavailable)"
+}
+
+cmd_outage() {
+  need_tools
+  running_stack || die "the rehearsal is not running"
+  case "${1:-}" in
+    on)
+      compose exec -T filing_worker python -m app.synthetic_ledger control lookup-unavailable on
+      compose exec -T filing_worker python -m app.synthetic_ledger control timeout-before-effect on
+      : > "$OUTAGE_FLAG"
+      compose stop synthetic_answer_model
+      say "[mvp01-owner] SIMULATED outage ON: answer model stopped (connection refused), destination cannot be asked and its next write times out."
+      say "              Mark the synthetic calendar source offline yourself in the calendar screen (the existing control). 'status' shows the state."
+      ;;
+    off)
+      compose exec -T filing_worker python -m app.synthetic_ledger control lookup-unavailable off
+      compose exec -T filing_worker python -m app.synthetic_ledger control timeout-before-effect off
+      rm -f "$OUTAGE_FLAG"
+      compose start synthetic_answer_model
+      say "[mvp01-owner] simulated outage OFF: answer model started, destination answers again. A waiting filing resolves on the next worker pass (within about a minute)."
+      say "              The calendar source stays offline until you mark it online and import a fresh snapshot."
+      ;;
+    *) die "usage: outage on|off" ;;
+  esac
 }
 
 cmd_scenario() {
@@ -384,5 +445,6 @@ case "${1:-}" in
   stop) cmd_stop ;;
   reset) cmd_reset ;;
   scenario) shift; cmd_scenario "$@" ;;
-  *) say "usage: bash scripts/mvp01-owner.sh start|status|rebuild|restart [--kill]|stop|reset|scenario <name> [on|off]"; exit 2 ;;
+  outage) shift; cmd_outage "${1:-}" ;;
+  *) say "usage: bash scripts/mvp01-owner.sh start|status|rebuild|restart [--kill]|stop|reset|outage on|off|scenario <name> [on|off]"; exit 2 ;;
 esac
