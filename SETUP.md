@@ -2,6 +2,34 @@
 
 Use Docker/Compose, Python 3.12, uv 0.13.4 and Node 22. The platform is development/test only. Keep separate databases, projects, credentials and ports for unrelated environments.
 
+## Local Mac owner loop
+
+Agents should do most code edits and host-side checks in the owner's local macOS checkout or a separate local worktree. Use the host Python/uv and Node toolchains; use local Docker Compose to run the Butler services and container-specific checks. Use another host only when a concrete constraint requires it, and record that exception and how it differs from the owner path.
+
+For the default local development stack, the repository is `local-assistant-core`, the product is **Butler**, and the Compose project is **`local-assistant-core-dev`**. The first-run helper creates a private `.env`, builds and starts the stack, and prints the browser URL:
+
+```sh
+bash scripts/first-run.sh
+```
+
+Open `https://localhost:8443/` after importing the exported public development CA as directed by the helper. Check the named stack and its output with:
+
+```sh
+docker compose --env-file .env -p local-assistant-core-dev -f infra/core/compose.yml ps
+docker compose --env-file .env -p local-assistant-core-dev -f infra/core/compose.yml logs -f
+```
+
+To stop the stack while preserving its database and certificates, run:
+
+```sh
+docker compose --env-file .env -p local-assistant-core-dev -f infra/core/compose.yml down
+```
+
+Do not add `-v` when stopping a stack with records to preserve. The base Compose file builds the application images from the checkout; it does not bind-mount the repository source or provide hot reload. After code edits, rebuild with `docker compose --env-file .env -p local-assistant-core-dev -f infra/core/compose.yml up -d --build`. Each owner handoff must include the exact startup/rebuild command, URL, synthetic fixture, journey steps and expected result, plus the safe reset/stop command.
+
+The base stack's service keys are explicit (`postgres`, `migrate`, `api`, `web`, `caddy`, `role_setup`, and named optional workers). Compose namespaces containers, volumes and networks from the project name and declared service/resource names; keep `local-assistant-core-dev` and `local-assistant-core-test` separate, and give each parallel worktree a unique `local-assistant-core-<batch>-<purpose>` name and nonconflicting loopback ports. Do not set a fixed `container_name` or share a fixed volume/network name across worktrees. Document every host bind mount by source path, container path, read/write mode and purpose; use only the smallest required synthetic fixture path, read-only by default. Never mount the entire home directory, `.env`, private records or credentials into a service container.
+
+
 Review `.env.example` and `infra/core/compose.yml`. `bash scripts/first-run.sh` creates a private local `.env`, generates distinct database/runtime secrets when needed, starts the development stack and exports only its public development CA. It does not import that CA into host trust. Review each host/trust action separately. Do not expose the service outside the reviewed loopback setup.
 
 See [HTTPS](docs/LOCAL_HTTPS.md) and [identity/provisioning](docs/IDENTITY.md). Use hidden credential prompts, a migration account for trusted administration and the restricted `butler_runtime` account for the API. Never commit `.env`, private keys or runtime records. [Development commands](docs/DEVELOPMENT.md) and [test gates](docs/TESTING.md) describe synthetic verification.

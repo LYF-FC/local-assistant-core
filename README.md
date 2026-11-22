@@ -23,4 +23,4 @@ Run `make check` using Python 3.12, uv 0.13.4 and Node 22. Dependencies are lock
 
 This snapshot intentionally has fresh Git history. Historical private planning, discussions, acceptance records and CI logs are not included. Scope IDs and display labels are generic. This snapshot is for fresh installations; switching an existing private database requires a separate reviewed conversion. No open-source license is added by this preparation; license selection remains a separate owner decision. Existing dependency notices remain intact.
 
-The internal application and environment prefix currently use the generic software name Butler; this repository name does not embed a household identity.
+The Git repository is named `local-assistant-core`; the product is named **Butler**. Local Compose projects use explicit environment names (`local-assistant-core-dev`, `local-assistant-core-test`, or a batch-specific `local-assistant-core-<batch>-<purpose>` name). These names identify software environments and do not embed a household identity.
