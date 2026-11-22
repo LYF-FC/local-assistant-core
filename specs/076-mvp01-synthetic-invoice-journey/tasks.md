@@ -1,6 +1,6 @@
 # Spec 076 tasks
 
-Implementation authorized 22 November 2026. Checkboxes record engineering state on this unmerged branch only; none implies review, verification, merge or acceptance. Evidence is in [convergence.md](convergence.md).
+Implementation authorized 22 November 2026. Checkboxes record engineering state as recorded on the then-unmerged branch (merged since as PR #77, merge `2a5a0cde92f3f4cfdaf12b53f442948989c267b2`); none implies review, verification, merge or acceptance. Evidence is in [convergence.md](convergence.md).
 
 - [x] T1 Contract, decision, plan, checklist, analysis (R1–R8, AC1–AC12 mapping).
 - [x] T2 Durable synthetic ledger module, guards, controls, worker flag, setting, volume directory (R3, R4).

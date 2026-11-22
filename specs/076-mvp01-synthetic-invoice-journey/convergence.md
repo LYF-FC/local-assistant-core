@@ -1,6 +1,8 @@
 # Spec 076 convergence record (22 November 2026)
 
-Engineering evidence on the **unmerged** branch `work/mvp01-invoice/a3-implementation`, base `e088626331aff57d630d95faa721353a27bd468f`. First commit `67bae82d053c9f9e0b09747acabf447064600109` (local only, not pushed); a follow-up commit applies the review fixes below. The results in the table were obtained on the working tree that became `67bae82` unless the follow-up section says otherwise. Host: owner's Mac (Darwin, Python 3.13.5, Docker 29.9.3). Implementation, integration, testing, verification and acceptance are separate: **not merged, not independently reviewed, not verified, not accepted.** Nothing here is CI evidence.
+**Merge record (documentation reconciliation, 22 November 2026):** this work was merged to `main` by the owner as PR #77 at merge commit `2a5a0cde92f3f4cfdaf12b53f442948989c267b2` (head `e631be90cbc65de4c586ac5a55614008b6dc60c0`). Merged is not verified; [PROJECT_MASTER.md](../../PROJECT_MASTER.md) owns status. The statements below describe the state when the evidence was recorded (history), including the `67bae82` commit being local and the branch unmerged.
+
+Engineering evidence on the then-unmerged branch `work/mvp01-invoice/a3-implementation`, base `e088626331aff57d630d95faa721353a27bd468f`. First commit `67bae82d053c9f9e0b09747acabf447064600109` (local only, not pushed); a follow-up commit applies the review fixes below. The results in the table were obtained on the working tree that became `67bae82` unless the follow-up section says otherwise. Host: owner's Mac (Darwin, Python 3.13.5, Docker 29.9.3). Implementation, integration, testing, verification and acceptance are separate: **at recording time: not merged, not independently reviewed, not verified, not accepted** (merged since as PR #77; owner acceptance is recorded in PROJECT_MASTER.md for the bounded scope only). Nothing here is CI evidence.
 
 ## Results
 
