@@ -307,7 +307,7 @@ class GateTests(unittest.TestCase):
             self.assertNotIn("continue-on-error", job)
             for step in job.get("steps", []):
                 self.assertNotIn("continue-on-error", step)
-        self.assertEqual(jobs["postgres"]["timeout-minutes"], 20)
+        self.assertEqual(jobs["postgres"]["timeout-minutes"], 30)
         self.assertTrue(
             any(
                 "test-db-restore.sh" in step.get("run", "")

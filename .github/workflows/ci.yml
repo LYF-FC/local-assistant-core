@@ -83,7 +83,7 @@ jobs:
     needs: scope
     if: ${{ needs.scope.outputs.postgres == 'true' }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     services:
       postgres:
         image: postgres:17
