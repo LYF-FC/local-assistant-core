@@ -72,3 +72,21 @@ Process kill, container restart, host reboot and clean-host recovery are differe
 ## Stop and reset
 
 `stop` keeps everything. `reset` also works when the generated config is gone (for example after deleting `.local/`) while the project's volumes remain: it then identifies the project by its exact Compose label and name prefix. Without the config only these checks apply: the project name is the fixed rehearsal name, every object carries that exact Compose label **and** name prefix, and you type the project name; the database-name and synthetic-marker checks need the config and are skipped (the printed list of containers and volumes is what you confirm). The Compose project name is global on this Mac, so `reset` also removes a rehearsal started from **another checkout** of this repository. It deletes, after you type the exact project name, only the containers, network and volumes carrying the `local-assistant-core-mvp01-owner` Compose label and prefix (verified before deletion) and `.local/mvp01-owner/`. It refuses to run if the generated config does not name the exact rehearsal database and synthetic marker. No prune, no other project, no images. Remove the old CA fingerprint from your keychain yourself.
+
+## Second journey: the bad-connection day (spec 077)
+
+A simulated outage on the same stack; nothing real fails. Keep the **Mac awake** (Docker Desktop pauses when it sleeps and the timings assume it does not) and budget **at most 3 sign-ins** (limit: 5 per account per 15 minutes, never cleared). Fixture: `.local/mvp01-owner/fixtures/invoice-002.eml`, SHA-256 `bc1865c1b375de7f34054102f95daea067d8c4ef619796dd8fab8b110f28f58c` (invoice `MVP01-2026-002`, 245.60 EUR, due date left Unknown; attachment SHA-256 `074f8e821ab5650b4f8b0136315a847c51998c8d40a6effe0995deb6b16c2102`, 140 bytes). `rebuild` installs it.
+
+1. `bash scripts/mvp01-owner.sh rebuild`, sign in once, create a reminder a few minutes ahead (task and reminder control as in the first journey).
+2. `bash scripts/mvp01-owner.sh outage on` — answer model stopped, destination cannot be asked and its next write times out (simulated). `status` shows `outage: ON`.
+3. Calendar screen: mark the synthetic source offline. The overview says offline/stale with the last-good time and makes no free-day claim.
+4. Ask a question: *Local model unavailable* (needs a reviewed document; with none you see "no sources"). Tasks, reminders, documents and import keep working; the reminder is delivered once.
+5. Import `invoice-002.eml` twice, review, approve the plan only, then request the filing (two acknowledgements). It shows **Outcome not confirmed** with the plain reason; the Attention inbox lists it with *Open related document* (then *Load invoice review* to see the filing panel). History shows requested/attempted only; ledger effects stay unchanged.
+6. `bash scripts/mvp01-owner.sh restart --kill`; sign in again: same waiting state; the model stays stopped (the outage is still on).
+7. `bash scripts/mvp01-owner.sh outage off`: the filing becomes **Filed** with exactly one new ledger effect. While the destination was unreachable Butler asked it again only about every 15 minutes (the spec 069 back-off, unchanged), so after `outage off` this can take **up to about 16 minutes**; leave the page and look again later, or use Refresh (the panel stops polling by itself after about 2 minutes); import `invoice-002.eml` once more: replay. Mark the calendar online and import a fresh snapshot yourself; answers work again.
+
+**Stated limit (S4):** if a destination answers lookups but its *writes* time out three times, the filing ends `failed` (final) although the destination was only unreachable. The composed outage avoids this because the destination cannot be asked either. Changing the write-only case needs a spec 069 change and is an owner option.
+
+**Stated limit (S10):** a reminder is delivered in one database transaction. If the reminder worker is killed at the due time it appears **late** (at the next worker pass, within about a minute of the restart), **never twice** and never lost.
+
+The live checker (`scripts/mvp01-owner-check.py outage-journey|outage-end|peer`) is agent evidence only; its peer step replaces the synthetic peer's password for one command and is meant for a disposable verify stack, not your rehearsal stack, unless you decide otherwise.

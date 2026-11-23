@@ -1,6 +1,7 @@
 // Unified attention inbox (spec 071): a read-and-link composition of existing protected reads for
 // one granted scope. It issues only read queries, holds only minimal card fields in memory, and can
 // never decide, cancel, consume, retry, acknowledge, file, send or complete anything.
+import { filingExplanation } from "./filing-reasons";
 import type { Session } from "./api";
 import { AttentionError, listApprovals, type ApprovalPage, listFiling, listNotifications, type FailureState } from "./attention-api";
 import type { Destination } from "./daily-overview";
@@ -58,7 +59,7 @@ async function read(key: SourceKey, session: Session, scope: TaskScope, signal: 
       return { state: "available", readAt: page.checked_at, more: page.next_cursor !== null, notice: page.notice, cards: page.items.map(row => card({
         kind: "filing", id: row.id, scope, revision: row.revision, title: "Filing request", status: state === "failed" ? "Filing failed" : "Outcome not confirmed", readAt: page.checked_at,
         evidence: [`${row.attempts} attempt${row.attempts === 1 ? "" : "s"}`, `Updated ${row.updated_at}`, ...(row.reason ? [`Reason: ${words(row.reason)}`] : [])],
-        uncertainty: state === "unknown" ? ["The filing outcome was not confirmed. Check the document before repeating anything."] : [],
+        uncertainty: [filingExplanation(row)],
         open: row.document_id && row.owner_id ? { type: "document", target: { id: row.document_id, owner_id: row.owner_id, scope, min_revision: row.source_revision! } } : null,
         openNote: row.document_id ? null : "The related document is no longer linked.",
       })) };
