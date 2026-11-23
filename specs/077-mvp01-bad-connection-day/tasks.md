@@ -1,6 +1,6 @@
 # Spec 077 tasks
 
-Engineering state on an unmerged branch; no checkbox implies review, verification, merge or acceptance. Evidence: [convergence](convergence.md).
+Engineering state as recorded on the then-unmerged branch (merged since as PR #84, merge `7d56324e133aa150d0bb9da1f5f56963a7c013c9`; owner-accepted 23 November 2026 for the bounded scope; see the convergence record); no checkbox implies review, verification, merge or acceptance. Evidence: [convergence](convergence.md).
 
 - [x] T1 Contract, plan, checklist, analysis.
 - [x] T2 S4/S10 characterisation tests (PostgreSQL).
