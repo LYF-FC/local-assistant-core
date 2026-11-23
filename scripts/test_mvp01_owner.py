@@ -48,7 +48,8 @@ class OwnerScriptTests(unittest.TestCase):
         self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
         (self.tmp / "scripts" / "mvp01-owner-fixtures").mkdir(parents=True)
         shutil.copy(REPO / "scripts" / "mvp01-owner.sh", self.tmp / "scripts")
-        shutil.copy(REPO / "scripts" / "mvp01-owner-fixtures" / "invoice.eml", self.tmp / "scripts" / "mvp01-owner-fixtures")
+        for fixture in ("invoice.eml", "invoice-002.eml"):
+            shutil.copy(REPO / "scripts" / "mvp01-owner-fixtures" / fixture, self.tmp / "scripts" / "mvp01-owner-fixtures")
         (self.tmp / "bin").mkdir()
         docker = self.tmp / "bin" / "docker"
         docker.write_text(SHIM)
