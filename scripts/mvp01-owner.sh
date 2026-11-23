@@ -364,10 +364,17 @@ cmd_outage() {
   running_stack || die "the rehearsal is not running"
   case "${1:-}" in
     on)
-      compose exec -T filing_worker python -m app.synthetic_ledger control lookup-unavailable on
-      compose exec -T filing_worker python -m app.synthetic_ledger control timeout-before-effect on
-      : > "$OUTAGE_FLAG"
-      compose stop synthetic_answer_model
+      # All-or-nothing: if any step fails, undo the earlier ones so the outage is never left half applied.
+      if ! { compose exec -T filing_worker python -m app.synthetic_ledger control lookup-unavailable on \
+        && compose exec -T filing_worker python -m app.synthetic_ledger control timeout-before-effect on \
+        && : > "$OUTAGE_FLAG" \
+        && compose stop synthetic_answer_model; }; then
+        compose exec -T filing_worker python -m app.synthetic_ledger control lookup-unavailable off || true
+        compose exec -T filing_worker python -m app.synthetic_ledger control timeout-before-effect off || true
+        rm -f "$OUTAGE_FLAG"
+        compose start synthetic_answer_model || true
+        die "outage on failed part-way; the earlier steps were undone (check 'status'); nothing real was affected"
+      fi
       say "[mvp01-owner] SIMULATED outage ON: answer model stopped (connection refused), destination cannot be asked and its next write times out."
       say "              Mark the synthetic calendar source offline yourself in the calendar screen (the existing control). 'status' shows the state."
       ;;
@@ -376,7 +383,7 @@ cmd_outage() {
       compose exec -T filing_worker python -m app.synthetic_ledger control timeout-before-effect off
       rm -f "$OUTAGE_FLAG"
       compose start synthetic_answer_model
-      say "[mvp01-owner] simulated outage OFF: answer model started, destination answers again. A waiting filing resolves on the next worker pass (within about a minute)."
+      say "[mvp01-owner] simulated outage OFF: answer model started, destination answers again. A waiting filing is asked about again at its next check, which can be up to about 15 minutes after the last one (spec 069 back-off); it is then filed once."
       say "              The calendar source stays offline until you mark it online and import a fresh snapshot."
       ;;
     *) die "usage: outage on|off" ;;

@@ -41,12 +41,16 @@ def login(origin, ca):
     return session
 
 
-def wait(predicate, seconds, step=2):
+def wait(predicate, seconds, step=2, note=None):
     end = time.time() + seconds
+    last = time.time()
     while time.time() < end:
         value = predicate()
         if value:
             return value
+        if note and time.time() - last >= 60:
+            print(note, file=sys.stderr, flush=True)
+            last = time.time()
         time.sleep(step)
     return None
 
@@ -204,6 +208,8 @@ def outage_journey(origin, ca, state_file):
     status, brief = s.call("/api/v1/calendars/briefing", {"scope": SCOPE, "day": DAY, "timezone": ZONE})
     blob = json.dumps(brief).lower()
     check("C1 overview keeps the last-known event and says offline", status == 200 and "family planning call" in blob and "offline" in blob, blob[:300])
+    events = brief.get("events", []) if isinstance(brief, dict) else []
+    check("C1 overview structurally marks every event of the offline source as offline", bool(events) and all(e.get("availability") == "offline" for e in events), [e.get("availability") for e in events])
     check("C1 overview makes no free-day claim", "free day" not in blob.replace("not establish a free day", "").replace("does not mean a free day", ""))
     # C2 (tasks) first; the question needs a reviewed source, so it follows the review below.
     status, tasks = s.call("/api/v1/tasks/query", {"scope": SCOPE, "status": "open", "due": "all", "search": "MVP-01 synthetic"})
@@ -249,11 +255,14 @@ def outage_journey(origin, ca, state_file):
     print("outage-journey complete; run the restart and `outage off`, then outage-end")
 
 
+OUTAGE_END_WAIT_SECONDS = 17 * 60  # worst case: one 15-minute back-off after the outage ends, plus a worker pass
+
+
 def outage_end(origin, ca, state_file, effects_before=None, effects_after=None):
     """After `outage off`: one owner sign-in. Ledger counts come from `status` (before the outage ended, after filing)."""
     state = json.loads(Path(state_file).read_text())
     s = login(origin, ca)
-    done = wait(lambda: next((f for f in filings(s, state["document_id"]) if f["state"] in ("filed", "failed")), None), 150, 3)
+    done = wait(lambda: next((f for f in filings(s, state["document_id"]) if f["state"] in ("filed", "failed")), None), OUTAGE_END_WAIT_SECONDS, 3, "still waiting: while the destination was unreachable it was asked only about every 15 minutes (spec 069 back-off)")
     check("C6 the waiting filing resolves to Filed", done and done["id"] == state["filing_id"] and done["state"] == "filed", done)
     items = filings(s, state["document_id"])
     check("C6 still exactly one request for invoice 2", len(items) == 1)

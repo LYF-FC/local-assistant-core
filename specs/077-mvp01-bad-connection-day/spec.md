@@ -37,8 +37,8 @@ Excluded: migrations, new filing states, security protections/grants/triggers/ra
 | C2 model stopped: explicit unavailable; tasks/reminder work | live checker, `mvp01-outage.spec.ts`, PostgreSQL connection-refused test, S10 tests |
 | C3 invoice 2 twice, plan only, exact request | live checker, fixture checksum test |
 | C4 waiting with reason, inbox card, never failed/filed | `filing-reasons.test.ts`, `attention-inbox.test.ts`, live checker, `mvp01-outage.spec.ts` |
-| C5 `restart --kill` keeps waiting state, no effect | live run (script copy), `test_mvp01_bad_connection_postgres.py` S4 tests |
-| C6 outage off: Filed, ledger +1, third import replays | live checker `outage-end`, PostgreSQL S4 composed-outage test |
+| C5 `restart --kill` keeps waiting state, no effect | live run (script copy; real SIGKILL of the application and workers), S10 subprocess SIGKILL tests; the S4 PostgreSQL tests use fresh in-process worker objects and kill nothing |
+| C6 outage off: Filed, ledger +1, third import replays | live checker `outage-end` (waits up to 17 minutes: while unreachable the destination is asked again only every 15 minutes, the spec 069 back-off), PostgreSQL S4 composed-outage test (forces the row due) |
 | C7 peer sees none of it (live) | live checker `peer`; PostgreSQL peer tests of spec 076 |
 | C8 inbox empty only when every source loaded and empty | existing spec 071 tests (unchanged) |
 | C9 admin hat | excluded (D5) |

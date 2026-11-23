@@ -87,14 +87,15 @@ def test_s4_the_composed_outage_never_fails_the_filing_and_ends_with_exactly_one
     assert summary["effects"] == 1 and summary["entries"] == 1 and summary["calls"] == 2
 
 
-def test_s4_an_unreachable_destination_survives_a_killed_worker_and_still_files_once(
+def test_s4_an_unreachable_destination_survives_fresh_worker_objects_and_still_files_once(
     scenario, runtime_engine, ledger
 ):
     maker, admin, _doc, _receipt, _path, row = requested(scenario, runtime_engine)
     synthetic_ledger.main(["control", "lookup-unavailable", "on"])
     synthetic_ledger.main(["control", "timeout-before-effect", "on"])
     assert filing_worker.process(maker, row, DurableSyntheticDestination(ledger)) == "unknown"
-    # A hard stop of every worker changes nothing durable: a fresh worker object keeps waiting.
+    # In-process only: a fresh worker object stands in for a restarted worker; no process is killed here
+    # (real SIGKILL evidence: the S10 subprocess tests below and the live `restart --kill` run).
     due(admin, row)
     assert filing_worker.process(maker, row, DurableSyntheticDestination(ledger)) == "unknown"
     # An `unknown` row holds no claim (the database forbids one), so no deadline can reap it into `failed`.

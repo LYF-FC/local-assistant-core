@@ -33,6 +33,8 @@ elif a[:2] == ["volume", "ls"]:
 elif a[:1] == ["ps"]:
     print(os.environ.get("FAKE_CONTAINERS", ""))
 elif a[:1] == ["compose"]:
+    if "stop" in a and os.environ.get("FAKE_STOP_FAILS") == "1":
+        sys.exit(1)
     if "up" in a and os.environ.get("FAKE_UP_FAILS") == "1":
         sys.exit(1)
     if "ps" in a and "-q" in a:
@@ -255,6 +257,17 @@ class OwnerScriptTests(unittest.TestCase):
         self.assertTrue(any("lookup-unavailable off" in c for c in self.ledger_controls()))
         self.assertTrue(any(" start synthetic_answer_model" in c for c in self.calls()))
         self.assert_nothing_removed_except_the_model_stop()
+
+    def test_outage_on_that_fails_part_way_is_undone_and_never_left_half_applied(self):
+        self.config()
+        result = self.run_script("outage", "on", extra={"FAKE_RUNNING": "caddy", "FAKE_STOP_FAILS": "1"})
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("undone", result.stderr)
+        self.assertFalse((self.state / "outage.on").exists())
+        controls = self.ledger_controls()
+        self.assertTrue(any("lookup-unavailable off" in c for c in controls))
+        self.assertTrue(any("timeout-before-effect off" in c for c in controls))
+        self.assertTrue(any(" start synthetic_answer_model" in c for c in self.calls()))
 
     def assert_nothing_removed_except_the_model_stop(self):
         for call in self.calls():

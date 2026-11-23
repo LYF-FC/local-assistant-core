@@ -19,6 +19,12 @@ describe("plain-language filing explanations (spec 077)", () => {
     expect(text).toContain("only unreachable");
     expect(text).toContain("nothing was filed");
   });
+  it("says a new request needs a new plan revision after a final result, never just 'make a new request'", () => {
+    for (const [state, reason] of [["failed", "attempts_exhausted"], ["failed", "collision"], ["failed", null], ["cancelled", "cancelled_by_owner"]] as const) {
+      const text = filingExplanation({ state, reason, attempts: 3 });
+      expect(text).toContain("new plan revision");
+    }
+  });
   it("covers every spec 069 cancellation and failure reason without leaking a code", () => {
     for (const reason of ["collision", "plan_changed", "source_changed", "cancelled_by_owner", "owner_unavailable", "scope_unavailable", "reconciled_absent", "transient_error"]) {
       const text = filingExplanation({ state: "cancelled", reason, attempts: 0 });
