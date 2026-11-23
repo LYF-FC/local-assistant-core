@@ -1,6 +1,6 @@
 # Spec 077 convergence record (22 November 2026)
 
-Engineering evidence on the **unmerged, uncommitted** branch `work/mvp01-bad-connection/a3-implementation`, base `f88fd5c575cbdf252facbcd0b25cbca9319aac0b`. Implementation, integration, testing, verification and acceptance are separate: **not merged, not reviewed, not verified, not accepted, not tried by the owner.** Nothing here is CI evidence.
+Engineering evidence on the **unmerged** branch `work/mvp01-bad-connection/a3-implementation` (pull request #84; the results below were gathered before the branch was rebased onto `main` `b355585b4f694676e6d88266a0c1d7f877b362a9`, from base `f88fd5c575cbdf252facbcd0b25cbca9319aac0b`, and the rebase changed documentation only). Implementation, integration, testing, verification and acceptance are separate: **not merged, not reviewed, not verified, not accepted, not tried by the owner.** Nothing here is CI evidence.
 
 ## Results (author's Mac, Darwin, Docker 29.9.3; synthetic only)
 
