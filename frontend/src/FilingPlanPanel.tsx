@@ -1,10 +1,11 @@
 import {useState} from "react";
+import { UNKNOWN_IS_NOT_ZERO } from "./pdf-extraction";
 import type {FilingPlan,planAction} from "./invoices-api";
 type Options=Parameters<typeof planAction>[5];
 export default function FilingPlanPanel({plan,canEdit,busy,fieldsDirty,missing=[],onAction}:{plan:FilingPlan|null;canEdit:boolean;busy:boolean;fieldsDirty:boolean;missing?:string[];onAction:(op:"plan"|"approve_plan"|"withdraw_plan",options?:Options)=>void}){
  const [folder,setFolder]=useState(plan?.folder??""),[filename,setFilename]=useState(plan?.filename??""),[intent,setIntent]=useState(false),[limits,setLimits]=useState(false);
  function reset(){setIntent(false);setLimits(false);}
- return <section aria-label="Invoice filing plan"><h4>Filing plan</h4><p>Review a logical destination and name based on saved invoice fields. No file has been written, moved or renamed. Approval records a plan only and cannot authorize a future worker.</p>
+ return <section aria-label="Invoice filing plan"><h4>Filing plan</h4><p>Review a logical destination and name based on saved invoice fields. No file has been written, moved or renamed. Approval records a plan only and cannot authorize a future worker.</p><p>{UNKNOWN_IS_NOT_ZERO}</p>
  {plan?<><p>Plan status: {plan.state}. Policy: {plan.policy}. Field-review revision {plan.based_on_review_revision}.</p><code className="filing-path">{plan.relative_path}</code><p>{plan.manual?"Manual destination":"Suggested destination"} · source revision {plan.source_revision} · original SHA-256 <code>{plan.source_sha256}</code></p></>:<p>No current filing plan.</p>}
  {fieldsDirty&&<p>Save or reload invoice field edits before changing a filing plan.</p>}
  {canEdit&&<fieldset disabled={busy||fieldsDirty}><legend>Review filing destination</legend>{missing.length>0&&<p role="status">A suggested plan needs these fields confirmed and saved first: {missing.join(", ")}. Unknown fields need a manual destination below.</p>}<button disabled={missing.length>0} onClick={()=>onAction("plan")}>Suggest filing plan</button><p>Suggestions require confirmed issuer, invoice number and issue date. Unknowns need a manual destination. Relative lowercase ASCII paths only: invoices/year/vendor or invoices/manual. Names must end in the original .pdf or .txt type. These logical paths are not authorized filesystem roots.</p>

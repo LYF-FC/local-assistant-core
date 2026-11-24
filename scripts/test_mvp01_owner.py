@@ -50,7 +50,7 @@ class OwnerScriptTests(unittest.TestCase):
         self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
         (self.tmp / "scripts" / "mvp01-owner-fixtures").mkdir(parents=True)
         shutil.copy(REPO / "scripts" / "mvp01-owner.sh", self.tmp / "scripts")
-        for fixture in ("invoice.eml", "invoice-002.eml"):
+        for fixture in ("invoice.eml", "invoice-002.eml", "invoice-pdf.eml", "invoice-scan.eml", "invoice-pdf-offline.eml"):
             shutil.copy(REPO / "scripts" / "mvp01-owner-fixtures" / fixture, self.tmp / "scripts" / "mvp01-owner-fixtures")
         (self.tmp / "bin").mkdir()
         docker = self.tmp / "bin" / "docker"
@@ -295,6 +295,94 @@ class OwnerScriptTests(unittest.TestCase):
         last_up = max(i for i, c in enumerate(calls) if " up -d" in c)
         self.assertTrue(any(" stop synthetic_answer_model" in c for c in calls[last_up:]), calls)
         self.assertIn("outage is still ON", result.stdout)
+
+    def start_curl_stub(self):
+        curl = self.tmp / "bin" / "curl"
+        curl.write_text("#!/bin/sh\nexit 0\n")
+        curl.chmod(curl.stat().st_mode | stat.S_IEXEC)
+
+    def test_the_pdf_overlay_is_composed_and_the_pdf_worker_is_in_both_restart_modes(self):
+        self.config()
+        self.start_curl_stub()
+        for mode in ("--kill", ""):
+            self.log.write_text("")
+            args = ("restart", mode) if mode else ("restart",)
+            result = self.run_script(*args, extra={"FAKE_RUNNING": "caddy"})
+            self.assertEqual(result.returncode, 0, result.stderr)
+            composed = [c for c in self.calls() if c.startswith("compose")]
+            self.assertTrue(composed and all("infra/core/pdf-ingestion.override.yml" in c for c in composed), composed)
+            word = "kill -s SIGKILL" if mode else "restart"
+            self.assertTrue(any(word in c and " pdf_worker" in c for c in self.calls()), self.calls())
+
+    def test_pdf_worker_stop_and_start_use_a_flag_that_keeps_it_stopped_across_restart(self):
+        self.config()
+        self.start_curl_stub()
+        stop = self.run_script("pdf-worker", "stop", extra={"FAKE_RUNNING": "caddy"})
+        self.assertEqual(stop.returncode, 0, stop.stderr)
+        self.assertTrue((self.state / "pdf-worker.stopped").exists())
+        self.assertTrue(any(" stop pdf_worker" in c for c in self.calls()))
+        self.log.write_text("")
+        restart = self.run_script("restart", "--kill", extra={"FAKE_RUNNING": "caddy"})
+        self.assertEqual(restart.returncode, 0, restart.stderr)
+        calls = self.calls()
+        last_up = max(i for i, c in enumerate(calls) if " up -d" in c)
+        self.assertTrue(any(" stop pdf_worker" in c for c in calls[last_up:]), calls)
+        self.assertIn("PDF worker is still STOPPED", restart.stdout)
+        status = self.run_script("status", extra={"FAKE_RUNNING": "caddy"})
+        self.assertIn("pdf worker  : STOPPED by you", status.stdout)
+        self.assertIn("not verified confinement", (REPO / "scripts" / "mvp01-owner.sh").read_text())
+        start = self.run_script("pdf-worker", "start", extra={"FAKE_RUNNING": "caddy"})
+        self.assertEqual(start.returncode, 0, start.stderr)
+        self.assertFalse((self.state / "pdf-worker.stopped").exists())
+        self.assertTrue(any(" up -d --wait --wait-timeout 120 pdf_worker" in c for c in self.calls()))
+        for call in self.calls():
+            self.assertFalse(any(word in f" {call} " for word in ("prune", " rm ", "rmi", "volume rm", "network rm", "system ", " down ")), call)
+
+    def test_pdf_worker_commands_refuse_without_a_running_stack_or_with_bad_input_and_roll_back(self):
+        self.config()
+        self.assertNotEqual(self.run_script("pdf-worker", "stop").returncode, 0)  # not running
+        self.assertFalse((self.state / "pdf-worker.stopped").exists())
+        bad = self.run_script("pdf-worker", "explode", extra={"FAKE_RUNNING": "caddy"})
+        self.assertNotEqual(bad.returncode, 0)
+        self.assertIn("usage: pdf-worker stop|start", bad.stderr)
+        failed = self.run_script("pdf-worker", "stop", extra={"FAKE_RUNNING": "caddy", "FAKE_STOP_FAILS": "1"})
+        self.assertNotEqual(failed.returncode, 0)
+        self.assertFalse((self.state / "pdf-worker.stopped").exists())
+        self.assertIn("nothing was changed", failed.stderr)
+        again = self.run_script("pdf-worker", "stop", extra={"FAKE_RUNNING": "caddy"})
+        self.assertEqual(again.returncode, 0)
+        self.assertEqual(self.run_script("pdf-worker", "stop", extra={"FAKE_RUNNING": "caddy"}).returncode, 0)  # idempotent
+        failed_start = self.run_script("pdf-worker", "start", extra={"FAKE_RUNNING": "caddy", "FAKE_UP_FAILS": "1"})
+        self.assertNotEqual(failed_start.returncode, 0)
+        self.assertTrue((self.state / "pdf-worker.stopped").exists())  # still stopped after a failed start
+
+    def test_paper_fixtures_match_their_generator_and_published_checksums(self):
+        import hashlib
+        import importlib.util
+
+        folder = REPO / "scripts" / "mvp01-owner-fixtures"
+        spec = importlib.util.spec_from_file_location("paper_fixtures", folder / "paper_fixtures.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        text = (REPO / "scripts" / "mvp01-owner.sh").read_text()
+        for name, variable in (("invoice-pdf.eml", "EXPECTED_SHA_PDF"), ("invoice-scan.eml", "EXPECTED_SHA_SCAN"), ("invoice-pdf-offline.eml", "EXPECTED_SHA_PDF_OFFLINE")):
+            data = (folder / name).read_bytes()
+            self.assertEqual(data, module.build(name)[1], name)  # deterministic: no timestamps, no host fonts
+            self.assertIn(f'{variable}="{hashlib.sha256(data).hexdigest()}"', text)
+            self.assertLessEqual(len(module.build(name)[0]), 128 * 1024)  # the document original limit
+        ids = [module.FIXTURES[n]["message_id"] for n in module.FIXTURES]
+        numbers = [module.FIXTURES[n]["number"] for n in module.FIXTURES]
+        self.assertEqual(len(set(ids)), 3)
+        self.assertEqual(len(set(numbers)), 3)
+        self.assertFalse(set(numbers) & {"MVP01-2026-001", "MVP01-2026-002"})
+        self.assertNotIn(b"%JavaScript", b"".join(module.build(n)[0] for n in module.FIXTURES))
+
+    def test_a_paper_fixture_checksum_mismatch_refuses_before_any_build(self):
+        self.config()
+        (self.tmp / "scripts" / "mvp01-owner-fixtures" / "invoice-scan.eml").write_bytes(b"tampered")
+        result = self.run_script("start", extra={"FAKE_NETWORKS": "[]"})
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(any(" up -d" in c for c in self.calls()))
 
     def test_second_fixture_checksum_is_published_and_matches_the_file(self):
         import hashlib

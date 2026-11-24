@@ -1,4 +1,5 @@
 import {useCallback,useEffect,useRef,useState} from "react";
+import { UNKNOWN_IS_NOT_ZERO } from "./pdf-extraction";
 import type {Session} from "./api";
 import type {Document} from "./documents-api";
 import type {FilingPlan,Receipt} from "./invoices-api";
@@ -26,7 +27,7 @@ export default function FilingExecutionPanel({document:doc,receipt,plan,session,
  function cancel(f:api.Filing){void run(async s=>{await api.cancelFiling(doc,f,session.csrfToken,s);if(s.aborted)return;setNotice("Unstarted request cancelled. No filing effect occurred.");const l=await api.queryFilings(doc,session.csrfToken,s,session.user.id);if(!s.aborted)setListing(l);});}
  const isOwner=doc.can_edit&&doc.owner_id===session.user.id;
  const mine=listing?.items.find(i=>i.plan_revision===receipt.review_revision&&i.source_revision===doc.revision);
- return <section aria-label="Synthetic filing execution"><h4>Synthetic filing execution</h4>
+ return <section aria-label="Synthetic filing execution"><h4>Synthetic filing execution</h4><p>{UNKNOWN_IS_NOT_ZERO}</p>
  <p>Plan approval authorized nothing. A filing needs this separate request, bound to the exact saved source, plan and destination shown below. The destination is a <strong>synthetic metadata simulation</strong> for the local rehearsal: it records filing identity, logical path, SHA-256 and size. It does not copy the invoice and writes no real folder, share or NAS.</p>
  <dl><dt>Document</dt><dd><code>{doc.id}</code> · source revision {doc.revision}</dd><dt>Approved plan</dt><dd>review revision {receipt.review_revision} · <code>{plan.relative_path}</code></dd><dt>Original SHA-256</dt><dd><code>{plan.source_sha256}</code></dd><dt>Destination</dt><dd>Synthetic metadata destination (simulation)</dd></dl>
  {isOwner&&listing&&!mine&&<fieldset disabled={busy}><legend>Request this exact filing</legend><label><input type="checkbox" checked={intent} onChange={e=>setIntent(e.target.checked)}/>I authorize one filing of exactly this saved source and approved plan to the synthetic metadata destination.</label><label><input type="checkbox" checked={limits} onChange={e=>setLimits(e.target.checked)}/>I understand this simulates a destination: nothing is copied and no real folder exists.</label><button disabled={!intent||!limits} onClick={request}>Request synthetic filing</button></fieldset>}

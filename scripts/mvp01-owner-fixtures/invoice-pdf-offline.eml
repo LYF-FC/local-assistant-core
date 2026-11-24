@@ -1,0 +1,37 @@
+From: billing@vendor.example.invalid
+To: household@example.invalid
+Subject: Synthetic MVP-01 paper invoice MVP01-2026-005
+Date: Mon, 23 Nov 2026 09:10:00 +0000
+Message-ID: <mvp01-paper-offline-005@example.invalid>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="===============7301000000000000005=="
+
+--===============7301000000000000005==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+
+Synthetic forwarded paper invoice for the MVP-01 rehearsal. No real data.
+
+--===============7301000000000000005==
+Content-Type: application/pdf
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="invoice-MVP01-2026-005.pdf"
+MIME-Version: 1.0
+
+JVBERi0xLjQKJeLjz9MKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4K
+ZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4K
+ZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAg
+MCA2MTIgNzkyXSAvUmVzb3VyY2VzIDw8IC9Gb250IDw8IC9GMSA1IDAgUiA+PiA+PiAvQ29udGVu
+dHMgNCAwIFIgPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCAyMzQgPj4Kc3RyZWFtCkJUIC9G
+MSAxNCBUZiAyMi40MDAwMDAwMDAwMDAwMDIgVEwgNzIgNzIwIFRkCihJc3N1ZXI6IFN5bnRoZXRp
+YyBSZWhlYXJzYWwgVmVuZG9yKSBUaiBUKgooSW52b2ljZSBudW1iZXI6IE1WUDAxLTIwMjYtMDA1
+KSBUaiBUKgooSW52b2ljZSBkYXRlOiAyMDI2LTExLTIzKSBUaiBUKgooRHVlIGRhdGU6IDIwMjct
+MDEtMDgpIFRqIFQqCihUb3RhbDogNjQuMjApIFRqIFQqCihDdXJyZW5jeTogRVVSKSBUaiBUKgpF
+VAplbmRzdHJlYW0KZW5kb2JqCjUgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUx
+IC9CYXNlRm9udCAvSGVsdmV0aWNhIC9FbmNvZGluZyAvV2luQW5zaUVuY29kaW5nID4+CmVuZG9i
+agp4cmVmCjAgNgowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTUgMDAwMDAgbiAKMDAwMDAw
+MDA2NCAwMDAwMCBuIAowMDAwMDAwMTIxIDAwMDAwIG4gCjAwMDAwMDAyNDcgMDAwMDAgbiAKMDAw
+MDAwMDUzMiAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDYgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4
+cmVmCjYyOQolJUVPRgo=
+
+--===============7301000000000000005==--

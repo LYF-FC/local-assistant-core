@@ -26,6 +26,13 @@ SOURCE_EML2="$ROOT/scripts/mvp01-owner-fixtures/invoice-002.eml"
 EML2="$FIXTURES/invoice-002.eml"
 EXPECTED_SHA2="bc1865c1b375de7f34054102f95daea067d8c4ef619796dd8fab8b110f28f58c"
 OUTAGE_FLAG="$STATE/outage.on"
+PDF_STOPPED_FLAG="$STATE/pdf-worker.stopped"
+SOURCE_PDF="$ROOT/scripts/mvp01-owner-fixtures/invoice-pdf.eml"
+SOURCE_SCAN="$ROOT/scripts/mvp01-owner-fixtures/invoice-scan.eml"
+SOURCE_PDF_OFFLINE="$ROOT/scripts/mvp01-owner-fixtures/invoice-pdf-offline.eml"
+EXPECTED_SHA_PDF="1a9da9a9540a78f1772af19550b5c92038e14c03b7077e0b6eb9fd298e416680"
+EXPECTED_SHA_SCAN="8847cd9921927af49514285bef440bf0e65b333d3c08088376422a171f3a15af"
+EXPECTED_SHA_PDF_OFFLINE="8d481f484b5b76a8dcd1c146d177f35cf847dd7721e2d90b66bfd5aeb6ce56ec"
 FIXTURE_DAY="2026-11-24"
 FIXTURE_ZONE="Europe/Zurich"
 EXPECTED_SHA="a1b6c2eb631bfe14e6dbbeed559cba75acb0e5640b820a026110d78aee1a9d97"
@@ -35,7 +42,7 @@ die() { printf '\n[mvp01-owner] REFUSED: %s\n' "$*" >&2; exit 1; }
 
 compose() {
   docker compose --env-file "$ENV_FILE" -p "$PROJECT" --profile reminders \
-    -f infra/core/compose.yml -f infra/core/answers-synthetic.override.yml -f infra/core/mvp01-owner.override.yml "$@"
+    -f infra/core/compose.yml -f infra/core/answers-synthetic.override.yml -f infra/core/mvp01-owner.override.yml -f infra/core/pdf-ingestion.override.yml "$@"
 }
 
 need_tools() {
@@ -161,6 +168,28 @@ install_fixture() {
     cp "$SOURCE_EML2" "$EML2"
     chmod 600 "$EML2"
   fi
+  install_paper_fixture "$SOURCE_PDF" "$EXPECTED_SHA_PDF" invoice-pdf.eml
+  install_paper_fixture "$SOURCE_SCAN" "$EXPECTED_SHA_SCAN" invoice-scan.eml
+  install_paper_fixture "$SOURCE_PDF_OFFLINE" "$EXPECTED_SHA_PDF_OFFLINE" invoice-pdf-offline.eml
+}
+
+# Spec 078 (paper invoice): synthetic PDF mails, generated deterministically and published with their checksums.
+install_paper_fixture() {
+  local source="$1" expected="$2" name="$3"
+  [ -f "$source" ] || die "paper-invoice fixture source missing: ${name}"
+  [ "$(shasum -a 256 "$source" | cut -d' ' -f1)" = "$expected" ] || die "paper-invoice fixture checksum differs from the documented value: ${name}"
+  if [ ! -f "$FIXTURES/$name" ] || ! cmp -s "$source" "$FIXTURES/$name"; then
+    cp "$source" "$FIXTURES/$name"
+    chmod 600 "$FIXTURES/$name"
+  fi
+}
+
+# The PDF worker (real Poppler/Tesseract on synthetic bytes) can be stopped by the owner to see the honest
+# "extraction unavailable" state. A flag file keeps it stopped across start/rebuild/restart, like the outage switch.
+pdf_apply_worker() {
+  if [ -f "$PDF_STOPPED_FLAG" ]; then
+    compose stop pdf_worker >/dev/null 2>&1 || true
+  fi
 }
 
 # The simulated outage (spec 077) is composed only from existing controls: the answer model container is stopped
@@ -271,6 +300,12 @@ Second journey, "the bad-connection day" (spec 077): second fixture ${EML2}
   E  bash scripts/mvp01-owner.sh restart --kill ; sign in again; the same waiting filing, no second effect (see 'status' ledger).
   F  bash scripts/mvp01-owner.sh outage off ; the filing becomes Filed with exactly one new ledger effect; import invoice-002.eml once more: replay. Mark the calendar online and import a fresh snapshot yourself.
   Sign-ins: at most 3 for the whole journey (the limit is 5 per 15 minutes per account and is never cleared).
+Third journey, "the paper invoice" (spec 078): PDF fixtures in ${FIXTURES}: invoice-pdf.eml (text PDF), invoice-scan.eml (scan; its Total is deliberately blurred), invoice-pdf-offline.eml (imported while the PDF worker is stopped).
+  Real Poppler/Tesseract on synthetic bytes in the network-free pdf_worker (default Docker seccomp plus an in-process guard: not verified confinement). Filing stays the metadata-only simulated ledger. No OCR accuracy claim.
+  P1  Documents > Import forwarded email: invoice-pdf.eml twice (second = "Exact email already imported"); badge "Text extracted"; "View original pages" (after the copy-limits tick) draws up to 3 pages as images; not verified confinement.
+  P2  invoice-scan.eml: badge "No text found" -> "Run OCR (up to 2 pages)"; OCR is uncertain and a line can be missing (the Total). Compare with the original, confirm what you can see, leave Total Unknown ("Unknown is not zero"); plan only; request the filing: Filed once, ledger +1.
+  P3  bash scripts/mvp01-owner.sh restart ; bash scripts/mvp01-owner.sh restart --kill (includes pdf_worker): same state, no second effect.
+  P4  bash scripts/mvp01-owner.sh pdf-worker stop ; import invoice-pdf-offline.eml: "Extraction unavailable", original kept; each attempt adds a version (tick the box to try). 'pdf-worker start' then Re-extract: review is required again.
 Optional failure rehearsals (synthetic ledger controls): bash scripts/mvp01-owner.sh scenario timeout-after-effect on  (before step 8)
 Stop (keeps data and certificate): bash scripts/mvp01-owner.sh stop     Destructive reset of ONLY this rehearsal: bash scripts/mvp01-owner.sh reset
 =====================================================================
@@ -286,6 +321,7 @@ cmd_start() {
   say "[mvp01-owner] building and starting ${PROJECT} (images are built from this checkout; rebuild after edits)"
   compose up -d --build --wait --wait-timeout 300
   outage_apply_model
+  pdf_apply_worker
   wait_ca
   verify_tls
   seed_fixture
@@ -302,6 +338,7 @@ cmd_rebuild() {
   compose build
   compose up -d --force-recreate --wait --wait-timeout 300
   outage_apply_model
+  pdf_apply_worker
   wait_ca
   verify_tls
   seed_fixture
@@ -312,10 +349,10 @@ cmd_restart() {
   need_tools
   ensure_config
   running_stack || die "the rehearsal is not running; use 'start'"
-  local services="api web caddy reminder_worker filing_worker synthetic_answer_model"
+  local services="api web caddy reminder_worker filing_worker synthetic_answer_model pdf_worker"
   if [ "${1:-}" = "--kill" ]; then
-    say "[mvp01-owner] PROCESS KILL (SIGKILL) of: api reminder_worker filing_worker synthetic_answer_model, then recreate/start"
-    compose kill -s SIGKILL api reminder_worker filing_worker synthetic_answer_model
+    say "[mvp01-owner] PROCESS KILL (SIGKILL) of: api reminder_worker filing_worker synthetic_answer_model pdf_worker, then recreate/start"
+    compose kill -s SIGKILL api reminder_worker filing_worker synthetic_answer_model pdf_worker
     compose up -d --wait --wait-timeout 300
   else
     say "[mvp01-owner] CONTAINER RESTART of: ${services} (PostgreSQL stays up; this is not a host reboot)"
@@ -324,9 +361,11 @@ cmd_restart() {
     compose up -d --wait --wait-timeout 300
   fi
   outage_apply_model
+  pdf_apply_worker
   verify_tls
   say "[mvp01-owner] done. Sign in again if needed; run 'status' to compare the ledger counts."
   if [ -f "$OUTAGE_FLAG" ]; then say "[mvp01-owner] the simulated outage is still ON (answer model stays stopped, destination controls persist); 'outage off' ends it."; fi
+  if [ -f "$PDF_STOPPED_FLAG" ]; then say "[mvp01-owner] the PDF worker is still STOPPED by you; 'pdf-worker start' starts it."; fi
 }
 
 cmd_stop() {
@@ -356,6 +395,9 @@ cmd_status() {
   local model_state
   model_state="$(compose ps --status running --services 2>/dev/null | grep -c '^synthetic_answer_model$' || true)"
   if [ -f "$OUTAGE_FLAG" ]; then say "outage      : ON (simulated). answer model $([ "$model_state" = 0 ] && echo stopped || echo RUNNING-unexpectedly); destination: lookups unavailable and one write armed to time out (see ledger controls above)"; else say "outage      : off. answer model $([ "$model_state" = 0 ] && echo STOPPED-unexpectedly || echo running)"; fi
+  local pdf_state
+  pdf_state="$(compose ps --status running --services 2>/dev/null | grep -c '^pdf_worker$' || true)"
+  if [ -f "$PDF_STOPPED_FLAG" ]; then say "pdf worker  : STOPPED by you (flag kept across start/rebuild/restart). PDF extraction and OCR report 'unavailable'; the original is kept. 'pdf-worker start' repairs it. $([ "$pdf_state" = 0 ] || echo 'NOTE: it is running although the flag is set.')"; else say "pdf worker  : $([ "$pdf_state" = 0 ] && echo 'NOT RUNNING (unexpected; run restart)' || echo 'running') (real Poppler/Tesseract on synthetic bytes; default Docker seccomp plus an in-process guard, not verified confinement)"; fi
   say "calendar    : $(compose run --rm -T migrate python - calendar < scripts/mvp01-owner-fixtures.py 2>/dev/null | tail -n 1 || echo unavailable)"
 }
 
@@ -387,6 +429,29 @@ cmd_outage() {
       say "              The calendar source stays offline until you mark it online and import a fresh snapshot."
       ;;
     *) die "usage: outage on|off" ;;
+  esac
+}
+
+cmd_pdf_worker() {
+  need_tools
+  running_stack || die "the rehearsal is not running"
+  case "${1:-}" in
+    stop)
+      : > "$PDF_STOPPED_FLAG"
+      if ! compose stop pdf_worker; then
+        rm -f "$PDF_STOPPED_FLAG"
+        die "could not stop the PDF worker; nothing was changed"
+      fi
+      say "[mvp01-owner] PDF worker STOPPED (simulated unavailable parser). Importing a PDF now keeps the original and reports extraction as unavailable. It stays stopped across start/rebuild/restart until 'pdf-worker start'."
+      ;;
+    start)
+      if ! compose up -d --wait --wait-timeout 120 pdf_worker; then
+        die "the PDF worker did not become healthy; the stopped flag was kept unchanged"
+      fi
+      rm -f "$PDF_STOPPED_FLAG"
+      say "[mvp01-owner] PDF worker started and healthy. In the document, click Re-extract PDF text; review is required again."
+      ;;
+    *) die "usage: pdf-worker stop|start" ;;
   esac
 }
 
@@ -437,7 +502,7 @@ cmd_reset() {
     # Compose only needs the required variables present for interpolation; `down` never uses their values.
     BUTLER_POSTGRES_PASSWORD=reset-only-unused BUTLER_RUNTIME_PASSWORD=reset-only-unused \
       docker compose --env-file /dev/null -p "$PROJECT" --profile reminders \
-      -f infra/core/compose.yml -f infra/core/answers-synthetic.override.yml -f infra/core/mvp01-owner.override.yml \
+      -f infra/core/compose.yml -f infra/core/answers-synthetic.override.yml -f infra/core/mvp01-owner.override.yml -f infra/core/pdf-ingestion.override.yml \
       down -v --remove-orphans
   fi
   rm -rf "$STATE"
@@ -453,5 +518,6 @@ case "${1:-}" in
   reset) cmd_reset ;;
   scenario) shift; cmd_scenario "$@" ;;
   outage) shift; cmd_outage "${1:-}" ;;
-  *) say "usage: bash scripts/mvp01-owner.sh start|status|rebuild|restart [--kill]|stop|reset|outage on|off|scenario <name> [on|off]"; exit 2 ;;
+  pdf-worker) shift; cmd_pdf_worker "${1:-}" ;;
+  *) say "usage: bash scripts/mvp01-owner.sh start|status|rebuild|restart [--kill]|stop|reset|outage on|off|pdf-worker stop|start|scenario <name> [on|off]"; exit 2 ;;
 esac

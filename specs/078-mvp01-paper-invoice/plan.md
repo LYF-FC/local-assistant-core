@@ -1,0 +1,8 @@
+# Plan — spec 078
+
+1. **Stack and commands (R1, R2).** Add the existing `pdf-ingestion.override.yml` to the script's compose list, the kill and restart lists and `reset`; add `pdf-worker stop|start` with a flag file (like the outage flag) re-applied after every `up`; `status` and the printed guide say what is real and what is not.
+2. **Fixtures (R3).** `paper_fixtures.py` builds the PDFs and `.eml` files byte-for-byte from committed inputs; the scan raster was rendered once by Poppler from the P2 lines (20 pt, 100 dpi) in the repository's own worker image and degraded by a documented stdlib function (low contrast, blurred Total line). SHA-256 values live in the script and are tested.
+3. **Wording and badge (R4, R5, R7, R8).** One pure module `pdf-extraction.ts` (states → badge, explanation, guard predicate, the Unknown sentence) used by the documents list and detail, the filing plan and the filing panel; vitest asserts meanings, never OCR text.
+4. **Original view (R6).** `original-pages.ts` lazily imports `pdfjs-dist` (4.10.38, exact) and draws up to 12 pages to canvases; `OriginalPages.tsx` hosts them. The CSP (`script-src 'self'`) is unchanged; the worker script is a same-origin asset. Rejected alternative: render pages in `pdf_worker` with `pdftoppm` behind a new API route (a backend and worker change outside the brief).
+5. **Checks (R9).** Checker commands, a Playwright spec with two phases, PostgreSQL tests with injected worker replies (D7 regression, wrong value, scope refusals), script tests.
+6. **Docs and status.** Guide section, spec records, one master gate entry; the register is untouched (its fingerprint is tied to the generated feature progress file).
