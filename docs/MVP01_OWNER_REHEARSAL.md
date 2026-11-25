@@ -8,8 +8,9 @@ A named, disposable, single-stack Docker rehearsal on your Mac for the synthetic
 bash scripts/mvp01-owner.sh start       # create private config, build images, start, seed the fixture, print the guide
 bash scripts/mvp01-owner.sh status      # revisions, services, fixture checksum, CA fingerprint, identity, ledger counts
 bash scripts/mvp01-owner.sh rebuild     # rebuild images from this checkout and recreate containers (data preserved)
-bash scripts/mvp01-owner.sh restart     # container restart of api/web/caddy/workers/simulated model
-bash scripts/mvp01-owner.sh restart --kill   # SIGKILL of api/workers/simulated model, then start again
+bash scripts/mvp01-owner.sh restart     # container restart of api/web/caddy/workers/simulated model/PDF worker
+bash scripts/mvp01-owner.sh restart --kill   # SIGKILL of api/workers/simulated model/PDF worker, then start again
+bash scripts/mvp01-owner.sh pdf-worker stop     # simulate an offline PDF reader (kept across start/rebuild/restart); pdf-worker start repairs it
 bash scripts/mvp01-owner.sh stop        # compose down; database, CA and synthetic ledger volumes are kept
 bash scripts/mvp01-owner.sh reset       # DESTRUCTIVE, only this rehearsal; asks you to type the project name
 bash scripts/mvp01-owner.sh scenario timeout-after-effect on   # optional synthetic failure controls
@@ -90,3 +91,29 @@ A simulated outage on the same stack; nothing real fails. Keep the **Mac awake**
 **Stated limit (S10):** a reminder is delivered in one database transaction. If the reminder worker is killed at the due time it appears **late** (at the next worker pass, within about a minute of the restart), **never twice** and never lost.
 
 The live checker (`scripts/mvp01-owner-check.py outage-journey|outage-end|peer`) is agent evidence only; its peer step replaces the synthetic peer's password for one command and is meant for a disposable verify stack, not your rehearsal stack, unless you decide otherwise.
+
+## Third journey: the paper invoice (spec 078)
+
+Invoices arrive as **PDFs**, sometimes as a scan. Butler reads them locally with the real Poppler (text) and Tesseract (OCR) engines, on **synthetic** PDF bytes only; no model, no provider, no mailbox, nothing leaves your Mac. The filing destination is still the **simulated metadata ledger**: it records the PDF's hash, size and logical path, never the PDF itself. The rebuild adds the PDF worker (`pdf_worker`: no network, read-only, default Docker seccomp plus an in-process guard; **this is not verified confinement**). The first rebuild pulls base images and takes longer. Keep the **Mac awake**; budget **at most 3 sign-ins** (limit 5 per account per 15 minutes, never cleared).
+
+Fixtures (synthetic, generated deterministically by `scripts/mvp01-owner-fixtures/paper_fixtures.py`, checksums checked before they are copied to `.local/mvp01-owner/fixtures/`):
+
+| File | What it is | SHA-256 |
+|---|---|---|
+| `invoice-pdf.eml` | text PDF, invoice `MVP01-2026-003`, 312.80 EUR | `1a9da9a9540a78f1772af19550b5c92038e14c03b7077e0b6eb9fd298e416680` |
+| `invoice-scan.eml` | image-only PDF (a scan), invoice `MVP01-2026-004`; the Total line is deliberately blurred | `8847cd9921927af49514285bef440bf0e65b333d3c08088376422a171f3a15af` |
+| `invoice-pdf-offline.eml` | text PDF, invoice `MVP01-2026-005`, imported while the PDF worker is stopped | `8d481f484b5b76a8dcd1c146d177f35cf847dd7721e2d90b66bfd5aeb6ce56ec` |
+
+1. `bash scripts/mvp01-owner.sh rebuild`. `status` shows `pdf worker : running`. Sign in once. Note the ledger counts in `status` (baseline).
+2. Documents → *Import forwarded email…* → `invoice-pdf.eml`, twice: the second time says **Exact email already imported**. The list shows the badge **Text extracted**. Open the document, tick the copy-limits acknowledgement at the bottom, then click **View original pages**: up to the first 3 pages are drawn as images in this page (nothing is embedded, saved or downloaded, and no PDF script, link or form is run). Reading a PDF in the browser is **not verified confinement** and is not claimed to be safe; a damaged or too large PDF says "The original could not be shown here". The extraction section says what was read.
+3. Import `invoice-scan.eml`. Badge: **No text found**; the extraction section says it looks like a scan and suggests **Run OCR (up to 2 pages)**. Click it, then read the warning: OCR is uncertain and **a line can be missing**: the blurred Total is likely absent from the text even though the status says *ready*. **No claim is made about OCR accuracy**; the result can differ on another machine. Compare the text with the original (use **View original pages**).
+4. *Correct and review* (your attestation that you compared), *Load invoice review*, confirm only what you can see in the original and leave the Total **Unknown** (and the invoice number if it was misread). Read *Unknown is not zero*: Unknown stays Unknown; the ledger holds only the file's hash, size and logical path, never invoice values. Suggest or enter a plan, approve **the plan only**, then request the synthetic filing (two acknowledgements): **Filed** once; open its history; `status` shows the ledger **+1 effect** per filed invoice (the ledger holds metadata, not the PDF).
+5. `bash scripts/mvp01-owner.sh restart`, then `restart --kill` (the printed list now includes `pdf_worker`). Sign in only if asked. Same documents, extraction states, reviews and Filed status; the ledger counts do not change.
+6. `bash scripts/mvp01-owner.sh pdf-worker stop`. Import `invoice-pdf-offline.eml`: the original is kept and the badge says **Extraction unavailable**; the section says the PDF reader is offline, the original is kept, and what to do. The buttons are locked until you tick *I started the PDF worker and want to try again*: **each attempt while the worker is offline adds a version of the document (quota: 50 per document) and needs a new review**, which is unchanged backend behaviour; the lock only prevents accidental clicks and never hides the state. `status` says the worker is STOPPED by you, and it stays stopped across `start`, `rebuild` and `restart` until you start it again (next step).
+7. `bash scripts/mvp01-owner.sh pdf-worker start`, tick the box, click **Re-extract PDF text**: ready, a new unreviewed version; review is required again. `bash scripts/mvp01-owner.sh stop` keeps your data.
+
+**Things to know.** Each **View original pages** leaves a small leftover in the browser page (one font object per view): after many views, reload the page. The scan's OCR may misread the invoice number (for example `MVP 01-2026-004` with a space): do **not** confirm it, correct it or leave the field Unknown. If you run the earlier "What is the total amount?" question (the first journey) after the paper trial, its answer will cite the paper invoice too, because that invoice is now a reviewed document.
+
+**Stated limits.** Real Poppler/Tesseract on synthetic bytes; OCR accuracy is not claimed and one scan on one setup was observed. Seccomp: default Docker profile plus an in-process guard, not verified confinement for this stack. Filing is metadata-only; the PDF bytes live in the application database only. Restart evidence is container restart and SIGKILL of the application, workers and the PDF worker; no host reboot. A scan has at most 2 OCR pages; handwriting, photos, several attachments and HTML mail are not supported.
+
+The live checker (`scripts/mvp01-owner-check.py paper-journey|paper-verify|paper-worker-down|paper-repaired|paper-peer|paper-hostile-import`) and the browser spec `frontend/e2e/mvp01-paper.spec.ts` are agent evidence only; they run on a disposable copy, not on your stack, and are not your acceptance.

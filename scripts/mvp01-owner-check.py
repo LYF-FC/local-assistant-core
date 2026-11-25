@@ -322,9 +322,204 @@ def peer(origin, ca, state_file):
 
 
 
-COMMANDS = {"journey": journey, "verify": verify, "outage-journey": outage_journey, "outage-end": outage_end, "peer": peer}
+# ---------------------------------------------------------------- spec 078: the paper invoice
+FIX = HERE / "mvp01-owner-fixtures"
+PAPER = {"pdf": FIX / "invoice-pdf.eml", "scan": FIX / "invoice-scan.eml", "offline": FIX / "invoice-pdf-offline.eml"}
+TITLES = {"pdf": "MVP-01 paper invoice (text PDF)", "scan": "MVP-01 paper invoice (scan)", "offline": "MVP-01 paper invoice (worker stopped)"}
+# States, never OCR text (live OCR output varies by platform): the checker adapts to what the engine returned.
+
+
+def import_mail(s, key):
+    raw = PAPER[key].read_bytes()
+    body = {"scope": SCOPE, "title": TITLES[key], "message_base64": base64.b64encode(raw).decode()}
+    first = s.call("/api/v1/email-intake", body)
+    second = s.call("/api/v1/email-intake", {**body, "title": "A replay must not rename"})
+    check(f"P {key}: imported once, then replayed", first[0] in (200, 201) and second[0] == 200 and second[1]["status"] == "replayed", (first[0], second[0]))
+    check(f"P {key}: one document and the original title kept", first[1]["document"]["id"] == second[1]["document"]["id"] and second[1]["document"]["title"] == TITLES[key])
+    return second[1]["document"]
+
+
+def read_doc(s, doc):
+    status, current = s.call(f"/api/v1/documents/{doc['id']}/read", {"scope": SCOPE})
+    check("document read", status == 200, status)
+    return current
+
+
+def extract(s, doc, mode):
+    status, out = s.call(f"/api/v1/documents/{doc['id']}/extract", {"scope": SCOPE, "expected_revision": doc["revision"], "mode": mode})
+    check(f"extract ({mode}) accepted", status == 200, status)
+    return out
+
+
+def line_of(text, needle):
+    for number, line in enumerate(text.splitlines(), 1):
+        if needle in line:
+            return number
+    return None
+
+
+def review_and_file(s, doc, label, expect_total_unknown):
+    """Review (confirm only what the document text really shows, leave the rest Unknown), plan, request, wait Filed."""
+    status, doc = s.call(f"/api/v1/documents/{doc['id']}/correct", {"scope": SCOPE, "expected_revision": doc["revision"], "title": doc["title"], "source_reference": doc["source_reference"], "reviewed": True})
+    check(f"P {label}: text reviewed against the original (human attestation)", status == 200 and doc["reviewed"] is True, status)
+    text = doc["content_text"]
+    status, receipt = s.call(f"/api/v1/invoices/{doc['id']}/prepare", {"scope": SCOPE, "expected_document_revision": doc["revision"], "expected_review_revision": None})
+    check(f"P {label}: candidates prepared", status == 200, status)
+    expected = {"issuer": "Synthetic Rehearsal Vendor", "issued_on": "2026-11-23", "currency": "EUR"}
+    needles = {"issuer": "Synthetic Rehearsal Vendor", "issued_on": "2026-11-23", "currency": "EUR"}
+    if not expect_total_unknown:
+        expected.update({"invoice_number": "MVP01-2026-003", "total": "312.80", "due_on": "2027-01-08"})
+        needles.update({"invoice_number": "MVP01-2026-003", "total": "312.80", "due_on": "2027-01-08"})
+    decisions = {}
+    for field in ("issuer", "invoice_number", "issued_on", "due_on", "total", "currency"):
+        line = line_of(text, needles[field]) if field in needles else None
+        if field in expected and line:
+            decisions[field] = {"state": "confirmed", "value": expected[field], "line": line, "note": ""}
+        else:
+            decisions[field] = {"state": "unknown", "value": None, "line": None, "note": "Left Unknown on purpose (not readable or not confirmed)"}
+    if expect_total_unknown:
+        check(f"P {label}: the Total stays Unknown (it was not read)", decisions["total"]["state"] == "unknown")
+    status, receipt = s.call(f"/api/v1/invoices/{doc['id']}/review", {"scope": SCOPE, "expected_document_revision": doc["revision"], "expected_review_revision": receipt["review_revision"], "attest_original": True, "decisions": decisions})
+    check(f"P {label}: review saved with Unknown fields kept Unknown", status == 200 and receipt["status"] == "reviewed", status)
+    manual = decisions["invoice_number"]["state"] != "confirmed"
+    plan_body = {"scope": SCOPE, "expected_document_revision": doc["revision"], "expected_review_revision": receipt["review_revision"]}
+    if manual:
+        plan_body.update({"folder": "invoices/manual", "filename": f"paper-{label}.pdf"})
+    status, receipt = s.call(f"/api/v1/invoices/{doc['id']}/plan", plan_body)
+    check(f"P {label}: logical plan proposed", status == 200, status)
+    status, receipt = s.call(f"/api/v1/invoices/{doc['id']}/approve_plan", {"scope": SCOPE, "expected_document_revision": doc["revision"], "expected_review_revision": receipt["review_revision"], "acknowledge_plan_only": True, "acknowledge_duplicate_limits": True})
+    plan = receipt["review"]["data"]["filing_plan"]
+    check(f"P {label}: plan approved, execution not authorized", status == 200 and plan["state"] == "approved" and plan["execution_authorized"] is False, status)
+    check(f"P {label}: plan approval alone started nothing", filings(s, doc["id"]) == [])
+    request = {"scope": SCOPE, "document_id": doc["id"], "expected_document_revision": doc["revision"], "expected_review_revision": receipt["review_revision"], "acknowledge_synthetic_destination": True, "acknowledge_exact_plan": True}
+    status, created = s.call("/api/v1/filing/request", request)
+    check(f"P {label}: one exact request", status == 201 and created["filing"]["state"] == "pending", status)
+    done = wait(lambda: next((f for f in filings(s, doc["id"]) if f["state"] in ("filed", "failed", "unknown")), None), 90, 3)
+    check(f"P {label}: worker filed it once", done and done["state"] == "filed" and done["attempts"] == 1, done)
+    return doc, done, plan
+
+
+def paper_journey(origin, ca, state_file):
+    """Spec 078 (agent run, API): P1 text PDF and P2 scan through extraction, OCR, review, plan and filing. One sign-in."""
+    s = login(origin, ca)
+    p1 = import_mail(s, "pdf")
+    p1 = read_doc(s, p1)
+    ex = p1["extraction"]
+    check("P1 extraction ready with the text engine (1 page)", ex["status"] == "ready" and ex["engine"] == "poppler-text-v1" and ex["pages"] == 1, ex)
+    p2 = import_mail(s, "scan")
+    p2 = read_doc(s, p2)
+    check("P2 an image-only PDF has no text yet (no_text)", p2["extraction"]["status"] == "no_text" and p2["content_text"] == "", p2["extraction"])
+    ocr = extract(s, p2, "ocr")
+    p2 = read_doc(s, p2)
+    ex2 = p2["extraction"]
+    check("P2 explicit OCR ran: ready with the OCR engine, review reset, new version", ex2["status"] == "ready" and ex2["engine"] == "poppler-tesseract-v1" and p2["reviewed"] is False and p2["revision"] > p1["revision"] - 1, (ex2["status"], ex2["engine"], p2["reviewed"]))
+    p1, f1, plan1 = review_and_file(s, p1, "text", False)
+    p2, f2, plan2 = review_and_file(s, p2, "scan", True)
+    state = {"p1": {"document_id": p1["id"], "revision": p1["revision"], "title": p1["title"], "filing_id": f1["id"], "path": plan1["relative_path"]},
+             "p2": {"document_id": p2["id"], "revision": p2["revision"], "title": p2["title"], "filing_id": f2["id"], "path": plan2["relative_path"]},
+             "document_id": p1["id"], "filing_id": f1["id"], "document_title": p1["title"]}
+    Path(state_file).write_text(json.dumps(state, indent=1))
+    print(f"paper-journey complete; state written ({len(results)} checks passed)")
+
+
+def paper_verify(origin, ca, state_file, effects_before=None, effects_after=None):
+    """After restart / restart --kill: same documents, extraction states, reviews and exactly one Filed request each."""
+    state = json.loads(Path(state_file).read_text())
+    s = login(origin, ca)
+    for key in ("p1", "p2"):
+        item = state[key]
+        status, doc = s.call(f"/api/v1/documents/{item['document_id']}/read", {"scope": SCOPE})
+        check(f"P {key}: same document after restart, title kept", status == 200 and doc["title"] == item["title"] and doc["revision"] == item["revision"], status)
+        check(f"P {key}: extraction still ready", doc["extraction"]["status"] == "ready")
+        items = filings(s, item["document_id"])
+        check(f"P {key}: exactly one filing, still Filed", len(items) == 1 and items[0]["id"] == item["filing_id"] and items[0]["state"] == "filed", items)
+        status, hist = s.call("/api/v1/filing/history", {"scope": SCOPE, "execution_id": item["filing_id"]})
+        check(f"P {key}: history preserved", [e["operation"] for e in hist["items"]] == ["requested", "attempted", "filed"])
+    if effects_before is not None and effects_after is not None:
+        check("P the ledger gained exactly two effects in total and none after the restart", int(effects_after) == int(effects_before), (effects_before, effects_after))
+    print("paper-verify complete")
+
+
+def paper_worker_down(origin, ca, state_file):
+    """Run with `pdf-worker stop` applied: P3 keeps its original, reports unavailable, and each attempt adds a version."""
+    s = login(origin, ca)
+    p3 = import_mail(s, "offline")
+    p3 = read_doc(s, p3)
+    ex = p3["extraction"]
+    check("P3 with the worker stopped: the import succeeds and extraction is unavailable", ex["status"] == "unavailable" and p3["reviewed"] is False, ex)
+    raw = PAPER["offline"].read_bytes()
+    status, got = s.call(f"/api/v1/documents/{p3['id']}/original", {"scope": SCOPE, "expected_revision": p3["revision"], "version": p3["revision"], "acknowledge_copy_limits": True})
+    original = base64.b64decode(got["original_base64"]) if status == 200 else b""
+    check("P3 the original is kept byte for byte", status == 200 and original[:5] == b"%PDF-" and got["sha256"] == hashlib.sha256(original).hexdigest(), status)
+    status, refused = s.call(f"/api/v1/documents/{p3['id']}/correct", {"scope": SCOPE, "expected_revision": p3["revision"], "title": p3["title"], "source_reference": p3["source_reference"], "reviewed": True})
+    check("P3 text that was never extracted cannot be attested as reviewed", status in (409, 422), status)
+    revisions = [p3["revision"]]
+    for _ in range(2):
+        extract(s, {"id": p3["id"], "revision": revisions[-1]}, "text")
+        current = read_doc(s, p3)
+        revisions.append(current["revision"])
+    check("P3 each attempt while the worker is down adds a version (backend behaviour, unchanged)", revisions[0] < revisions[1] < revisions[2], revisions)
+    check("P3 the state stays visible as unavailable", current["extraction"]["status"] == "unavailable" and current["reviewed"] is False)
+    Path(state_file).write_text(json.dumps({**json.loads(Path(state_file).read_text()), "p3": {"document_id": p3["id"], "revision": current["revision"]}}, indent=1))
+    print("paper-worker-down complete")
+
+
+def paper_repaired(origin, ca, state_file):
+    """Run after `pdf-worker start`: Re-extract works, review is required again."""
+    state = json.loads(Path(state_file).read_text())
+    s = login(origin, ca)
+    p3 = read_doc(s, {"id": state["p3"]["document_id"]})
+    extract(s, p3, "text")
+    p3 = read_doc(s, p3)
+    check("P3 after repair Re-extract is ready and unreviewed (review required again)", p3["extraction"]["status"] == "ready" and p3["reviewed"] is False, p3["extraction"])
+    print("paper-repaired complete")
+
+
+def paper_hostile_import(origin, ca, state_file):
+    """Agent only (one sign-in): import the hostile, the damaged and the oversized-page test PDFs as ordinary documents."""
+    spec = importlib.util.spec_from_file_location("paper_fixtures", FIX / "paper_fixtures.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    s = login(origin, ca)
+    for kind, title in (("hostile", "MVP-01 hostile test PDF"), ("malformed", "MVP-01 malformed test PDF"), ("huge", "MVP-01 huge-page test PDF")):
+        body = {"scope": SCOPE, "title": title, "message_base64": base64.b64encode(module.agent_eml(kind)).decode()}
+        status, out = s.call("/api/v1/email-intake", body)
+        check(f"{kind} test PDF imported as an ordinary document (extraction state is whatever the engine says)", status in (200, 201), status)
+    print("paper-hostile-import complete")
+
+
+def paper_peer(origin, ca, state_file):
+    """The second synthetic adult sees nothing of the PDF documents, originals or extraction (one peer sign-in)."""
+    state = json.loads(Path(state_file).read_text())
+    p = seed.Session(origin, ca)
+    p.login("mvp01-peer", os.environ["BUTLER_MVP01_PEER_PASSWORD"])
+    ids = [state[k]["document_id"] for k in ("p1", "p2") if k in state] + ([state["p3"]["document_id"]] if "p3" in state else [])
+    every = ""
+    for scope in ("household_shared", "member_a_private"):
+        code, _ = p.call("/api/v1/documents/query", {"scope": scope})
+        check(f"PEER document list in {scope} is refused", code in (403, 404), code)
+        for identifier in ids:
+            for name, path, body in (
+                ("read", "read", {"scope": scope}),
+                ("original", "original", {"scope": scope, "expected_revision": 1, "version": 1, "acknowledge_copy_limits": True}),
+                ("extract", "extract", {"scope": scope, "expected_revision": 1, "mode": "ocr"}),
+            ):
+                code, _ = p.call(f"/api/v1/documents/{identifier}/{path}", body)
+                check(f"PEER {name} of a PDF document in {scope} is refused", code in (403, 404), code)
+    for name, path, body in (
+        ("documents", "/api/v1/documents/query", {"scope": "member_b_private"}),
+        ("filing", "/api/v1/filing/query", {"scope": "member_b_private", "state": "all", "document_id": None, "after": None}),
+    ):
+        code, data = p.call(path, body)
+        every += json.dumps(data)
+        check(f"PEER {name} in its own scope shows nothing of the owner", code == 200 and not any(i in json.dumps(data) for i in ids))
+    check("PEER no PDF title, filename or id appears anywhere", not any(x in every for x in ids + ["MVP-01 paper invoice", "invoice-MVP01-2026", "scan-MVP01-2026"]))
+    print("paper-peer complete")
+
+
+COMMANDS = {"journey": journey, "verify": verify, "outage-journey": outage_journey, "outage-end": outage_end, "peer": peer, "paper-journey": paper_journey, "paper-verify": paper_verify, "paper-worker-down": paper_worker_down, "paper-repaired": paper_repaired, "paper-peer": paper_peer, "paper-hostile-import": paper_hostile_import}
 
 if __name__ == "__main__":
     if len(sys.argv) < 5 or sys.argv[1] not in COMMANDS:
-        raise SystemExit("usage: mvp01-owner-check.py journey|verify|outage-journey|outage-end|peer <origin> <ca> <state-file> [effects-before effects-after for outage-end]")
+        raise SystemExit("usage: mvp01-owner-check.py journey|verify|outage-journey|outage-end|peer|paper-journey|paper-verify|paper-worker-down|paper-repaired|paper-peer <origin> <ca> <state-file> [effects-before effects-after for outage-end]")
     COMMANDS[sys.argv[1]](*sys.argv[2:])
