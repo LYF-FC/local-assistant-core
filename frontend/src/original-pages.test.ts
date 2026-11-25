@@ -3,10 +3,10 @@ import { type Engine, MAX_PAGES, pageFits, renderOriginalPages } from "./origina
 
 // A fake pdf.js: records teardown, and lets a test decide when (or whether) a page render settles.
 function fake(options: { pages?: number; width?: number; height?: number; render?: "never" | "ok" } = {}) {
-  const log = { workerDestroyed: 0, taskDestroyed: 0, cancelled: 0, rendered: 0 };
+  const log = { terminated: 0, workerDestroyed: 0, taskDestroyed: 0, cancelled: 0, rendered: 0 };
   let release: () => void = () => undefined;
   const engine: Engine = {
-    Worker: class {} as never,
+    Worker: class { terminate() { log.terminated++; } } as never,
     PDFWorker: class { destroy() { log.workerDestroyed++; } } as never,
     getDocument: () => ({
       promise: Promise.resolve({
@@ -42,6 +42,7 @@ describe("bounded in-page PDF view (spec 078)", () => {
     expect(result).toEqual({ pages: 9, shown: MAX_PAGES });
     expect(canvases).toHaveLength(MAX_PAGES);
     expect(log.workerDestroyed).toBe(1);
+    expect(log.terminated).toBe(1);
     expect(log.taskDestroyed).toBe(1);
   });
   it("Hide mid-render aborts: the render is cancelled, the task destroyed and the worker terminated", async () => {
@@ -55,6 +56,18 @@ describe("bounded in-page PDF view (spec 078)", () => {
     expect(log.cancelled).toBe(1);
     expect(log.taskDestroyed).toBe(1);
     expect(log.workerDestroyed).toBe(1);
+    expect(log.terminated).toBe(1);
+  });
+  it("switching document or unmounting (both abort the same signal) terminates the thread exactly once, even if aborted twice", async () => {
+    stubDom();
+    const { engine, log } = fake({ render: "never" });
+    const control = new AbortController();
+    const running = renderOriginalPages(new Uint8Array([1]), container(), control.signal, engine);
+    await new Promise(r => setTimeout(r, 0));
+    control.abort();
+    control.abort();
+    await expect(running).rejects.toMatchObject({ name: "AbortError" });
+    expect(log.terminated).toBe(1);
   });
   it("a render that never finishes is stopped by the time limit with a visible error", async () => {
     stubDom();
@@ -65,6 +78,7 @@ describe("bounded in-page PDF view (spec 078)", () => {
     await vi.advanceTimersByTimeAsync(5001);
     await outcome;
     expect(log.workerDestroyed).toBe(1);
+    expect(log.terminated).toBe(1);
     expect(log.taskDestroyed).toBe(1);
   });
   it("an already aborted signal starts nothing that keeps running", async () => {
@@ -74,6 +88,7 @@ describe("bounded in-page PDF view (spec 078)", () => {
     control.abort();
     await expect(renderOriginalPages(new Uint8Array([1]), container(), control.signal, engine)).rejects.toMatchObject({ name: "AbortError" });
     expect(log.workerDestroyed).toBe(1);
+    expect(log.terminated).toBe(1);
   });
   it("refuses very tall, very narrow and non-finite pages instead of drawing a distorted or huge canvas", async () => {
     expect(pageFits(612, 792, 0.98)).toBe(true);
@@ -86,5 +101,6 @@ describe("bounded in-page PDF view (spec 078)", () => {
     await expect(renderOriginalPages(new Uint8Array([1]), container(), new AbortController().signal, engine)).rejects.toThrow("cannot be drawn");
     expect(canvases).toHaveLength(0);
     expect(log.workerDestroyed).toBe(1);
+    expect(log.terminated).toBe(1);
   });
 });

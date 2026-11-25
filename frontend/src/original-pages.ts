@@ -1,7 +1,7 @@
 // In-page view of a PDF original as rendered page images (spec 078, decision D4).
 // The PDF is never embedded (no <iframe>, <object>, <embed> or blob URL navigation) and no scripting, annotation, link
-// or form layer is created: pdf.js only draws each page onto a <canvas>. Eval, XFA, web font loading (FontFace) and
-// range/stream fetching are off. Reading a hostile PDF in the browser is NOT verified confinement.
+// or form layer is created: pdf.js only draws each page onto a <canvas>. Eval, XFA and range/stream fetching are off;
+// FontFace loading is left at the pdf.js default (disableFontFace: true draws a blank page, see the comment below). Reading a hostile PDF in the browser is NOT verified confinement.
 // Rendering is bounded: at most MAX_PAGES (3) pages, one at a time, a pixel budget and side limits per canvas, a total
 // time limit, and an abort (Hide, new document, unmount) that cancels the render, destroys the loading task and
 // terminates the pdf.js worker, so nothing keeps running behind a hidden or replaced view.
@@ -18,7 +18,7 @@ export type RenderResult = { pages: number; shown: number };
 export type Engine = {
   getDocument(options: Record<string, unknown>): { promise: Promise<any>; destroy(): unknown }; // eslint-disable-line @typescript-eslint/no-explicit-any
   PDFWorker: new (options: { port: unknown }) => { destroy(): void };
-  Worker: new () => unknown;
+  Worker: new () => { terminate(): void };
 };
 
 export function canvasScale(pageWidth: number, pageHeight: number, cssWidth: number, ratio: number): number {
@@ -51,7 +51,8 @@ export async function renderOriginalPages(
   timeoutMs: number = RENDER_TIMEOUT_MS,
 ): Promise<RenderResult> {
   const pdf = engine ?? (await loadEngine());
-  const worker = new pdf.PDFWorker({ port: new pdf.Worker() });
+  const thread = new pdf.Worker();
+  const worker = new pdf.PDFWorker({ port: thread });
   const task = pdf.getDocument({
     data: bytes.slice(),
     worker,
@@ -75,7 +76,9 @@ export async function renderOriginalPages(
     stopped = reason;
     try { current?.cancel(); } catch { /* already finished */ }
     void Promise.resolve(task.destroy()).catch(() => undefined);
-    try { worker.destroy(); } catch { /* already terminated */ }
+    try { worker.destroy(); } catch { /* already destroyed */ }
+    // PDFWorker.destroy() may leave a caller-supplied thread running, so the thread is terminated explicitly.
+    try { thread.terminate(); } catch { /* already terminated */ }
     reject(reason);
   };
   const guard = <T,>(promise: Promise<T>): Promise<T> => Promise.race([promise, halted]);
