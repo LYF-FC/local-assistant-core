@@ -42,6 +42,12 @@ This is a prerequisite for private installation adoption and a usable reusable-i
 
 ## Shared contracts and exclusions
 
+### Butler Code — post-MVP workflow
+
+Owner-approved 24 November 2026: [Butler Code](BUTLER_CODE.md) adds a named supervised development workflow for side projects, beginning with one small pilot after an accepted Everyday MVP. It refines WORK-07 project continuity, OPS-07/08 script maintenance/supervised repair and CORE-07 scoped coordination; it does not add counted references or remove any existing requirement. A1 — Project Orchestrator - ChatGPT remains the external coordinator; the owner retains scope, authority and acceptance decisions. Butler Code can later support bounded A2–A6 responsibilities under the contract's independence rules. A side-project example such as spotdl is illustrative, not a selected target or approved modification. Current priorities and planning status remain in the [master](../PROJECT_MASTER.md#post-mvp-scope-addition--butler-code-owner-approved-24-november-2026). No implementation starts, no runtime/model is selected, and no work is assigned away from MVP-01.
+
+### Common authority and data boundaries
+
 FastAPI/PostgreSQL/React remain the baseline. Windmill is the intended deterministic orchestrator; Home Assistant owns physical automation; NOMAD remains separate. Synology is the intended durable archive/backup layer, with local substitutes for development; PostgreSQL runs on local storage. Native acceleration is evaluated separately from portable platform containers. No alternate stack, agent framework, vector store or cluster scheduler becomes mandatory merely because it was investigated.
 
 Records carry stable IDs, owner/workspace, source, timestamp/timezone, version, corrections and retention category. Exports preserve provenance; derived indexes are rebuildable. Current identity and owner checks apply to search, answers, history, exports and connectors. Technical administration is not content access. Jobs use durable state, bounded retries, idempotency and reconciliation for ambiguous external outcomes. Approval binds the actual payload/action/recipient and expires when relevant inputs change. Untrusted document/model text cannot grant authority.

@@ -48,6 +48,8 @@ Operational, privacy and recovery contracts begin in batch 1 and close across al
 
 ## Later stages — all retained
 
+**Butler Code, post-MVP:** the owner approved a small supervised side-project pilot after an accepted Everyday MVP (24 November 2026), mapped to existing WORK-07, OPS-07/08 and CORE-07. A1 — Project Orchestrator - ChatGPT remains external coordinator. Start with reproducing one issue, a bounded patch, independent review, executable checks and a runnable owner demonstration; broader role automation comes only from demonstrated value and separate approval. Project selection, exact scheduling among other post-MVP work and implementation need a later owner-approved brief. See [contract](docs/BUTLER_CODE.md) and [authoritative planning record](PROJECT_MASTER.md#post-mvp-scope-addition--butler-code-owner-approved-24-november-2026). No current MVP task is displaced, and existing post-MVP commitments and the deferred review programme are not reordered by this addition.
+
 | Stage | Capability | Dependencies / acceptance |
 |---|---|---|
 | Household/food (historical v0.3) | HOME-01–11, DOC-04–07: location stock, batches/expiry, supplies, transfers, grocery order intake, shopping, recipes/references, equipment and exports | Transactional stock/unit ledger; reviewed intake is not receipt; safe fetch; shortages/provenance; reversible file cleanup. Basic financial goal/progress register expands here. |

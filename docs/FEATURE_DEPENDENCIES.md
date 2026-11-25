@@ -2,6 +2,8 @@
 
 Companion to the [complete register](FEATURE_REGISTER.md). These are prerequisites and feasibility questions, not installed dependencies or activation authority. Preserve parent mappings when splitting work. Manual imports can unblock a domain but do not certify its live connector. Historical version labels are planning stages; the [roadmap](../ROADMAP.md) orders work by current dependencies.
 
+The post-MVP [Butler Code workflow](BUTLER_CODE.md) refines WORK-07, OPS-07/08 and CORE-07. Its pilot depends on an accepted Everyday MVP, an owner-approved project/issue brief, isolated synthetic workspace and tool/data/network/resource limits, approved model/runtime readiness, independent exact-revision review and a followable owner demonstration. The external A1 interface needs an explicit data-flow contract; private project material is not authorized for transmission to ChatGPT or another provider by this scope note. No new reference, dependency installation or activation authority is introduced.
+
 | ID | Required foundation or feasibility gate |
 |---|---|
 | CORE-01 | authentication and policy |
