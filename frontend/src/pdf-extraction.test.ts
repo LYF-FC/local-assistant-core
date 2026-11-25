@@ -27,7 +27,7 @@ describe("extraction states in plain language (spec 078)", () => {
   });
   it("says OCR is uncertain, that a line can be missing and that nothing is claimed accurate", () => {
     const text = extractionExplanation(ocr("ready"));
-    expect(text).toContain("a line can be missing");
+    expect(text).toContain("line can be missing");
     expect(text).toContain("Unknown");
     expect(text.toLowerCase()).not.toMatch(/accurate|accuracy|verified|confinement/);
   });

@@ -64,7 +64,7 @@ test.describe("paper-ui",()=>{
   // Scan after OCR: says OCR is uncertain and that a line can be missing; the original shows beside the text.
   await panel.getByRole("button",{name:T.scan,exact:true}).click();
   const scan=page.getByRole("article",{name:"Selected document",exact:true});
-  await expect(scan.getByRole("region",{name:"PDF extraction",exact:true})).toContainText("a line can be missing");
+  await expect(scan.getByRole("region",{name:"PDF extraction",exact:true})).toContainText("line can be missing");
   await viewOriginal(page,scan);
   await expect(scan.getByRole("img",{name:/Original page 1 of 1/})).toBeVisible();
   expect(await hasInk(page,/Original page 1 of 1/)).toBeGreaterThan(50);
@@ -97,7 +97,22 @@ test.describe("paper-ui",()=>{
   expect(page.url().startsWith(process.env.BUTLER_E2E_ORIGIN??"https://localhost")).toBe(true);
   await expect(page.locator("iframe, embed, object")).toHaveCount(0);
  });
-test("damaged and oversized-page PDFs end in a visible state, never a blank or a crash",async()=>{
+test("opening another document never shows the previous original or keeps its confirmations",async()=>{
+  const page=shared;await page.setViewportSize({width:1280,height:900});await page.goto("/");
+  const panel=await openDocuments(page);
+  await panel.getByRole("button",{name:T.pdf,exact:true}).click();
+  let detail=page.getByRole("article",{name:"Selected document",exact:true});
+  await viewOriginal(page,detail);
+  await expect(detail.getByRole("img",{name:/Original page 1 of 1/})).toBeVisible();
+  await panel.getByRole("button",{name:T.scan,exact:true}).click();
+  detail=page.getByRole("article",{name:"Selected document",exact:true});
+  await expect(detail).toContainText(T.scan);
+  await expect(page.getByRole("region",{name:"Original pages",exact:true})).toHaveCount(0);
+  await expect(page.getByRole("img",{name:/Original page/})).toHaveCount(0);
+  await expect(page.getByLabel("Acknowledge document copy limits",{exact:true})).not.toBeChecked();
+  await expect(detail.getByRole("button",{name:"View original pages",exact:true})).toBeDisabled();
+ });
+ test("damaged and oversized-page PDFs end in a visible state, never a blank or a crash",async()=>{
   const page=shared;const crashes:string[]=[];page.on("pageerror",e=>crashes.push(e.message));page.on("crash",()=>crashes.push("page crashed"));
   await page.setViewportSize({width:1280,height:900});await page.goto("/");
   const panel=await openDocuments(page);
@@ -133,6 +148,15 @@ test.describe("paper-down",()=>{
   await expect(section).not.toContainText(/\bfailed\b/i);
   // UI guard: no attempt can be clicked until the owner confirms the worker is back; the state stays visible.
   await expect(section.getByRole("button",{name:"Re-extract PDF text",exact:true})).toBeDisabled();
+ // The confirmation belongs to this document: tick it, open another document and come back: it is unticked and locked again.
+ await section.getByLabel("I started the PDF worker and want to try again",{exact:true}).check();
+ await expect(section.getByRole("button",{name:"Re-extract PDF text",exact:true})).toBeEnabled();
+ await panel.getByRole("button",{name:T.pdf,exact:true}).click();
+ await panel.getByRole("button",{name:T.offline,exact:true}).click();
+ const again=page.getByRole("article",{name:"Selected document",exact:true}).getByRole("region",{name:"PDF extraction",exact:true});
+ await expect(again.getByLabel("I started the PDF worker and want to try again",{exact:true})).not.toBeChecked();
+ await expect(again.getByRole("button",{name:"Re-extract PDF text",exact:true})).toBeDisabled();
+ await expect(section.getByRole("button",{name:"Re-extract PDF text",exact:true})).toBeDisabled();
   await expect(section.getByRole("button",{name:"Run OCR (up to 2 pages)",exact:true})).toBeDisabled();
   await expect(section).toContainText("unavailable");
   // The original stays viewable while the parser is offline.

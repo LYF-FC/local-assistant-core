@@ -9,7 +9,7 @@ export type ExtractionLike = {
 };
 
 export const UNKNOWN_IS_NOT_ZERO =
-  "Unknown is not zero: a field you leave Unknown stays Unknown. It is never treated as 0.00, as unpaid or as a missing invoice, and a filing with an Unknown total records no total.";
+  "Unknown is not zero: a field you leave Unknown stays Unknown. It is never treated as 0.00, as unpaid or as a missing invoice, The filing ledger holds only the file's hash, size and logical path, never invoice values.";
 
 export function isOcr(e: ExtractionLike): boolean {
   return e.engine === "poppler-tesseract-v1";
@@ -33,7 +33,7 @@ export function extractionExplanation(e: ExtractionLike): string {
   switch (e.status) {
     case "ready":
       return isOcr(e)
-        ? "OCR is uncertain and a line can be missing: text that is blurred or faint may be dropped without any warning, and the status still says ready. Compare every name, number and date with the original shown below, and leave a field Unknown if you cannot confirm it."
+        ? "OCR recognition is uncertain. Verify every name, number and date against the original before review. A line can be missing: text that is blurred or faint may be dropped without any warning, and the status still says ready. Compare every name, number and date with the original (use View original pages), and leave a field Unknown if you cannot confirm it."
         : "Extraction can omit images or reading order. Check the original before reviewing.";
     case "no_text":
       return "No text was found in this PDF. It looks like a scan or an image. Run OCR (up to 2 pages), then compare the result with the original. The original is kept either way.";

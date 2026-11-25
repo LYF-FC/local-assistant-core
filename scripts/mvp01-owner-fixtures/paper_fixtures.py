@@ -2,7 +2,7 @@
 """Deterministic synthetic PDF invoice fixtures for the MVP-01 "paper invoice" rehearsal (spec 078).
 
 Standard library only, no timestamps, no host fonts and no external image: the bytes depend on nothing but this file
-and, for the scan, the committed grayscale raster `invoice-scan.pgm.zlib`.
+and, for the scan, the committed grayscale raster `invoice-scan.pixels.zlib`.
 
 * P1  invoice-pdf.eml          one-page text PDF (Helvetica), invoice MVP01-2026-003
 * P2  invoice-scan.eml         one-page image-only PDF, invoice MVP01-2026-004; the "Total" line is deliberately blurred
@@ -17,13 +17,14 @@ repository's own PDF worker image), then degraded by `degrade()` below (blur of 
 
 import base64
 import hashlib
-import re
 import sys
 import zlib
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-RASTER = HERE / "invoice-scan.pgm.zlib"
+# The scan's grayscale pixels as ONE committed zlib stream, embedded byte for byte, so no platform's zlib can change the PDF.
+RASTER = HERE / "invoice-scan.pixels.zlib"
+WIDTH, HEIGHT = 850, 1100
 ISSUER = "Synthetic Rehearsal Vendor"
 
 FIXTURES = {
@@ -174,18 +175,16 @@ def hostile_eml():
     return agent_eml("hostile")
 
 
-def read_raster():
-    raw = zlib.decompress(RASTER.read_bytes())
-    header = re.match(rb"P5\n([0-9]+) ([0-9]+)\n255\n", raw)
-    width, height = map(int, header.groups())
-    pixels = raw[header.end() :]
-    assert len(pixels) == width * height
-    return width, height, pixels
+def read_pixels():
+    """Decoded pixels (for checks and for rebuilding the raster); the PDF itself embeds the stored stream."""
+    pixels = zlib.decompress(RASTER.read_bytes())
+    assert len(pixels) == WIDTH * HEIGHT
+    return pixels
 
 
 def scan_pdf():
-    width, height, pixels = read_raster()
-    image = zlib.compress(pixels, 9)
+    read_pixels()  # size sanity check only; the stored compressed stream is embedded unchanged
+    width, height, image = WIDTH, HEIGHT, RASTER.read_bytes()
     commands = b"q 612 0 0 792 0 0 cm /Im1 Do Q"
     return assemble(
         [
@@ -227,7 +226,7 @@ def sha(data):
 
 
 def manifest():
-    result = {"invoice-scan.pgm.zlib": sha(RASTER.read_bytes())}
+    result = {RASTER.name: sha(RASTER.read_bytes())}
     for name in FIXTURES:
         pdf, mail = build(name)
         result[name] = sha(mail)

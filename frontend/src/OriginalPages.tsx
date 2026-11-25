@@ -5,7 +5,7 @@ export default function OriginalPages({ bytes, onClose }: { bytes: Uint8Array; o
   const host = useRef<HTMLDivElement>(null);
   const [state, setState] = useState<{ phase: "drawing" | "done" | "error"; pages?: number; shown?: number }>({ phase: "drawing" });
   useEffect(() => {
-    const control = new AbortController();
+    const control = new AbortController(); // Hide, a new document or unmount aborts the render and terminates the worker
     setState({ phase: "drawing" });
     if (host.current)
       renderOriginalPages(bytes, host.current, control.signal)

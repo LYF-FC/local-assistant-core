@@ -33,6 +33,8 @@ elif a[:2] == ["volume", "ls"]:
 elif a[:1] == ["ps"]:
     print(os.environ.get("FAKE_CONTAINERS", ""))
 elif a[:1] == ["compose"]:
+    if "run" in a and os.environ.get("FAKE_RUN_OUT"):
+        print(os.environ["FAKE_RUN_OUT"])
     if "stop" in a and os.environ.get("FAKE_STOP_FAILS") == "1":
         sys.exit(1)
     if "up" in a and os.environ.get("FAKE_UP_FAILS") == "1":
@@ -313,6 +315,26 @@ class OwnerScriptTests(unittest.TestCase):
             self.assertTrue(composed and all("infra/core/pdf-ingestion.override.yml" in c for c in composed), composed)
             word = "kill -s SIGKILL" if mode else "restart"
             self.assertTrue(any(word in c and " pdf_worker" in c for c in self.calls()), self.calls())
+
+    def test_the_stopped_flag_is_reapplied_after_start_and_rebuild_too(self):
+        self.require_free_ports()
+        self.config()
+        self.start_curl_stub()
+        subprocess.run(
+            ["openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", str(self.tmp / "k.pem"), "-out", str(self.state / "butler-mvp01-dev-root.crt"), "-days", "1", "-subj", "/CN=synthetic"],
+            check=True, capture_output=True,
+        )
+        shutil.copy(REPO / "scripts" / "mvp01-owner-fixtures.py", self.tmp / "scripts")
+        self.state.joinpath("pdf-worker.stopped").write_text("")
+        seeded = "owner=exists peer=exists agenda_tasks=2 calendar_sources=1"
+        for command in ("start", "rebuild"):
+            self.log.write_text("")
+            result = self.run_script(command, extra={"FAKE_NETWORKS": "[]", "FAKE_RUN_OUT": seeded, "BUTLER_MVP01_OWNER_PASSWORD": "synthetic-owner-pass-0123"})
+            self.assertEqual(result.returncode, 0, result.stderr + result.stdout[-400:])
+            calls = self.calls()
+            last_up = max(i for i, c in enumerate(calls) if " up -d" in c)
+            self.assertTrue(any(" stop pdf_worker" in c for c in calls[last_up:]), (command, calls))
+            self.assertIn("pdf_worker", " ".join(calls))
 
     def test_pdf_worker_stop_and_start_use_a_flag_that_keeps_it_stopped_across_restart(self):
         self.config()
