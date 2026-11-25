@@ -7,6 +7,7 @@
 // terminates the pdf.js worker, so nothing keeps running behind a hidden or replaced view.
 export const MAX_PAGES = 3;
 export const RENDER_TIMEOUT_MS = 20_000;
+export const DESTROY_WAIT_MS = 500;
 const MAX_CANVAS_PIXELS = 4_000_000;
 const MAX_CANVAS_SIDE = 8192;
 const MIN_CANVAS_SIDE = 50;
@@ -51,42 +52,55 @@ export async function renderOriginalPages(
   timeoutMs: number = RENDER_TIMEOUT_MS,
 ): Promise<RenderResult> {
   const pdf = engine ?? (await loadEngine());
-  const thread = new pdf.Worker();
-  const worker = new pdf.PDFWorker({ port: thread });
-  const task = pdf.getDocument({
-    data: bytes.slice(),
-    worker,
-    isEvalSupported: false,
-    enableXfa: false,
-    // disableFontFace stays at its default: with it the non-embedded standard fonts of a text PDF are not drawn at all
-    // (observed: a blank page) unless the standard font files are bundled too; that alternative is an open follow-up.
-    disableAutoFetch: true,
-    disableStream: true,
-    disableRange: true,
-    stopAtErrors: false,
-    verbosity: 0,
-  });
+  let thread: { terminate(): void } | null = null;
+  let worker: { destroy(): void } | null = null;
+  let task: { promise: Promise<any>; destroy(): unknown } | null = null; // eslint-disable-line @typescript-eslint/no-explicit-any
   let current: { cancel(): void } | null = null;
   let stopped: Error | null = null;
   let reject: (e: Error) => void = () => undefined;
   const halted = new Promise<never>((_, r) => { reject = r; });
   halted.catch(() => undefined);
-  const stop = (reason: Error) => {
-    if (stopped) return;
+  let teardown: Promise<void> | null = null;
+  // Idempotent. Stops the render at once; the loading task gets a bounded moment (DESTROY_WAIT_MS) to finish its own
+  // cleanup (it also releases the page's fonts), then the PDFWorker is destroyed and the thread is terminated explicitly
+  // (PDFWorker.destroy() may leave a caller-supplied thread running). Whatever was created before a failure is torn down.
+  const stop = (reason: Error): Promise<void> => {
+    if (teardown) return teardown;
     stopped = reason;
     try { current?.cancel(); } catch { /* already finished */ }
-    void Promise.resolve(task.destroy()).catch(() => undefined);
-    try { worker.destroy(); } catch { /* already destroyed */ }
-    // PDFWorker.destroy() may leave a caller-supplied thread running, so the thread is terminated explicitly.
-    try { thread.terminate(); } catch { /* already terminated */ }
     reject(reason);
+    teardown = (async () => {
+      let wait: ReturnType<typeof setTimeout> | undefined;
+      try {
+        if (task) await Promise.race([Promise.resolve(task.destroy()), new Promise<void>(r => { wait = setTimeout(r, DESTROY_WAIT_MS); })]);
+      } catch { /* already destroyed */ }
+      clearTimeout(wait);
+      try { worker?.destroy(); } catch { /* already destroyed */ }
+      try { thread?.terminate(); } catch { /* already terminated */ }
+    })();
+    return teardown;
   };
   const guard = <T,>(promise: Promise<T>): Promise<T> => Promise.race([promise, halted]);
-  const onAbort = () => stop(new DOMException("Aborted", "AbortError"));
+  const onAbort = () => void stop(new DOMException("Aborted", "AbortError"));
   signal.addEventListener("abort", onAbort);
-  if (signal.aborted) onAbort();
-  const timer = setTimeout(() => stop(new Error("The original took too long to draw")), timeoutMs);
+  const timer = setTimeout(() => void stop(new Error("The original took too long to draw")), timeoutMs);
   try {
+    if (signal.aborted) throw new DOMException("Aborted", "AbortError");
+    thread = new pdf.Worker();
+    worker = new pdf.PDFWorker({ port: thread });
+    task = pdf.getDocument({
+      data: bytes.slice(),
+      worker,
+      isEvalSupported: false,
+      enableXfa: false,
+      // disableFontFace stays at its default: with it the non-embedded standard fonts of a text PDF are not drawn at all
+      // (observed: a blank page) unless the standard font files are bundled too; that alternative is an open follow-up.
+      disableAutoFetch: true,
+      disableStream: true,
+      disableRange: true,
+      stopAtErrors: false,
+      verbosity: 0,
+    });
     const doc = await guard<any>(task.promise); // eslint-disable-line @typescript-eslint/no-explicit-any
     const shown = Math.min(doc.numPages, MAX_PAGES);
     container.replaceChildren();
@@ -117,6 +131,6 @@ export async function renderOriginalPages(
   } finally {
     clearTimeout(timer);
     signal.removeEventListener("abort", onAbort);
-    stop(new Error("finished"));
+    await stop(new Error("finished"));
   }
 }

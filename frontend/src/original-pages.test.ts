@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { type Engine, MAX_PAGES, pageFits, renderOriginalPages } from "./original-pages";
+import { DESTROY_WAIT_MS, type Engine, MAX_PAGES, pageFits, renderOriginalPages } from "./original-pages";
 
 // A fake pdf.js: records teardown, and lets a test decide when (or whether) a page render settles.
 function fake(options: { pages?: number; width?: number; height?: number; render?: "never" | "ok" } = {}) {
@@ -69,6 +69,38 @@ describe("bounded in-page PDF view (spec 078)", () => {
     await expect(running).rejects.toMatchObject({ name: "AbortError" });
     expect(log.terminated).toBe(1);
   });
+  it("a synchronous getDocument failure, or a PDFWorker that cannot be built, still terminates the thread", async () => {
+    stubDom();
+    const { engine, log } = fake();
+    await expect(renderOriginalPages(new Uint8Array([1]), container(), new AbortController().signal, { ...engine, getDocument: () => { throw new Error("boom"); } })).rejects.toThrow("boom");
+    expect(log.terminated).toBe(1);
+    expect(log.workerDestroyed).toBe(1);
+    const second = fake();
+    await expect(renderOriginalPages(new Uint8Array([1]), container(), new AbortController().signal, { ...second.engine, PDFWorker: class { constructor() { throw new Error("no worker"); } } as never })).rejects.toThrow("no worker");
+    expect(second.log.terminated).toBe(1);
+  });
+  it("waits at most a bounded moment for destroy() before terminating, and never builds anything for an aborted signal", async () => {
+    stubDom();
+    vi.useFakeTimers();
+    const { engine, log } = fake({ render: "never" });
+    const hung = { ...engine, getDocument: (o: Record<string, unknown>) => ({ ...engine.getDocument(o), destroy: () => new Promise(() => undefined) }) };
+    const control = new AbortController();
+    const running = renderOriginalPages(new Uint8Array([1]), container(), control.signal, hung);
+    const outcome = expect(running).rejects.toMatchObject({ name: "AbortError" });
+    await vi.advanceTimersByTimeAsync(10);
+    control.abort();
+    await vi.advanceTimersByTimeAsync(10);
+    expect(log.terminated).toBe(0); // still waiting for destroy()
+    await vi.advanceTimersByTimeAsync(DESTROY_WAIT_MS + 1);
+    await outcome;
+    expect(log.terminated).toBe(1);
+    vi.useRealTimers();
+    const aborted = new AbortController();
+    aborted.abort();
+    const second = fake();
+    await expect(renderOriginalPages(new Uint8Array([1]), container(), aborted.signal, second.engine)).rejects.toMatchObject({ name: "AbortError" });
+    expect(second.log.terminated).toBe(0);
+  });
   it("a render that never finishes is stopped by the time limit with a visible error", async () => {
     stubDom();
     vi.useFakeTimers();
@@ -87,8 +119,7 @@ describe("bounded in-page PDF view (spec 078)", () => {
     const control = new AbortController();
     control.abort();
     await expect(renderOriginalPages(new Uint8Array([1]), container(), control.signal, engine)).rejects.toMatchObject({ name: "AbortError" });
-    expect(log.workerDestroyed).toBe(1);
-    expect(log.terminated).toBe(1);
+    expect(log.terminated).toBe(0); // nothing was created
   });
   it("refuses very tall, very narrow and non-finite pages instead of drawing a distorted or huge canvas", async () => {
     expect(pageFits(612, 792, 0.98)).toBe(true);

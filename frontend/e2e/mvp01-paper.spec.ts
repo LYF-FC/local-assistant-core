@@ -87,10 +87,15 @@ test.describe("paper-ui",()=>{
   await panel.getByRole("button",{name:T.hostile,exact:true}).click();
   const detail=page.getByRole("article",{name:"Selected document",exact:true});
   await viewOriginal(page,detail);
-  await expect(detail.getByRole("img",{name:/Original page 1 of 1/}).or(detail.getByRole("alert"))).toBeVisible();
-  // Click where the link annotation sits in the PDF: nothing may navigate, open or request.
+  // The file is well-formed (balanced strings), so the page must really be DRAWN; the "could not be shown" branch is a failure here
+  // (the separate damaged-PDF test covers that branch).
   const canvas=detail.getByRole("img",{name:/Original page 1 of 1/});
-  if(await canvas.count()){const box=(await canvas.boundingBox())!;await page.mouse.click(box.x+box.width*0.2,box.y+box.height*0.08);}
+  await expect(canvas).toBeVisible({timeout:15000});
+  await expect(detail.getByRole("alert")).toHaveCount(0);
+  expect(await hasInk(page,/Original page 1 of 1/)).toBeGreaterThan(50);
+  // Click where the link annotation sits in the PDF (Rect 60 700 400 740 of a 612x792 page): nothing may navigate, open or request.
+  const box=(await canvas.boundingBox())!;
+  await page.mouse.click(box.x+box.width*(230/612),box.y+box.height*(1-720/792));
   await page.waitForTimeout(1500);
   expect(dialogs).toEqual([]);expect(popups).toEqual([]);
   expect(external.filter(u=>/example\.invalid/.test(u))).toEqual([]);

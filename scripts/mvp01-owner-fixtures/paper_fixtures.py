@@ -116,9 +116,9 @@ def hostile_pdf():
     stream = b"BT /F1 14 Tf 72 720 Td (Synthetic hostile-PDF test page) Tj ET"
     return assemble(
         [
-            b"<< /Type /Catalog /Pages 2 0 R /OpenAction << /S /JavaScript /JS (app.alert\\('SCRIPT-RAN');) >> >>",
+            b"<< /Type /Catalog /Pages 2 0 R /OpenAction << /S /JavaScript /JS (app.alert\\('SCRIPT-RAN'\\);) >> >>",
             b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-            b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R /Annots [6 0 R] /AA << /O << /S /JavaScript /JS (app.alert\\('PAGE-SCRIPT-RAN');) >> >> >>",
+            b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R /Annots [6 0 R] /AA << /O << /S /JavaScript /JS (app.alert\\('PAGE-SCRIPT-RAN'\\);) >> >> >>",
             f"<< /Length {len(stream)} >>\nstream\n".encode() + stream + b"\nendstream",
             b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
             b"<< /Type /Annot /Subtype /Link /Rect [60 700 400 740] /Border [0 0 0] /A << /S /URI /URI (http://example.invalid/hostile) >> >>",
