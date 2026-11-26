@@ -14,6 +14,8 @@ Before implementing a row, add measurable acceptance to its feature spec and pre
 
 ## Complete retained inventory
 
+Butler Code is an owner-approved post-MVP workflow refinement of existing WORK-07, OPS-07/08 and CORE-07, not an additional counted reference. Its [contract](BUTLER_CODE.md) defines a small separately authorized side-project pilot with external A1 coordination and independent review/validation boundaries. [PROJECT_MASTER.md](../PROJECT_MASTER.md#post-mvp-scope-addition--butler-code-owner-approved-24-november-2026) owns its planning/status record. This note changes no row, acceptance, historical count or existing requirement.
+
 | ID | Outcome and retained requirement | Milestone | Status / existing spec evidence | Remaining acceptance |
 |---|---|---|---|---|
 | CORE-01 | Individual and shared identities: two adult identities, shared household, member-private, parent-managed care and restricted professional/health records; domain access remains explicitly granted | MVP | partial; full contract remains open; specs 001,006,012 | Accounts/transport/grants exist; full parent-managed/domain profiles and actual-host acceptance remain. |
